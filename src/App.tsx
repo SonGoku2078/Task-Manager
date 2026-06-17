@@ -10,6 +10,7 @@ import TaskDetailPanel from './components/TaskDetailPanel';
 import CategoryBar from './components/CategoryBar';
 import FilterBar from './components/FilterBar';
 import BulkActionBar from './components/BulkActionBar';
+import TemplatesGallery from './components/TemplatesGallery';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -21,6 +22,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   week: 'Diese Woche',
   search: 'Suche',
   custom: 'Gespeicherte Ansicht',
+  templates: 'Vorlagen',
 };
 
 function App() {
@@ -193,6 +195,10 @@ function App() {
           </div>
         </div>
 
+        {ui.currentView === 'templates' ? (
+          <TemplatesGallery />
+        ) : (
+        <>
         <div className="quick-add">
           <input
             ref={quickAddRef}
@@ -266,6 +272,8 @@ function App() {
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
         />
+        </>
+        )}
       </div>
 
       {selectedTask && <TaskDetailPanel task={selectedTask} />}

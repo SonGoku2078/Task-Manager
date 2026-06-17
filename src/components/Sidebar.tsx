@@ -10,6 +10,7 @@ const navItems: { id: ViewType; icon: string; label: string }[] = [
   { id: 'projects', icon: '📂', label: 'Projekte' },
   { id: 'categories', icon: '🏷️', label: 'Kategorien' },
   { id: 'calendar', icon: '📅', label: 'Kalender' },
+  { id: 'templates', icon: '📋', label: 'Vorlagen' },
 ];
 
 export default function Sidebar() {

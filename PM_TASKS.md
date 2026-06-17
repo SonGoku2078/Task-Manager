@@ -46,7 +46,7 @@ Triagiert, gruppiert nach Tier.
 
 ### TIER-2-MANAGEMENT (Important, Post-MVP)
 
-- [ ] **[TIER-2] Project Templates** — Pre-built project structures
+- [x] **[TIER-2] Project Templates** — Pre-built project structures
 - [x] **[TIER-2] Project Labels** — Organize projects by tags
 - [x] **[TIER-2] Bulk Operations** — Multi-select tasks for actions
 - [x] **[TIER-2] Today View** — Special view for today's tasks

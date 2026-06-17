@@ -10,7 +10,8 @@ export type ViewType =
   | 'today'
   | 'week'
   | 'search'
-  | 'custom';
+  | 'custom'
+  | 'templates';
 
 export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
 export type SortDir = 'asc' | 'desc';

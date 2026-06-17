@@ -11,6 +11,7 @@ import type {
   SavedView,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
+import type { ProjectTemplate } from './templates';
 
 const DATE_KEYS = new Set([
   'dueDate',
@@ -99,6 +100,8 @@ interface AppState {
   addProject: (name: string, color?: string, icon?: string) => Project;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+
+  createProjectFromTemplate: (template: ProjectTemplate) => Project;
 
   // Category CRUD
   addCategory: (name: string, color?: string) => Category;
@@ -261,6 +264,37 @@ export const useStore = create<AppState>()(
               ? { ...state.ui, selectedProjectId: null }
               : state.ui,
         })),
+
+      createProjectFromTemplate: (template) => {
+        const project: Project = {
+          id: uid('proj'),
+          name: template.name,
+          color: template.color,
+          icon: template.icon,
+        };
+        const now = new Date();
+        const tasks: Task[] = template.tasks.map((t, i) => ({
+          id: uid('task'),
+          title: t.title,
+          description: '',
+          projectId: project.id,
+          dueDate: null,
+          priority: t.priority ?? 'medium',
+          categoryIds: [],
+          completed: false,
+          // Stagger createdAt so template order is preserved under createdAt sort.
+          createdAt: new Date(now.getTime() + i),
+          updatedAt: now,
+          starred: false,
+          recurrence: 'none',
+          recurrenceEnd: null,
+        }));
+        set((state) => ({
+          projects: [...state.projects, project],
+          tasks: [...state.tasks, ...tasks],
+        }));
+        return project;
+      },
 
       addCategory: (name, color) => {
         const category: Category = {
