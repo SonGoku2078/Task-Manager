@@ -1,138 +1,89 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from './store';
-import { dummyTasks, projects } from './dummyData';
-import type { Task } from './types';
+import { selectVisibleTasks } from './selectors';
+import type { ViewType } from './types';
 import './App.css';
 import Sidebar from './components/Sidebar';
 import CalendarPanel from './components/CalendarPanel';
 import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
 
+const VIEW_TITLES: Record<ViewType, string> = {
+  inbox: 'Inbox',
+  priority: 'Priorität',
+  projects: 'Projekt',
+  categories: 'Kategorien',
+  calendar: 'Kalender',
+  today: 'Heute',
+  week: 'Diese Woche',
+  search: 'Suche',
+};
+
 function App() {
-  const { tasks, uiState, addTask, selectTask } = useStore();
-  const [showNewTaskForm, setShowNewTaskForm] = useState(false);
+  const tasks = useStore((s) => s.tasks);
+  const ui = useStore((s) => s.ui);
+  const projects = useStore((s) => s.projects);
+  const addTask = useStore((s) => s.addTask);
+  const selectTask = useStore((s) => s.selectTask);
+
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  // Load tasks from localStorage on mount
-  useEffect(() => {
-    const store = useStore.getState();
-    const savedTasks = localStorage.getItem('tasks');
+  const visibleTasks = selectVisibleTasks(tasks, ui);
+  const selectedTask = ui.selectedTaskId
+    ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
+    : null;
 
-    if (savedTasks) {
-      try {
-        const parsedTasks = JSON.parse(savedTasks);
-        parsedTasks.forEach((task: Task) => {
-          store.addTask({
-            ...task,
-            dueDate: new Date(task.dueDate),
-            createdAt: new Date(task.createdAt),
-            updatedAt: new Date(task.updatedAt),
-          });
-        });
-      } catch (error) {
-        console.error('Failed to load tasks from localStorage:', error);
-      }
-    } else if (store.tasks.length === 0) {
-      // First time: load dummy data
-      dummyTasks.forEach(task => store.addTask(task));
-    }
-  }, []);
+  const currentProject =
+    ui.currentView === 'projects' && ui.selectedProjectId
+      ? projects.find((p) => p.id === ui.selectedProjectId)
+      : null;
 
-  // Save tasks to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }, [tasks]);
+  const headerTitle = currentProject
+    ? `${currentProject.icon} ${currentProject.name}`
+    : VIEW_TITLES[ui.currentView];
 
   const handleAddTask = () => {
-    if (newTaskTitle.trim()) {
-      const newTask: Task = {
-        id: `task-${Date.now()}`,
-        title: newTaskTitle,
-        description: '',
-        projectId: '1',
-        dueDate: new Date(),
-        priority: 'medium',
-        tags: [],
-        completed: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        starred: false,
-        recurrence: 'none',
-      };
-      addTask(newTask);
-      setNewTaskTitle('');
-      setShowNewTaskForm(false);
-    }
+    const title = newTaskTitle.trim();
+    if (!title) return;
+    const created = addTask({
+      title,
+      projectId: currentProject ? currentProject.id : null,
+    });
+    setNewTaskTitle('');
+    selectTask(created.id);
   };
 
   return (
     <div className="app-container">
-      <Sidebar projects={projects} />
+      <Sidebar />
       <CalendarPanel />
       <div className="main-content">
         <div className="task-header">
-          <h2>Inbox</h2>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button className="info-btn">ℹ️</button>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowNewTaskForm(!showNewTaskForm)}
-            >
-              + Add Task
-            </button>
-          </div>
+          <h2>{headerTitle}</h2>
+          <span className="task-count">{visibleTasks.length}</span>
         </div>
 
-        {showNewTaskForm && (
-          <div style={{
-            padding: '12px 20px',
-            borderBottom: '1px solid #e0e0e0',
-            display: 'flex',
-            gap: '8px',
-            backgroundColor: '#f9f9f9',
-          }}>
-            <input
-              type="text"
-              placeholder="New task..."
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddTask();
-                if (e.key === 'Escape') setShowNewTaskForm(false);
-              }}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontFamily: 'inherit',
-              }}
-              autoFocus
-            />
-            <button
-              className="btn btn-primary"
-              onClick={handleAddTask}
-            >
-              Save
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                setShowNewTaskForm(false);
-                setNewTaskTitle('');
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
+        <div className="quick-add">
+          <input
+            type="text"
+            className="quick-add-input"
+            placeholder="+ Aufgabe hinzufügen…"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddTask();
+              if (e.key === 'Escape') setNewTaskTitle('');
+            }}
+          />
+          <button className="btn btn-primary" onClick={handleAddTask}>
+            Hinzufügen
+          </button>
+        </div>
 
-        <TaskList tasks={tasks} onSelectTask={selectTask} />
+        <TaskList tasks={visibleTasks} />
       </div>
-      {uiState.selectedTask && uiState.selectedTask.id && (
-        <TaskDetailPanel task={uiState.selectedTask} />
-      )}
+
+      {selectedTask && <TaskDetailPanel task={selectedTask} />}
     </div>
   );
 }

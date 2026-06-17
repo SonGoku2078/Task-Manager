@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './CalendarPanel.css';
 
 export default function CalendarPanel() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 17)); // June 17, 2026
+  const [currentDate] = useState(new Date(2026, 5, 17)); // June 17, 2026
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();

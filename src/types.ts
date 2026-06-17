@@ -1,20 +1,33 @@
 export type Priority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 
+export type ViewType =
+  | 'inbox'
+  | 'priority'
+  | 'projects'
+  | 'categories'
+  | 'calendar'
+  | 'today'
+  | 'week'
+  | 'search';
+
+export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
+export type SortDir = 'asc' | 'desc';
+
 export interface Task {
   id: string;
   title: string;
   description: string;
-  projectId: string;
-  dueDate: Date;
+  projectId: string | null;
+  dueDate: Date | null;
   priority: Priority;
-  tags: string[];
+  categoryIds: string[];
   completed: boolean;
   createdAt: Date;
   updatedAt: Date;
   starred: boolean;
   recurrence: RecurrenceType;
-  recurrenceEnd?: Date;
+  recurrenceEnd?: Date | null;
 }
 
 export interface Project {
@@ -24,9 +37,26 @@ export interface Project {
   icon: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface Filters {
+  projectId: string | null;
+  categoryId: string | null;
+  priority: Priority | null;
+  completed: boolean | null; // null = both, false = open, true = done
+}
+
 export interface UIState {
-  selectedTask: Task | null;
-  selectedProject: string | null;
-  currentView: 'calendar' | 'inbox' | 'today' | 'week';
+  selectedTaskId: string | null;
+  selectedProjectId: string | null;
+  currentView: ViewType;
   currentDate: Date;
+  searchQuery: string;
+  filters: Filters;
+  sortField: SortField;
+  sortDir: SortDir;
 }

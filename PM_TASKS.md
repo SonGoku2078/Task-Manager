@@ -28,12 +28,12 @@ Triagiert, gruppiert nach Tier.
 
 **HIGH Priority:**
 - [x] **[TIER-1] Inbox** — Central task collection point, default view
-- [ ] **[TIER-1] Create/Edit/Delete Tasks** — CRUD for Tasks with all fields
+- [x] **[TIER-1] Create/Edit/Delete Tasks** — CRUD for Tasks with all fields
 - [ ] **[TIER-1] Projects Management** — Create/organize tasks in projects
 - [ ] **[TIER-1] Priority List** — Top 5 "Next Steps" for today
-- [ ] **[TIER-1] Task Fields** — Title, Description, DueDate, Priority, Category, Recurring
-- [ ] **[TIER-1] Completed Status** — Checkbox with strikethrough
-- [ ] **[TIER-1] Star/Favorite** — Mark important tasks
+- [x] **[TIER-1] Task Fields** — Title, Description, DueDate, Priority, Category, Recurring
+- [x] **[TIER-1] Completed Status** — Checkbox with strikethrough
+- [x] **[TIER-1] Star/Favorite** — Mark important tasks
 - [ ] **[TIER-1] Categories/Contexts** — Tagging system (GTD contexts)
 - [ ] **[TIER-1] Calendar View** — Date-based task visualization
 - [ ] **[TIER-1] Recurring Tasks** — Daily/Weekly/Monthly automation
@@ -94,7 +94,11 @@ Archive of finished features.
 
 | ID | Feature | Completed | Issue |
 |----|---------|-----------|-------|
-| (none yet) | — | — | — |
+| 001 | Inbox | 2026-06-18 | docs/pipeline/01-inbox.md |
+| 002 | Create/Edit/Delete (CRUD) | 2026-06-18 | docs/pipeline/02-crud.md |
+| 005 | Task Fields (all) | 2026-06-18 | docs/pipeline/05-task-fields.md |
+| 006 | Completed Status | 2026-06-18 | docs/pipeline/06-completed.md |
+| 007 | Star/Favorite | 2026-06-18 | docs/pipeline/07-star.md |
 
 ---
 

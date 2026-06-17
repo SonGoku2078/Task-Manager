@@ -18,6 +18,61 @@
   background: var(--hover-bg);
 }
 
+.task-item.selected {
+  background: rgba(76, 175, 80, 0.08);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.priority-dot.priority-high {
+  background: var(--alert-red);
+}
+
+.priority-dot.priority-medium {
+  background: #f59e0b;
+}
+
+.priority-dot.priority-low {
+  background: #9ca3af;
+}
+
+.task-cat {
+  font-size: 10px;
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.task-recurring {
+  font-size: 11px;
+}
+
+.task-list-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.task-list-empty .empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
 .task-checkbox {
   width: 20px;
   height: 20px;
