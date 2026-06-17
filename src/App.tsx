@@ -8,6 +8,7 @@ import CalendarPanel from './components/CalendarPanel';
 import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
 import CategoryBar from './components/CategoryBar';
+import FilterBar from './components/FilterBar';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -125,6 +126,10 @@ function App() {
         </div>
 
         {ui.currentView === 'categories' && <CategoryBar />}
+
+        {['inbox', 'projects', 'today', 'search', 'categories'].includes(
+          ui.currentView
+        ) && <FilterBar />}
 
         {ui.currentView === 'priority' && (
           <div className="view-hint">
