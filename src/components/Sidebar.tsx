@@ -27,6 +27,27 @@ export default function Sidebar() {
   const openCount = (projectId: string) =>
     tasks.filter((t) => t.projectId === projectId && !t.completed).length;
 
+  // Group projects by their optional label; unlabeled first.
+  const groupedProjects = (() => {
+    const order: (string | undefined)[] = [];
+    const map = new Map<string | undefined, typeof projects>();
+    for (const p of projects) {
+      const key = p.label || undefined;
+      if (!map.has(key)) {
+        map.set(key, []);
+        order.push(key);
+      }
+      map.get(key)!.push(p);
+    }
+    // Unlabeled group first, then labeled alphabetically.
+    order.sort((a, b) => {
+      if (a === undefined) return -1;
+      if (b === undefined) return 1;
+      return a.localeCompare(b);
+    });
+    return order.map((label) => ({ label, items: map.get(label)! }));
+  })();
+
   const submitProject = () => {
     const name = newName.trim();
     if (name) {
@@ -82,26 +103,33 @@ export default function Sidebar() {
           />
         </div>
       )}
-      <div className="sidebar-items">
-        {projects.map((p) => (
-          <button
-            key={p.id}
-            className={`sidebar-item project-item ${
-              currentView === 'projects' && selectedProjectId === p.id ? 'active' : ''
-            }`}
-            onClick={() => {
-              selectProject(p.id);
-              setView('projects');
-            }}
-          >
-            <span className="sidebar-icon" style={{ color: p.color }}>
-              {p.icon}
-            </span>
-            <span className="project-name">{p.name}</span>
-            <span className="project-count">{openCount(p.id)}</span>
-          </button>
-        ))}
-      </div>
+      {groupedProjects.map(({ label, items }) => (
+        <div key={label ?? '__none'}>
+          {label && <div className="sidebar-group-label">{label}</div>}
+          <div className="sidebar-items">
+            {items.map((p) => (
+              <button
+                key={p.id}
+                className={`sidebar-item project-item ${
+                  currentView === 'projects' && selectedProjectId === p.id
+                    ? 'active'
+                    : ''
+                }`}
+                onClick={() => {
+                  selectProject(p.id);
+                  setView('projects');
+                }}
+              >
+                <span className="sidebar-icon" style={{ color: p.color }}>
+                  {p.icon}
+                </span>
+                <span className="project-name">{p.name}</span>
+                <span className="project-count">{openCount(p.id)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <div className="sidebar-separator" />
 

@@ -131,13 +131,26 @@ function App() {
       <div className="main-content">
         <div className="task-header">
           {currentProject ? (
-            <input
-              className="project-title-input"
-              value={currentProject.name}
-              onChange={(e) =>
-                updateProject(currentProject.id, { name: e.target.value })
-              }
-            />
+            <div className="project-title-group">
+              <input
+                className="project-title-input"
+                value={currentProject.name}
+                onChange={(e) =>
+                  updateProject(currentProject.id, { name: e.target.value })
+                }
+              />
+              <input
+                className="project-label-input"
+                placeholder="+ Label"
+                value={currentProject.label ?? ''}
+                onChange={(e) =>
+                  updateProject(currentProject.id, {
+                    label: e.target.value || undefined,
+                  })
+                }
+                title="Projekt-Label (Gruppierung in der Seitenleiste)"
+              />
+            </div>
           ) : (
             <h2>{headerTitle}</h2>
           )}

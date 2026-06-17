@@ -35,6 +35,7 @@ export interface Project {
   name: string;
   color: string;
   icon: string;
+  label?: string; // optional grouping label (e.g. "Arbeit", "Privat")
 }
 
 export interface Category {

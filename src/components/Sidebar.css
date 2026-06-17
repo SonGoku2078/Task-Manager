@@ -76,6 +76,15 @@
   border-color: var(--accent);
 }
 
+.sidebar-group-label {
+  padding: 8px 16px 2px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b747b;
+  font-weight: 700;
+}
+
 .project-item .project-name {
   flex: 1;
   overflow: hidden;

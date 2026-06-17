@@ -88,6 +88,14 @@ body {
   gap: 12px;
 }
 
+.project-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
 .project-title-input {
   font-size: 18px;
   font-weight: 600;
@@ -97,7 +105,23 @@ body {
   font-family: inherit;
   color: var(--text-primary);
   background: transparent;
-  max-width: 60%;
+}
+
+.project-label-input {
+  font-size: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: var(--hover-bg);
+  width: 110px;
+}
+
+.project-label-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
 }
 
 .project-title-input:hover {
