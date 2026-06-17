@@ -80,7 +80,10 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
       break;
     case 'today': {
       const now = new Date();
-      result = result.filter((t) => t.dueDate && isSameDay(t.dueDate, now));
+      // Today = due today (incl. completed) OR overdue and still open.
+      result = result.filter(
+        (t) => t.dueDate && (isSameDay(t.dueDate, now) || isOverdue(t))
+      );
       break;
     }
     case 'search':
