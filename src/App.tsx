@@ -47,7 +47,13 @@ function App() {
 
   const headerTitle = currentProject
     ? `${currentProject.icon} ${currentProject.name}`
-    : VIEW_TITLES[ui.currentView];
+    : ui.currentView === 'calendar'
+      ? ui.currentDate.toLocaleDateString('de-DE', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })
+      : VIEW_TITLES[ui.currentView];
 
   const handleAddTask = () => {
     const title = newTaskTitle.trim();
@@ -55,6 +61,7 @@ function App() {
     const created = addTask({
       title,
       projectId: currentProject ? currentProject.id : null,
+      dueDate: ui.currentView === 'calendar' ? new Date(ui.currentDate) : null,
     });
     setNewTaskTitle('');
     selectTask(created.id);

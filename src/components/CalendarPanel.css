@@ -31,14 +31,33 @@
   background: rgba(76, 175, 80, 0.3);
 }
 
-.month-select {
-  padding: 8px 12px;
-  background: #4a4a4a;
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cal-nav-btn {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-dark);
-  color: #fff;
+  color: #ddd;
   border-radius: 4px;
-  font-size: 13px;
   cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.cal-month-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
 }
 
 .weekdays {
@@ -66,19 +85,29 @@
 .cal-day {
   aspect-ratio: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  color: #999;
+  color: #ccc;
   transition: all 0.15s;
   user-select: none;
+  padding: 0;
+  font-family: inherit;
 }
 
 .cal-day:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cal-day.empty {
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
 }
 
 .cal-day.today {
@@ -87,12 +116,19 @@
   font-weight: 600;
 }
 
-.cal-day.week-highlight {
-  background: rgba(76, 175, 80, 0.3);
-  color: var(--accent);
+.cal-day.selected {
+  border-color: var(--accent);
+  color: #fff;
   font-weight: 600;
 }
 
-.cal-day.other-month {
-  color: #555;
+.cal-day-dot {
+  font-size: 7px;
+  line-height: 6px;
+  color: #ffd24a;
+  margin-top: 1px;
+}
+
+.cal-day.today .cal-day-dot {
+  color: #fff;
 }
