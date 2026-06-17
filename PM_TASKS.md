@@ -34,7 +34,7 @@ Triagiert, gruppiert nach Tier.
 - [x] **[TIER-1] Task Fields** — Title, Description, DueDate, Priority, Category, Recurring
 - [x] **[TIER-1] Completed Status** — Checkbox with strikethrough
 - [x] **[TIER-1] Star/Favorite** — Mark important tasks
-- [ ] **[TIER-1] Categories/Contexts** — Tagging system (GTD contexts)
+- [x] **[TIER-1] Categories/Contexts** — Tagging system (GTD contexts)
 - [ ] **[TIER-1] Calendar View** — Date-based task visualization
 - [ ] **[TIER-1] Recurring Tasks** — Daily/Weekly/Monthly automation
 - [ ] **[TIER-1] Filter & Sort** — By project, category, priority, date
@@ -101,6 +101,7 @@ Archive of finished features.
 | 007 | Star/Favorite | 2026-06-18 | docs/pipeline/07-star.md |
 | 003 | Projects Management | 2026-06-18 | docs/pipeline/03-projects.md |
 | 004 | Priority List (Top 5) | 2026-06-18 | docs/pipeline/04-priority-list.md |
+| 008 | Categories/Contexts | 2026-06-18 | docs/pipeline/08-categories.md |
 
 ---
 

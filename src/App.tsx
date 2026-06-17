@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import CalendarPanel from './components/CalendarPanel';
 import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
+import CategoryBar from './components/CategoryBar';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -115,6 +116,8 @@ function App() {
             Hinzufügen
           </button>
         </div>
+
+        {ui.currentView === 'categories' && <CategoryBar />}
 
         {ui.currentView === 'priority' && (
           <div className="view-hint">
