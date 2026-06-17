@@ -5,16 +5,18 @@
 }
 
 :root {
-  --sidebar-bg: #2d2d2d;
-  --calendar-bg: #3a3a3a;
+  --sidebar-bg: #232a2e;
+  --calendar-bg: #2c343a;
   --main-bg: #ffffff;
-  --accent: #4caf50;
-  --text-primary: #1a1a1a;
-  --text-secondary: #999999;
-  --border-light: #e0e0e0;
-  --border-dark: #444444;
-  --alert-red: #ef4444;
-  --hover-bg: #f9f9f9;
+  --accent: #2b8a3e;
+  --accent-soft: rgba(43, 138, 62, 0.12);
+  --accent-hover: #248236;
+  --text-primary: #1c2024;
+  --text-secondary: #8a9199;
+  --border-light: #ebecee;
+  --border-dark: #3a444b;
+  --alert-red: #e5484d;
+  --hover-bg: #f7f8f9;
 }
 
 body {
@@ -36,6 +38,33 @@ body {
   flex-direction: column;
   background: var(--main-bg);
   overflow: hidden;
+  min-width: 0;
+}
+
+/* Responsive: collapse auxiliary panels on smaller viewports. */
+@media (max-width: 1080px) {
+  .calendar-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    width: 64px;
+  }
+  .sidebar-item span:not(.sidebar-icon):not(.project-count),
+  .sidebar-brand,
+  .sidebar-section-label,
+  .project-count {
+    display: none;
+  }
+  .task-detail-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    z-index: 20;
+  }
 }
 
 .task-header {
@@ -44,6 +73,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 60px;
+  background: var(--main-bg);
 }
 
 .task-header h2 {
@@ -123,7 +154,7 @@ body {
 }
 
 .btn-primary:hover {
-  background: #45a049;
+  background: var(--accent-hover);
 }
 
 .btn-secondary {

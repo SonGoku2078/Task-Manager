@@ -94,26 +94,27 @@
 }
 
 .sidebar-item {
-  padding: 14px 16px;
+  padding: 10px 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 14px;
-  transition: background 0.15s;
-  color: #bbb;
+  transition: background 0.15s, color 0.15s;
+  color: #aab2b8;
   user-select: none;
 }
 
 .sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
   color: #fff;
 }
 
 .sidebar-item.active {
-  background: rgba(76, 175, 80, 0.2);
-  color: var(--accent);
-  font-weight: 500;
+  background: rgba(76, 175, 80, 0.18);
+  color: #7bd88f;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .sidebar-icon {

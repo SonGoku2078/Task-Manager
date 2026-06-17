@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-06-18
+
+### Tier-1 Core Features Complete (14/14) — full pipeline build
+
+#### Foundation
+- Reworked Zustand store: `persist` middleware with a Date reviver (robust localStorage,
+  no double-load under StrictMode), `selectedTaskId` instead of a stale `selectedTask`
+  object (fixes the stale-edit bug and the circular store type).
+- New `Project` and `Category` entities with full CRUD.
+- New `src/selectors.ts`: filter / sort / search / priority / calendar scoping.
+
+#### Features
+- **Inbox** — default collection of project-less tasks + quick-add.
+- **CRUD** — create / edit (all fields, live) / delete tasks.
+- **Projects** — create (sidebar), assign (panel), rename + delete (orphans → inbox), open counts.
+- **Priority List** — top 5 open tasks (starred → high → due).
+- **Task Fields** — title, description, due date, priority, project, categories, recurrence.
+- **Completed** — checkbox + strikethrough, click-isolated.
+- **Star/Favorite** — toggle in list and panel; feeds the priority list.
+- **Categories/Contexts** — create/delete, multi-assign chips, filter pills with colors.
+- **Calendar View** — interactive month grid, nav, today, task-count dots, click-to-date, dated quick-add.
+- **Recurring Tasks** — daily/weekly/monthly auto-spawn on completion, optional end date.
+- **Filter & Sort** — by project/category/priority/status; sort by priority/due/title/created ±dir.
+- **Full-Text Search** — title + description, real-time, scoped to the search view.
+- **Keyboard Shortcuts** — `n` new, `/` search, `Esc` close, `Del` delete.
+- **UI Polish** — cohesive tokens, typography, hover/active states, responsive breakpoints.
+
+#### Verification
+- `npm run build` (tsc + vite) and `npm run lint` green at every feature commit.
+- Dev server renders (HTTP 200, modules transform without error).
+- Per-feature pipeline artifacts under `docs/pipeline/`.
+
+---
+
 ## [1.0.0] - 2026-06-17
 
 ### Initial Release - Task Manager MVP

@@ -2,7 +2,7 @@
 
 **Projekt:** Nozbe Task Manager Clone (HTML MVP)  
 **Repository:** https://github.com/SonGoku2078/Task-Manager  
-**Status:** Starting Phase 1 (Tier-1 Core Features)  
+**Status:** ✅ Tier-1 Core Features COMPLETE (14/14) — MVP funktionsfähig  
 **Last Updated:** 2026-06-18
 
 ---
@@ -42,7 +42,7 @@ Triagiert, gruppiert nach Tier.
 
 **MEDIUM Priority:**
 - [x] **[TIER-1] Keyboard Shortcuts** — Basic navigation (Enter, Escape, Tab)
-- [ ] **[TIER-1] Nozbe-Exact UI** — Design 1:1 match with official Nozbe
+- [x] **[TIER-1] Nozbe-Exact UI** — Design 1:1 match with official Nozbe
 
 ### TIER-2-MANAGEMENT (Important, Post-MVP)
 
@@ -76,7 +76,7 @@ Features gebrieft, beim Requirements Engineer in Arbeit.
 
 | ID | Feature | Status | Issue | Owner |
 |----|---------|---------| -----|-------|
-| 001 | Inbox View | IN-REQ-ENG | — | (awaiting Req-Eng) |
+| — | Alle Tier-1-Features abgeschlossen | done | docs/pipeline/* | — |
 
 ---
 
@@ -107,6 +107,7 @@ Archive of finished features.
 | 011 | Filter & Sort | 2026-06-18 | docs/pipeline/11-filter-sort.md |
 | 012 | Full-Text Search | 2026-06-18 | docs/pipeline/12-search.md |
 | 013 | Keyboard Shortcuts | 2026-06-18 | docs/pipeline/13-shortcuts.md |
+| 014 | Nozbe-Exact UI Polish | 2026-06-18 | docs/pipeline/14-ui-polish.md |
 
 ---
 
