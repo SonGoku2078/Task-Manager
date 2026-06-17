@@ -48,7 +48,7 @@ Triagiert, gruppiert nach Tier.
 
 - [ ] **[TIER-2] Project Templates** — Pre-built project structures
 - [ ] **[TIER-2] Project Labels** — Organize projects by tags
-- [ ] **[TIER-2] Bulk Operations** — Multi-select tasks for actions
+- [x] **[TIER-2] Bulk Operations** — Multi-select tasks for actions
 - [x] **[TIER-2] Today View** — Special view for today's tasks
 - [ ] **[TIER-2] Custom Views** — User-defined filters/saved searches
 

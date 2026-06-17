@@ -6,9 +6,18 @@ import './TaskList.css';
 interface TaskListProps {
   tasks: Task[];
   emptyHint?: string;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
-export default function TaskList({ tasks, emptyHint }: TaskListProps) {
+export default function TaskList({
+  tasks,
+  emptyHint,
+  selectionMode = false,
+  selectedIds,
+  onToggleSelect,
+}: TaskListProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const toggleStar = useStore((s) => s.toggleStar);
   const selectTask = useStore((s) => s.selectTask);
@@ -35,17 +44,22 @@ export default function TaskList({ tasks, emptyHint }: TaskListProps) {
             key={task.id}
             className={`task-item ${selectedTaskId === task.id ? 'selected' : ''} ${
               task.completed ? 'is-completed' : ''
-            }`}
-            onClick={() => selectTask(task.id)}
+            } ${selectionMode && selectedIds?.has(task.id) ? 'bulk-selected' : ''}`}
+            onClick={() =>
+              selectionMode ? onToggleSelect?.(task.id) : selectTask(task.id)
+            }
           >
             <input
               type="checkbox"
               className="task-checkbox"
-              checked={task.completed}
+              checked={
+                selectionMode ? !!selectedIds?.has(task.id) : task.completed
+              }
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => {
                 e.stopPropagation();
-                toggleTask(task.id);
+                if (selectionMode) onToggleSelect?.(task.id);
+                else toggleTask(task.id);
               }}
             />
             <span className={`priority-dot priority-${task.priority}`} title={task.priority} />

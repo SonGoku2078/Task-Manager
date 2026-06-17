@@ -9,6 +9,7 @@ import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
 import CategoryBar from './components/CategoryBar';
 import FilterBar from './components/FilterBar';
+import BulkActionBar from './components/BulkActionBar';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -35,6 +36,22 @@ function App() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const quickAddRef = useRef<HTMLInputElement>(null);
+
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const exitBulk = () => {
+    setBulkMode(false);
+    setSelectedIds(new Set());
+  };
 
   // Global keyboard shortcuts: n = new task, / = search, Esc = close, Del = delete.
   useEffect(() => {
@@ -126,6 +143,13 @@ function App() {
           )}
           <div className="task-header-right">
             <span className="task-count">{visibleTasks.length}</span>
+            <button
+              className="header-icon-btn"
+              title={bulkMode ? 'Auswahl beenden' : 'Mehrere auswählen'}
+              onClick={() => (bulkMode ? exitBulk() : setBulkMode(true))}
+            >
+              {bulkMode ? '✕' : '☑'}
+            </button>
             {currentProject && (
               <button
                 className="header-icon-btn"
@@ -194,6 +218,15 @@ function App() {
           ui.currentView
         ) && <FilterBar />}
 
+        {bulkMode && (
+          <BulkActionBar
+            selectedIds={[...selectedIds]}
+            totalVisible={visibleTasks.length}
+            onSelectAll={() => setSelectedIds(new Set(visibleTasks.map((t) => t.id)))}
+            onClear={exitBulk}
+          />
+        )}
+
         {ui.currentView === 'priority' && (
           <div className="view-hint">
             Deine Top 5 nächsten Schritte — markierte (★) und hoch-priorisierte Aufgaben zuerst.
@@ -204,9 +237,12 @@ function App() {
           tasks={visibleTasks}
           emptyHint={
             ui.currentView === 'priority'
-              ? 'Keine offenen Aufgaben — markiere welche mit ★ oder setze Priorität „Hoch".'
+              ? 'Keine offenen Aufgaben — markiere welche mit ★ oder setze Priorität Hoch.'
               : undefined
           }
+          selectionMode={bulkMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
         />
       </div>
 

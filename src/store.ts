@@ -88,6 +88,10 @@ interface AppState {
   toggleTask: (id: string) => void;
   toggleStar: (id: string) => void;
 
+  // Bulk operations
+  bulkUpdate: (ids: string[], updates: Partial<Task>) => void;
+  bulkDelete: (ids: string[]) => void;
+
   // Project CRUD
   addProject: (name: string, color?: string, icon?: string) => Project;
   updateProject: (id: string, updates: Partial<Project>) => void;
@@ -195,6 +199,28 @@ export const useStore = create<AppState>()(
             t.id === id ? { ...t, starred: !t.starred, updatedAt: new Date() } : t
           ),
         })),
+
+      bulkUpdate: (ids, updates) =>
+        set((state) => {
+          const idSet = new Set(ids);
+          return {
+            tasks: state.tasks.map((t) =>
+              idSet.has(t.id) ? { ...t, ...updates, updatedAt: new Date() } : t
+            ),
+          };
+        }),
+
+      bulkDelete: (ids) =>
+        set((state) => {
+          const idSet = new Set(ids);
+          return {
+            tasks: state.tasks.filter((t) => !idSet.has(t.id)),
+            ui:
+              state.ui.selectedTaskId && idSet.has(state.ui.selectedTaskId)
+                ? { ...state.ui, selectedTaskId: null }
+                : state.ui,
+          };
+        }),
 
       addProject: (name, color, icon) => {
         const project: Project = {
