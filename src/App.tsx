@@ -25,6 +25,9 @@ function App() {
   const projects = useStore((s) => s.projects);
   const addTask = useStore((s) => s.addTask);
   const selectTask = useStore((s) => s.selectTask);
+  const updateProject = useStore((s) => s.updateProject);
+  const deleteProject = useStore((s) => s.deleteProject);
+  const setView = useStore((s) => s.setView);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
@@ -59,8 +62,38 @@ function App() {
       <CalendarPanel />
       <div className="main-content">
         <div className="task-header">
-          <h2>{headerTitle}</h2>
-          <span className="task-count">{visibleTasks.length}</span>
+          {currentProject ? (
+            <input
+              className="project-title-input"
+              value={currentProject.name}
+              onChange={(e) =>
+                updateProject(currentProject.id, { name: e.target.value })
+              }
+            />
+          ) : (
+            <h2>{headerTitle}</h2>
+          )}
+          <div className="task-header-right">
+            <span className="task-count">{visibleTasks.length}</span>
+            {currentProject && (
+              <button
+                className="header-icon-btn"
+                title="Projekt löschen"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Projekt "${currentProject.name}" löschen? Aufgaben wandern in die Inbox.`
+                    )
+                  ) {
+                    deleteProject(currentProject.id);
+                    setView('inbox');
+                  }
+                }}
+              >
+                🗑️
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="quick-add">

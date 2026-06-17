@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStore } from '../store';
 import type { ViewType } from '../types';
 import './Sidebar.css';
@@ -18,9 +19,24 @@ export default function Sidebar() {
   const tasks = useStore((s) => s.tasks);
   const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
   const selectProject = useStore((s) => s.selectProject);
+  const addProject = useStore((s) => s.addProject);
+
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
 
   const openCount = (projectId: string) =>
     tasks.filter((t) => t.projectId === projectId && !t.completed).length;
+
+  const submitProject = () => {
+    const name = newName.trim();
+    if (name) {
+      const project = addProject(name);
+      selectProject(project.id);
+      setView('projects');
+    }
+    setNewName('');
+    setAdding(false);
+  };
 
   return (
     <div className="sidebar">
@@ -41,7 +57,31 @@ export default function Sidebar() {
 
       <div className="sidebar-separator" />
 
-      <div className="sidebar-section-label">Projekte</div>
+      <div className="sidebar-section-label">
+        Projekte
+        <button className="sidebar-add" onClick={() => setAdding(true)} title="Projekt hinzufügen">
+          +
+        </button>
+      </div>
+      {adding && (
+        <div className="sidebar-add-row">
+          <input
+            autoFocus
+            className="sidebar-add-input"
+            placeholder="Projektname…"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitProject();
+              if (e.key === 'Escape') {
+                setAdding(false);
+                setNewName('');
+              }
+            }}
+            onBlur={submitProject}
+          />
+        </div>
+      )}
       <div className="sidebar-items">
         {projects.map((p) => (
           <button

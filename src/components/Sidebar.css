@@ -35,6 +35,45 @@
   letter-spacing: 0.5px;
   color: #777;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-add {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.sidebar-add:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-add-row {
+  padding: 4px 12px 8px;
+}
+
+.sidebar-add-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border-dark);
+  border-radius: 6px;
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.sidebar-add-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .project-item .project-name {

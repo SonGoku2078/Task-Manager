@@ -29,7 +29,7 @@ Triagiert, gruppiert nach Tier.
 **HIGH Priority:**
 - [x] **[TIER-1] Inbox** — Central task collection point, default view
 - [x] **[TIER-1] Create/Edit/Delete Tasks** — CRUD for Tasks with all fields
-- [ ] **[TIER-1] Projects Management** — Create/organize tasks in projects
+- [x] **[TIER-1] Projects Management** — Create/organize tasks in projects
 - [ ] **[TIER-1] Priority List** — Top 5 "Next Steps" for today
 - [x] **[TIER-1] Task Fields** — Title, Description, DueDate, Priority, Category, Recurring
 - [x] **[TIER-1] Completed Status** — Checkbox with strikethrough
@@ -99,6 +99,7 @@ Archive of finished features.
 | 005 | Task Fields (all) | 2026-06-18 | docs/pipeline/05-task-fields.md |
 | 006 | Completed Status | 2026-06-18 | docs/pipeline/06-completed.md |
 | 007 | Star/Favorite | 2026-06-18 | docs/pipeline/07-star.md |
+| 003 | Projects Management | 2026-06-18 | docs/pipeline/03-projects.md |
 
 ---
 
