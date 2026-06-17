@@ -134,6 +134,31 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           </div>
         </div>
 
+        {task.recurrence !== 'none' && (
+          <div className="detail-field">
+            <label className="detail-label">Wiederholung endet (optional)</label>
+            <input
+              type="date"
+              className="detail-input"
+              value={toDateInput(task.recurrenceEnd ?? null)}
+              onChange={(e) =>
+                updateTask(task.id, {
+                  recurrenceEnd: e.target.value ? new Date(e.target.value) : null,
+                })
+              }
+            />
+            <p className="detail-hint">
+              🔁 Beim Abhaken wird automatisch die nächste{' '}
+              {task.recurrence === 'daily'
+                ? 'tägliche'
+                : task.recurrence === 'weekly'
+                  ? 'wöchentliche'
+                  : 'monatliche'}{' '}
+              Aufgabe erstellt.
+            </p>
+          </div>
+        )}
+
         <div className="detail-field">
           <label className="detail-label">Kategorien</label>
           <div className="cat-chips">
