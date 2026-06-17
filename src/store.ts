@@ -36,6 +36,9 @@ export const useStore = create<AppState>((set) => ({
   deleteTask: (id) =>
     set((state) => ({
       tasks: state.tasks.filter((t) => t.id !== id),
+      uiState: state.uiState.selectedTask?.id === id
+        ? { ...state.uiState, selectedTask: null }
+        : state.uiState,
     })),
 
   toggleTask: (id) =>
