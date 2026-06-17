@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
 import { selectVisibleTasks, selectPriorityTasks } from './selectors';
 import type { ViewType } from './types';
@@ -31,8 +31,46 @@ function App() {
   const deleteProject = useStore((s) => s.deleteProject);
   const setView = useStore((s) => s.setView);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
+  const deleteTask = useStore((s) => s.deleteTask);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const quickAddRef = useRef<HTMLInputElement>(null);
+
+  // Global keyboard shortcuts: n = new task, / = search, Esc = close, Del = delete.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const el = document.activeElement as HTMLElement | null;
+      const typing =
+        !!el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.tagName === 'SELECT' ||
+          el.isContentEditable);
+
+      if (e.key === 'Escape') {
+        if (typing) el?.blur();
+        else if (useStore.getState().ui.selectedTaskId) selectTask(null);
+        return;
+      }
+      if (typing) return;
+
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        quickAddRef.current?.focus();
+      } else if (e.key === '/') {
+        e.preventDefault();
+        setView('search');
+      } else if (e.key === 'Delete') {
+        const id = useStore.getState().ui.selectedTaskId;
+        if (id) {
+          e.preventDefault();
+          deleteTask(id);
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectTask, setView, deleteTask]);
 
   const visibleTasks =
     ui.currentView === 'priority'
@@ -111,9 +149,10 @@ function App() {
 
         <div className="quick-add">
           <input
+            ref={quickAddRef}
             type="text"
             className="quick-add-input"
-            placeholder="+ Aufgabe hinzufügen…"
+            placeholder={'+ Aufgabe hinzufügen…  (Taste n)'}
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={(e) => {
