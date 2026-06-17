@@ -17,6 +17,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const toggleStar = useStore((s) => s.toggleStar);
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
+  const members = useStore((s) => s.members);
   const addComment = useStore((s) => s.addComment);
   const deleteComment = useStore((s) => s.deleteComment);
 
@@ -194,6 +195,26 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             })}
           </div>
         </div>
+
+        {members.length > 0 && (
+          <div className="detail-field">
+            <label className="detail-label">Zugewiesen an</label>
+            <select
+              className="detail-select"
+              value={task.assigneeId ?? ''}
+              onChange={(e) =>
+                updateTask(task.id, { assigneeId: e.target.value || null })
+              }
+            >
+              <option value="">Niemand</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="detail-field">
           <label className="detail-label">

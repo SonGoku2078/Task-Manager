@@ -11,6 +11,10 @@ import type {
   SavedView,
   ActivityEntry,
   ActivityAction,
+  Member,
+  MemberRole,
+  Settings,
+  Theme,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
@@ -86,7 +90,11 @@ const defaultUIState: UIState = {
   sortField: 'manual',
   sortDir: 'asc',
   activeSavedViewId: null,
-  currentUser: 'Du',
+};
+
+const defaultSettings: Settings = {
+  userName: 'Du',
+  theme: 'light',
 };
 
 export interface NewTaskInput {
@@ -106,6 +114,8 @@ interface AppState {
   categories: Category[];
   savedViews: SavedView[];
   activityLog: ActivityEntry[];
+  members: Member[];
+  settings: Settings;
   ui: UIState;
 
   // Task CRUD
@@ -147,6 +157,13 @@ interface AppState {
   addSavedView: (name: string) => SavedView;
   deleteSavedView: (id: string) => void;
   applySavedView: (id: string) => void;
+
+  // Team (local) + settings
+  addMember: (name: string, role?: MemberRole) => Member;
+  updateMember: (id: string, updates: Partial<Member>) => void;
+  deleteMember: (id: string) => void;
+  setUserName: (name: string) => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const PROJECT_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4'];
@@ -159,6 +176,8 @@ export const useStore = create<AppState>()(
       categories: defaultCategories,
       savedViews: [],
       activityLog: [],
+      members: [],
+      settings: defaultSettings,
       ui: defaultUIState,
 
       addTask: (input) => {
@@ -182,7 +201,7 @@ export const useStore = create<AppState>()(
           tasks: [...state.tasks, task],
           activityLog: pushLog(
             state.activityLog,
-            makeEntry('created', task.title, state.ui.currentUser)
+            makeEntry('created', task.title, state.settings.userName)
           ),
         }));
         return task;
@@ -203,7 +222,7 @@ export const useStore = create<AppState>()(
             activityLog: removed
               ? pushLog(
                   state.activityLog,
-                  makeEntry('deleted', removed.title, state.ui.currentUser)
+                  makeEntry('deleted', removed.title, state.settings.userName)
                 )
               : state.activityLog,
             ui:
@@ -226,7 +245,7 @@ export const useStore = create<AppState>()(
             makeEntry(
               completing ? 'completed' : 'reopened',
               target.title,
-              state.ui.currentUser
+              state.settings.userName
             )
           );
 
@@ -272,7 +291,7 @@ export const useStore = create<AppState>()(
                     {
                       id: uid('cmt'),
                       text,
-                      author: state.ui.currentUser,
+                      author: state.settings.userName,
                       createdAt: new Date(),
                     },
                   ],
@@ -323,7 +342,7 @@ export const useStore = create<AppState>()(
           projects: [...state.projects, project],
           activityLog: pushLog(
             state.activityLog,
-            makeEntry('project-created', project.name, state.ui.currentUser)
+            makeEntry('project-created', project.name, state.settings.userName)
           ),
         }));
         return project;
@@ -378,7 +397,7 @@ export const useStore = create<AppState>()(
           tasks: [...state.tasks, ...tasks],
           activityLog: pushLog(
             state.activityLog,
-            makeEntry('project-created', project.name, state.ui.currentUser)
+            makeEntry('project-created', project.name, state.settings.userName)
           ),
         }));
         return project;
@@ -497,6 +516,39 @@ export const useStore = create<AppState>()(
             },
           };
         }),
+
+      addMember: (name, role = 'editor') => {
+        const member: Member = {
+          id: uid('mbr'),
+          name,
+          role,
+          color: PROJECT_COLORS[get().members.length % PROJECT_COLORS.length],
+        };
+        set((state) => ({ members: [...state.members, member] }));
+        return member;
+      },
+
+      updateMember: (id, updates) =>
+        set((state) => ({
+          members: state.members.map((m) =>
+            m.id === id ? { ...m, ...updates } : m
+          ),
+        })),
+
+      deleteMember: (id) =>
+        set((state) => ({
+          members: state.members.filter((m) => m.id !== id),
+          // Unassign tasks that pointed at this member.
+          tasks: state.tasks.map((t) =>
+            t.assigneeId === id ? { ...t, assigneeId: null } : t
+          ),
+        })),
+
+      setUserName: (name) =>
+        set((state) => ({ settings: { ...state.settings, userName: name } })),
+
+      setTheme: (theme) =>
+        set((state) => ({ settings: { ...state.settings, theme } })),
     }),
     {
       name: 'nozbe-clone-state',
@@ -508,6 +560,8 @@ export const useStore = create<AppState>()(
         categories: state.categories,
         savedViews: state.savedViews,
         activityLog: state.activityLog,
+        members: state.members,
+        settings: state.settings,
       }),
     }
   )

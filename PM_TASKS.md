@@ -11,7 +11,7 @@
 
 Alle neuen Feature-Ideen, Requests, Bugs — unpriorisiert.
 
-- [ ] **User Settings / Preferences** — Save user theme, language, defaults
+- [x] **User Settings / Preferences** — Save user theme, language, defaults
 - [ ] **Attachments on Tasks** — Add files/images to tasks
 - [ ] **Task Comments** — Add discussion/comments on tasks
 - [ ] **Email Integration** — Forward emails as tasks
@@ -54,8 +54,8 @@ Triagiert, gruppiert nach Tier.
 
 ### TIER-3-COLLABORATION (Team Features, Later)
 
-- [ ] **[TIER-3] Team Sharing** — Invite users, share projects
-- [ ] **[TIER-3] Permissions** — Read/Write/Admin controls
+- [x] **[TIER-3] Team Sharing** — Invite users, share projects (lokal/Stub)
+- [x] **[TIER-3] Permissions** — Read/Write/Admin controls (Rollen, lokal)
 - [x] **[TIER-3] Comments** — Discuss tasks with team (lokal/Single-User)
 - [x] **[TIER-3] Activity Log** — Who changed what, when
 - [x] **[TIER-3] Team Reports** — Completion tracking, productivity metrics
