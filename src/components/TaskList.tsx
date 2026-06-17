@@ -4,7 +4,7 @@ import './TaskList.css';
 
 interface TaskListProps {
   tasks: Task[];
-  onSelectTask: (task: Task | null) => void;
+  onSelectTask: (taskId: string | null) => void;
 }
 
 export default function TaskList({ tasks, onSelectTask }: TaskListProps) {
@@ -16,7 +16,7 @@ export default function TaskList({ tasks, onSelectTask }: TaskListProps) {
         <div
           key={task.id}
           className="task-item"
-          onClick={() => onSelectTask(task)}
+          onClick={() => onSelectTask(task.id)}
         >
           <input
             type="checkbox"

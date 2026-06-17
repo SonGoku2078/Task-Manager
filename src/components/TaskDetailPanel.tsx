@@ -28,7 +28,12 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             type="text"
             className="detail-input"
             value={task.title}
-            onChange={(e) => updateTask(task.id, { title: e.target.value })}
+            onChange={(e) => {
+              e.stopPropagation();
+              updateTask(task.id, { title: e.target.value });
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           />
         </div>
 
@@ -96,7 +101,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           className="btn btn-secondary"
           onClick={() => {
             deleteTask(task.id);
-            selectTask(null);
+            selectTask(null as any);
           }}
         >
           Delete

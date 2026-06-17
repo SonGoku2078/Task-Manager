@@ -130,7 +130,7 @@ function App() {
 
         <TaskList tasks={tasks} onSelectTask={selectTask} />
       </div>
-      {uiState.selectedTask && (
+      {uiState.selectedTask && uiState.selectedTask.id && (
         <TaskDetailPanel task={uiState.selectedTask} />
       )}
     </div>

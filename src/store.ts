@@ -11,10 +11,11 @@ interface AppState {
   toggleTask: (id: string) => void;
   toggleStar: (id: string) => void;
 
-  selectTask: (task: Task | null) => void;
+  selectTask: (taskId: string | null) => void;
   selectProject: (projectId: string | null) => void;
   setCurrentView: (view: UIState['currentView']) => void;
   setCurrentDate: (date: Date) => void;
+  getSelectedTask: () => Task | null;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -55,10 +56,18 @@ export const useStore = create<AppState>((set) => ({
       ),
     })),
 
-  selectTask: (task) =>
-    set((state) => ({
-      uiState: { ...state.uiState, selectedTask: task },
-    })),
+  selectTask: (taskId) =>
+    set((state) => {
+      const task = taskId ? state.tasks.find((t) => t.id === taskId) || null : null;
+      return {
+        uiState: { ...state.uiState, selectedTask: task },
+      };
+    }),
+
+  getSelectedTask: () => {
+    const state = useStore.getState();
+    return state.uiState.selectedTask;
+  },
 
   selectProject: (projectId) =>
     set((state) => ({
