@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
 import { selectVisibleTasks, selectPriorityTasks } from './selectors';
+import { parseQuickAdd } from './quickParse';
 import type { ViewType } from './types';
 import './App.css';
 import Sidebar from './components/Sidebar';
@@ -46,6 +47,9 @@ function App() {
   const selectTask = useStore((s) => s.selectTask);
   const updateProject = useStore((s) => s.updateProject);
   const deleteProject = useStore((s) => s.deleteProject);
+  const addProject = useStore((s) => s.addProject);
+  const addCategory = useStore((s) => s.addCategory);
+  const categories = useStore((s) => s.categories);
   const setView = useStore((s) => s.setView);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
   const deleteTask = useStore((s) => s.deleteTask);
@@ -136,11 +140,31 @@ function App() {
       : VIEW_TITLES[ui.currentView];
 
   const handleAddTask = () => {
-    const title = newTaskTitle.trim();
-    if (!title) return;
+    if (!newTaskTitle.trim()) return;
+    const parsed = parseQuickAdd(newTaskTitle);
+    const title = parsed.title || newTaskTitle.trim();
+
+    // Resolve #project token: match existing (case-insensitive) or create.
+    let projectId: string | null = currentProject ? currentProject.id : null;
+    if (parsed.projectName) {
+      const existing = projects.find(
+        (p) => p.name.toLowerCase() === parsed.projectName!.toLowerCase()
+      );
+      projectId = existing ? existing.id : addProject(parsed.projectName).id;
+    }
+
+    // Resolve @category tokens: match existing or create.
+    const categoryIds = parsed.categoryNames.map((name) => {
+      const existing = categories.find(
+        (c) => c.name.toLowerCase() === name.toLowerCase()
+      );
+      return existing ? existing.id : addCategory(name).id;
+    });
+
     const created = addTask({
       title,
-      projectId: currentProject ? currentProject.id : null,
+      projectId,
+      categoryIds,
       dueDate: ui.currentView === 'calendar' ? new Date(ui.currentDate) : null,
     });
     setNewTaskTitle('');
@@ -222,7 +246,7 @@ function App() {
             ref={quickAddRef}
             type="text"
             className="quick-add-input"
-            placeholder={'+ Aufgabe hinzufügen…  (Taste n)'}
+            placeholder={'+ Aufgabe…  #Projekt @Kategorie  (Taste n)'}
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={(e) => {
