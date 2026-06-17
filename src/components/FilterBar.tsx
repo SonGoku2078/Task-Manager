@@ -18,6 +18,8 @@ export default function FilterBar() {
   const setFilter = useStore((s) => s.setFilter);
   const resetFilters = useStore((s) => s.resetFilters);
   const setSort = useStore((s) => s.setSort);
+  const addSavedView = useStore((s) => s.addSavedView);
+  const applySavedView = useStore((s) => s.applySavedView);
 
   const hasActiveFilter =
     filters.projectId !== null ||
@@ -90,9 +92,24 @@ export default function FilterBar() {
       </button>
 
       {hasActiveFilter && (
-        <button className="filter-reset" onClick={resetFilters}>
-          ✕ Filter zurücksetzen
-        </button>
+        <>
+          <button
+            className="filter-save"
+            title="Aktuelle Filter als Ansicht speichern"
+            onClick={() => {
+              const name = window.prompt('Name der gespeicherten Ansicht:');
+              if (name && name.trim()) {
+                const view = addSavedView(name.trim());
+                applySavedView(view.id);
+              }
+            }}
+          >
+            💾 Ansicht speichern
+          </button>
+          <button className="filter-reset" onClick={resetFilters}>
+            ✕ Filter zurücksetzen
+          </button>
+        </>
       )}
     </div>
   );

@@ -20,12 +20,14 @@ const VIEW_TITLES: Record<ViewType, string> = {
   today: 'Heute',
   week: 'Diese Woche',
   search: 'Suche',
+  custom: 'Gespeicherte Ansicht',
 };
 
 function App() {
   const tasks = useStore((s) => s.tasks);
   const ui = useStore((s) => s.ui);
   const projects = useStore((s) => s.projects);
+  const savedViews = useStore((s) => s.savedViews);
   const addTask = useStore((s) => s.addTask);
   const selectTask = useStore((s) => s.selectTask);
   const updateProject = useStore((s) => s.updateProject);
@@ -102,9 +104,16 @@ function App() {
       ? projects.find((p) => p.id === ui.selectedProjectId)
       : null;
 
+  const activeSavedView =
+    ui.currentView === 'custom' && ui.activeSavedViewId
+      ? savedViews.find((v) => v.id === ui.activeSavedViewId)
+      : null;
+
   const headerTitle = currentProject
     ? `${currentProject.icon} ${currentProject.name}`
-    : ui.currentView === 'calendar'
+    : activeSavedView
+      ? `🔎 ${activeSavedView.name}`
+      : ui.currentView === 'calendar'
       ? ui.currentDate.toLocaleDateString('de-DE', {
           weekday: 'long',
           day: 'numeric',
@@ -227,7 +236,7 @@ function App() {
 
         {ui.currentView === 'categories' && <CategoryBar />}
 
-        {['inbox', 'projects', 'today', 'search', 'categories'].includes(
+        {['inbox', 'projects', 'today', 'search', 'categories', 'custom'].includes(
           ui.currentView
         ) && <FilterBar />}
 

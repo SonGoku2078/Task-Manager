@@ -55,6 +55,22 @@
   color: var(--accent);
 }
 
+.filter-save {
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.filter-save:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 .filter-reset {
   border: none;
   background: #fee2e2;

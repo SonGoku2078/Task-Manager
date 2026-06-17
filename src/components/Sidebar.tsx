@@ -20,6 +20,10 @@ export default function Sidebar() {
   const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
   const selectProject = useStore((s) => s.selectProject);
   const addProject = useStore((s) => s.addProject);
+  const savedViews = useStore((s) => s.savedViews);
+  const applySavedView = useStore((s) => s.applySavedView);
+  const deleteSavedView = useStore((s) => s.deleteSavedView);
+  const activeSavedViewId = useStore((s) => s.ui.activeSavedViewId);
 
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -130,6 +134,37 @@ export default function Sidebar() {
           </div>
         </div>
       ))}
+
+      {savedViews.length > 0 && (
+        <>
+          <div className="sidebar-separator" />
+          <div className="sidebar-section-label">Ansichten</div>
+          <div className="sidebar-items">
+            {savedViews.map((v) => (
+              <div
+                key={v.id}
+                className={`sidebar-item project-item ${
+                  activeSavedViewId === v.id ? 'active' : ''
+                }`}
+                onClick={() => applySavedView(v.id)}
+              >
+                <span className="sidebar-icon">🔎</span>
+                <span className="project-name">{v.name}</span>
+                <button
+                  className="saved-view-del"
+                  title="Ansicht löschen"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteSavedView(v.id);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="sidebar-separator" />
 

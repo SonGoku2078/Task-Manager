@@ -50,7 +50,7 @@ Triagiert, gruppiert nach Tier.
 - [x] **[TIER-2] Project Labels** — Organize projects by tags
 - [x] **[TIER-2] Bulk Operations** — Multi-select tasks for actions
 - [x] **[TIER-2] Today View** — Special view for today's tasks
-- [ ] **[TIER-2] Custom Views** — User-defined filters/saved searches
+- [x] **[TIER-2] Custom Views** — User-defined filters/saved searches
 
 ### TIER-3-COLLABORATION (Team Features, Later)
 

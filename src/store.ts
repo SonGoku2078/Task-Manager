@@ -8,6 +8,7 @@ import type {
   Filters,
   SortField,
   ViewType,
+  SavedView,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 
@@ -62,6 +63,7 @@ const defaultUIState: UIState = {
   },
   sortField: 'manual',
   sortDir: 'asc',
+  activeSavedViewId: null,
 };
 
 export interface NewTaskInput {
@@ -79,6 +81,7 @@ interface AppState {
   tasks: Task[];
   projects: Project[];
   categories: Category[];
+  savedViews: SavedView[];
   ui: UIState;
 
   // Task CRUD
@@ -111,6 +114,11 @@ interface AppState {
   setFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   resetFilters: () => void;
   setSort: (field: SortField, dir?: UIState['sortDir']) => void;
+
+  // Saved (custom) views
+  addSavedView: (name: string) => SavedView;
+  deleteSavedView: (id: string) => void;
+  applySavedView: (id: string) => void;
 }
 
 const PROJECT_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4'];
@@ -121,6 +129,7 @@ export const useStore = create<AppState>()(
       tasks: dummyTasks,
       projects: defaultProjects,
       categories: defaultCategories,
+      savedViews: [],
       ui: defaultUIState,
 
       addTask: (input) => {
@@ -293,6 +302,8 @@ export const useStore = create<AppState>()(
             currentView: view,
             // Search query is scoped to the search view.
             searchQuery: view === 'search' ? state.ui.searchQuery : '',
+            // Leaving a saved view clears the active marker.
+            activeSavedViewId: view === 'custom' ? state.ui.activeSavedViewId : null,
           },
         })),
 
@@ -323,6 +334,47 @@ export const useStore = create<AppState>()(
                 : 'asc'),
           },
         })),
+
+      addSavedView: (name) => {
+        const ui = get().ui;
+        const view: SavedView = {
+          id: uid('view'),
+          name,
+          filters: { ...ui.filters },
+          sortField: ui.sortField,
+          sortDir: ui.sortDir,
+          searchQuery: ui.searchQuery,
+        };
+        set((state) => ({ savedViews: [...state.savedViews, view] }));
+        return view;
+      },
+
+      deleteSavedView: (id) =>
+        set((state) => ({
+          savedViews: state.savedViews.filter((v) => v.id !== id),
+          ui:
+            state.ui.activeSavedViewId === id
+              ? { ...state.ui, activeSavedViewId: null, currentView: 'inbox' }
+              : state.ui,
+        })),
+
+      applySavedView: (id) =>
+        set((state) => {
+          const view = state.savedViews.find((v) => v.id === id);
+          if (!view) return {};
+          return {
+            ui: {
+              ...state.ui,
+              currentView: 'custom',
+              activeSavedViewId: id,
+              filters: { ...view.filters },
+              sortField: view.sortField,
+              sortDir: view.sortDir,
+              searchQuery: view.searchQuery,
+              selectedProjectId: null,
+            },
+          };
+        }),
     }),
     {
       name: 'nozbe-clone-state',
@@ -332,6 +384,7 @@ export const useStore = create<AppState>()(
         tasks: state.tasks,
         projects: state.projects,
         categories: state.categories,
+        savedViews: state.savedViews,
       }),
     }
   )

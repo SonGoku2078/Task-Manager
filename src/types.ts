@@ -9,7 +9,8 @@ export type ViewType =
   | 'calendar'
   | 'today'
   | 'week'
-  | 'search';
+  | 'search'
+  | 'custom';
 
 export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
 export type SortDir = 'asc' | 'desc';
@@ -51,6 +52,15 @@ export interface Filters {
   completed: boolean | null; // null = both, false = open, true = done
 }
 
+export interface SavedView {
+  id: string;
+  name: string;
+  filters: Filters;
+  sortField: SortField;
+  sortDir: SortDir;
+  searchQuery: string;
+}
+
 export interface UIState {
   selectedTaskId: string | null;
   selectedProjectId: string | null;
@@ -60,4 +70,5 @@ export interface UIState {
   filters: Filters;
   sortField: SortField;
   sortDir: SortDir;
+  activeSavedViewId: string | null;
 }

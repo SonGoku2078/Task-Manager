@@ -102,6 +102,20 @@
   text-align: center;
 }
 
+.saved-view-del {
+  border: none;
+  background: none;
+  color: #6b747b;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.saved-view-del:hover {
+  color: #fff;
+}
+
 .sidebar-item {
   padding: 10px 16px;
   cursor: pointer;
