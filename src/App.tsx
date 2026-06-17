@@ -11,6 +11,7 @@ import CategoryBar from './components/CategoryBar';
 import FilterBar from './components/FilterBar';
 import BulkActionBar from './components/BulkActionBar';
 import TemplatesGallery from './components/TemplatesGallery';
+import ActivityLog from './components/ActivityLog';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -23,6 +24,9 @@ const VIEW_TITLES: Record<ViewType, string> = {
   search: 'Suche',
   custom: 'Gespeicherte Ansicht',
   templates: 'Vorlagen',
+  activity: 'Aktivität',
+  reports: 'Berichte',
+  settings: 'Einstellungen',
 };
 
 function App() {
@@ -197,6 +201,8 @@ function App() {
 
         {ui.currentView === 'templates' ? (
           <TemplatesGallery />
+        ) : ui.currentView === 'activity' ? (
+          <ActivityLog />
         ) : (
         <>
         <div className="quick-add">

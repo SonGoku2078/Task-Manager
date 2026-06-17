@@ -9,6 +9,8 @@ import type {
   SortField,
   ViewType,
   SavedView,
+  ActivityEntry,
+  ActivityAction,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
@@ -19,6 +21,7 @@ const DATE_KEYS = new Set([
   'updatedAt',
   'recurrenceEnd',
   'currentDate',
+  'at',
 ]);
 
 // Revive ISO date strings back into Date objects when loading from storage.
@@ -32,6 +35,24 @@ const dateReviver = (key: string, value: unknown) => {
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+
+const ACTIVITY_CAP = 200;
+
+const makeEntry = (
+  action: ActivityAction,
+  subject: string,
+  actor: string
+): ActivityEntry => ({
+  id: uid('act'),
+  at: new Date(),
+  action,
+  subject,
+  actor,
+});
+
+// Append an entry, keeping only the most recent ACTIVITY_CAP.
+const pushLog = (log: ActivityEntry[], entry: ActivityEntry): ActivityEntry[] =>
+  [entry, ...log].slice(0, ACTIVITY_CAP);
 
 // Advance a date by one recurrence step.
 const nextRecurrence = (date: Date, type: Task['recurrence']): Date => {
@@ -84,6 +105,7 @@ interface AppState {
   projects: Project[];
   categories: Category[];
   savedViews: SavedView[];
+  activityLog: ActivityEntry[];
   ui: UIState;
 
   // Task CRUD
@@ -136,6 +158,7 @@ export const useStore = create<AppState>()(
       projects: defaultProjects,
       categories: defaultCategories,
       savedViews: [],
+      activityLog: [],
       ui: defaultUIState,
 
       addTask: (input) => {
@@ -155,7 +178,13 @@ export const useStore = create<AppState>()(
           recurrence: input.recurrence ?? 'none',
           recurrenceEnd: null,
         };
-        set((state) => ({ tasks: [...state.tasks, task] }));
+        set((state) => ({
+          tasks: [...state.tasks, task],
+          activityLog: pushLog(
+            state.activityLog,
+            makeEntry('created', task.title, state.ui.currentUser)
+          ),
+        }));
         return task;
       },
 
@@ -167,13 +196,22 @@ export const useStore = create<AppState>()(
         })),
 
       deleteTask: (id) =>
-        set((state) => ({
-          tasks: state.tasks.filter((t) => t.id !== id),
-          ui:
-            state.ui.selectedTaskId === id
-              ? { ...state.ui, selectedTaskId: null }
-              : state.ui,
-        })),
+        set((state) => {
+          const removed = state.tasks.find((t) => t.id === id);
+          return {
+            tasks: state.tasks.filter((t) => t.id !== id),
+            activityLog: removed
+              ? pushLog(
+                  state.activityLog,
+                  makeEntry('deleted', removed.title, state.ui.currentUser)
+                )
+              : state.activityLog,
+            ui:
+              state.ui.selectedTaskId === id
+                ? { ...state.ui, selectedTaskId: null }
+                : state.ui,
+          };
+        }),
 
       toggleTask: (id) =>
         set((state) => {
@@ -182,6 +220,14 @@ export const useStore = create<AppState>()(
           const completing = !target.completed;
           const tasks = state.tasks.map((t) =>
             t.id === id ? { ...t, completed: completing, updatedAt: new Date() } : t
+          );
+          const activityLog = pushLog(
+            state.activityLog,
+            makeEntry(
+              completing ? 'completed' : 'reopened',
+              target.title,
+              state.ui.currentUser
+            )
           );
 
           // Recurring task: spawn the next occurrence when completed.
@@ -205,7 +251,7 @@ export const useStore = create<AppState>()(
               });
             }
           }
-          return { tasks };
+          return { tasks, activityLog };
         }),
 
       toggleStar: (id) =>
@@ -273,7 +319,13 @@ export const useStore = create<AppState>()(
           color: color ?? PROJECT_COLORS[get().projects.length % PROJECT_COLORS.length],
           icon: icon ?? '📁',
         };
-        set((state) => ({ projects: [...state.projects, project] }));
+        set((state) => ({
+          projects: [...state.projects, project],
+          activityLog: pushLog(
+            state.activityLog,
+            makeEntry('project-created', project.name, state.ui.currentUser)
+          ),
+        }));
         return project;
       },
 
@@ -324,6 +376,10 @@ export const useStore = create<AppState>()(
         set((state) => ({
           projects: [...state.projects, project],
           tasks: [...state.tasks, ...tasks],
+          activityLog: pushLog(
+            state.activityLog,
+            makeEntry('project-created', project.name, state.ui.currentUser)
+          ),
         }));
         return project;
       },
@@ -451,6 +507,7 @@ export const useStore = create<AppState>()(
         projects: state.projects,
         categories: state.categories,
         savedViews: state.savedViews,
+        activityLog: state.activityLog,
       }),
     }
   )

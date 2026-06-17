@@ -177,6 +177,27 @@ export default function Sidebar() {
           <span className="sidebar-icon">🔍</span>
           <span>Suchen</span>
         </button>
+        <button
+          className={`sidebar-item ${currentView === 'activity' ? 'active' : ''}`}
+          onClick={() => setView('activity')}
+        >
+          <span className="sidebar-icon">📜</span>
+          <span>Aktivität</span>
+        </button>
+        <button
+          className={`sidebar-item ${currentView === 'reports' ? 'active' : ''}`}
+          onClick={() => setView('reports')}
+        >
+          <span className="sidebar-icon">📊</span>
+          <span>Berichte</span>
+        </button>
+        <button
+          className={`sidebar-item ${currentView === 'settings' ? 'active' : ''}`}
+          onClick={() => setView('settings')}
+        >
+          <span className="sidebar-icon">⚙️</span>
+          <span>Einstellungen</span>
+        </button>
       </div>
     </div>
   );

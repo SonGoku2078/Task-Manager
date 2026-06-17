@@ -11,7 +11,10 @@ export type ViewType =
   | 'week'
   | 'search'
   | 'custom'
-  | 'templates';
+  | 'templates'
+  | 'activity'
+  | 'reports'
+  | 'settings';
 
 export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
 export type SortDir = 'asc' | 'desc';
@@ -52,6 +55,21 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+}
+
+export type ActivityAction =
+  | 'created'
+  | 'completed'
+  | 'reopened'
+  | 'deleted'
+  | 'project-created';
+
+export interface ActivityEntry {
+  id: string;
+  at: Date;
+  action: ActivityAction;
+  subject: string;
+  actor: string;
 }
 
 export interface Filters {
