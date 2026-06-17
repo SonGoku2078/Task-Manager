@@ -40,6 +40,14 @@ export interface Comment {
   createdAt: Date;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  dataUrl: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -56,6 +64,7 @@ export interface Task {
   recurrenceEnd?: Date | null;
   comments?: Comment[];
   assigneeId?: string | null;
+  attachments?: Attachment[];
 }
 
 export interface Project {

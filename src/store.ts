@@ -15,6 +15,7 @@ import type {
   MemberRole,
   Settings,
   Theme,
+  Attachment,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
@@ -126,6 +127,8 @@ interface AppState {
   toggleStar: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
   deleteComment: (taskId: string, commentId: string) => void;
+  addAttachment: (taskId: string, attachment: Attachment) => void;
+  deleteAttachment: (taskId: string, attachmentId: string) => void;
 
   // Bulk operations
   bulkUpdate: (ids: string[], updates: Partial<Task>) => void;
@@ -305,6 +308,29 @@ export const useStore = create<AppState>()(
           tasks: state.tasks.map((t) =>
             t.id === taskId
               ? { ...t, comments: (t.comments ?? []).filter((c) => c.id !== commentId) }
+              : t
+          ),
+        })),
+
+      addAttachment: (taskId, attachment) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, attachments: [...(t.attachments ?? []), attachment] }
+              : t
+          ),
+        })),
+
+      deleteAttachment: (taskId, attachmentId) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  attachments: (t.attachments ?? []).filter(
+                    (a) => a.id !== attachmentId
+                  ),
+                }
               : t
           ),
         })),

@@ -12,11 +12,11 @@
 Alle neuen Feature-Ideen, Requests, Bugs — unpriorisiert.
 
 - [x] **User Settings / Preferences** — Save user theme, language, defaults
-- [ ] **Attachments on Tasks** — Add files/images to tasks
-- [ ] **Task Comments** — Add discussion/comments on tasks
+- [x] **Attachments on Tasks** — Add files/images to tasks (localStorage, ≤400 KB)
+- [x] **Task Comments** — Add discussion/comments on tasks
 - [x] **Email Integration** — Forward emails as tasks (lokaler Stub)
-- [ ] **Advanced Reporting** — Task statistics, completion rate, team reports
-- [ ] **Mobile Gestures** — Swipe to delete, long-press menus (Touch Devices)
+- [x] **Advanced Reporting** — Task statistics, completion rate (Berichte-Ansicht)
+- [ ] **Mobile Gestures** — Swipe to delete, long-press menus (Touch Devices) — *zurückgestellt: braucht Touch-Hardware zum Verifizieren*
 
 ---
 
@@ -66,7 +66,7 @@ Triagiert, gruppiert nach Tier.
 - [x] **[TIER-4] Hashtag Quick-Add** — #project @category syntax
 - [x] **[TIER-4] Print/PDF Export** — Export tasks as documents
 - [x] **[TIER-4] Dark Mode** — Night theme
-- [ ] **[TIER-4] Mobile App** — Electron/React Native version
+- [ ] **[TIER-4] Mobile App** — Electron/React Native version — *zurückgestellt: separater Build-Target/Epic, kein HTML-MVP-Scope*
 
 ---
 

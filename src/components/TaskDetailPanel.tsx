@@ -10,6 +10,13 @@ interface TaskDetailPanelProps {
 const toDateInput = (d: Date | null) =>
   d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
 
+const formatSize = (bytes: number) =>
+  bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 * 1024
+      ? `${(bytes / 1024).toFixed(0)} KB`
+      : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
 export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const updateTask = useStore((s) => s.updateTask);
   const deleteTask = useStore((s) => s.deleteTask);
@@ -20,9 +27,35 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const members = useStore((s) => s.members);
   const addComment = useStore((s) => s.addComment);
   const deleteComment = useStore((s) => s.deleteComment);
+  const addAttachment = useStore((s) => s.addAttachment);
+  const deleteAttachment = useStore((s) => s.deleteAttachment);
 
   const [commentText, setCommentText] = useState('');
+  const [attachError, setAttachError] = useState('');
   const comments = task.comments ?? [];
+  const attachments = task.attachments ?? [];
+
+  const MAX_ATTACH_BYTES = 400 * 1024; // 400 KB cap (localStorage-friendly)
+
+  const handleFile = (file: File | undefined) => {
+    setAttachError('');
+    if (!file) return;
+    if (file.size > MAX_ATTACH_BYTES) {
+      setAttachError(`Datei zu groß (max. 400 KB). „${file.name}" ist ${formatSize(file.size)}.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      addAttachment(task.id, {
+        id: `att-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        dataUrl: String(reader.result),
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const submitComment = () => {
     const text = commentText.trim();
@@ -215,6 +248,46 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             </select>
           </div>
         )}
+
+        <div className="detail-field">
+          <label className="detail-label">
+            Anhänge {attachments.length > 0 && `(${attachments.length})`}
+          </label>
+          <div className="attach-list">
+            {attachments.map((a) => (
+              <div key={a.id} className="attach-item">
+                <a
+                  href={a.dataUrl}
+                  download={a.name}
+                  className="attach-link"
+                  title={`${a.name} (${formatSize(a.size)})`}
+                >
+                  📎 {a.name}
+                </a>
+                <span className="attach-size">{formatSize(a.size)}</span>
+                <button
+                  className="attach-del"
+                  title="Entfernen"
+                  onClick={() => deleteAttachment(task.id, a.id)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <label className="attach-add-btn">
+            + Datei anhängen
+            <input
+              type="file"
+              hidden
+              onChange={(e) => {
+                handleFile(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {attachError && <p className="attach-error">{attachError}</p>}
+        </div>
 
         <div className="detail-field">
           <label className="detail-label">

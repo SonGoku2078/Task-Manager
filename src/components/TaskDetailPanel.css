@@ -215,3 +215,71 @@
 .comment-send {
   white-space: nowrap;
 }
+
+.attach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.attach-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--hover-bg);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.attach-link {
+  flex: 1;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attach-link:hover {
+  text-decoration: underline;
+}
+
+.attach-size {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.attach-del {
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.attach-del:hover {
+  color: var(--alert-red);
+}
+
+.attach-add-btn {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--accent);
+  border: 1px dashed var(--border-light);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.attach-add-btn:hover {
+  border-color: var(--accent);
+}
+
+.attach-error {
+  font-size: 12px;
+  color: var(--alert-red);
+  margin-top: 6px;
+}
