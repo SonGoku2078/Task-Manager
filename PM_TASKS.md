@@ -58,7 +58,7 @@ Triagiert, gruppiert nach Tier.
 - [ ] **[TIER-3] Permissions** — Read/Write/Admin controls
 - [x] **[TIER-3] Comments** — Discuss tasks with team (lokal/Single-User)
 - [x] **[TIER-3] Activity Log** — Who changed what, when
-- [ ] **[TIER-3] Team Reports** — Completion tracking, productivity metrics
+- [x] **[TIER-3] Team Reports** — Completion tracking, productivity metrics
 
 ### TIER-4-ADVANCED (Polish, Low Priority)
 

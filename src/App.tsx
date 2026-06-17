@@ -12,6 +12,7 @@ import FilterBar from './components/FilterBar';
 import BulkActionBar from './components/BulkActionBar';
 import TemplatesGallery from './components/TemplatesGallery';
 import ActivityLog from './components/ActivityLog';
+import ReportsView from './components/ReportsView';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -203,6 +204,8 @@ function App() {
           <TemplatesGallery />
         ) : ui.currentView === 'activity' ? (
           <ActivityLog />
+        ) : ui.currentView === 'reports' ? (
+          <ReportsView />
         ) : (
         <>
         <div className="quick-add">
