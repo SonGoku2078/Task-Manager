@@ -56,7 +56,7 @@ Triagiert, gruppiert nach Tier.
 
 - [ ] **[TIER-3] Team Sharing** — Invite users, share projects
 - [ ] **[TIER-3] Permissions** — Read/Write/Admin controls
-- [ ] **[TIER-3] Comments** — Discuss tasks with team
+- [x] **[TIER-3] Comments** — Discuss tasks with team (lokal/Single-User)
 - [ ] **[TIER-3] Activity Log** — Who changed what, when
 - [ ] **[TIER-3] Team Reports** — Completion tracking, productivity metrics
 

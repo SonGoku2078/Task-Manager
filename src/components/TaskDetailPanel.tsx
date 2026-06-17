@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import './TaskDetailPanel.css';
@@ -16,6 +17,19 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const toggleStar = useStore((s) => s.toggleStar);
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
+  const addComment = useStore((s) => s.addComment);
+  const deleteComment = useStore((s) => s.deleteComment);
+
+  const [commentText, setCommentText] = useState('');
+  const comments = task.comments ?? [];
+
+  const submitComment = () => {
+    const text = commentText.trim();
+    if (text) {
+      addComment(task.id, text);
+      setCommentText('');
+    }
+  };
 
   const toggleCategory = (id: string) => {
     const has = task.categoryIds.includes(id);
@@ -178,6 +192,52 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="detail-field">
+          <label className="detail-label">
+            Kommentare {comments.length > 0 && `(${comments.length})`}
+          </label>
+          <div className="comment-list">
+            {comments.map((c) => (
+              <div key={c.id} className="comment-item">
+                <div className="comment-head">
+                  <span className="comment-author">{c.author}</span>
+                  <span className="comment-date">
+                    {c.createdAt.toLocaleDateString('de-DE', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <button
+                    className="comment-del"
+                    title="Löschen"
+                    onClick={() => deleteComment(task.id, c.id)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="comment-text">{c.text}</div>
+              </div>
+            ))}
+          </div>
+          <div className="comment-add">
+            <input
+              type="text"
+              className="detail-input"
+              placeholder="Kommentar hinzufügen…"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitComment();
+              }}
+            />
+            <button className="btn btn-primary comment-send" onClick={submitComment}>
+              Senden
+            </button>
           </div>
         </div>
       </div>

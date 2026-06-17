@@ -65,6 +65,7 @@ const defaultUIState: UIState = {
   sortField: 'manual',
   sortDir: 'asc',
   activeSavedViewId: null,
+  currentUser: 'Du',
 };
 
 export interface NewTaskInput {
@@ -91,6 +92,8 @@ interface AppState {
   deleteTask: (id: string) => void;
   toggleTask: (id: string) => void;
   toggleStar: (id: string) => void;
+  addComment: (taskId: string, text: string) => void;
+  deleteComment: (taskId: string, commentId: string) => void;
 
   // Bulk operations
   bulkUpdate: (ids: string[], updates: Partial<Task>) => void;
@@ -209,6 +212,35 @@ export const useStore = create<AppState>()(
         set((state) => ({
           tasks: state.tasks.map((t) =>
             t.id === id ? { ...t, starred: !t.starred, updatedAt: new Date() } : t
+          ),
+        })),
+
+      addComment: (taskId, text) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  comments: [
+                    ...(t.comments ?? []),
+                    {
+                      id: uid('cmt'),
+                      text,
+                      author: state.ui.currentUser,
+                      createdAt: new Date(),
+                    },
+                  ],
+                }
+              : t
+          ),
+        })),
+
+      deleteComment: (taskId, commentId) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, comments: (t.comments ?? []).filter((c) => c.id !== commentId) }
+              : t
           ),
         })),
 

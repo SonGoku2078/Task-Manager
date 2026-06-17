@@ -16,6 +16,13 @@ export type ViewType =
 export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
 export type SortDir = 'asc' | 'desc';
 
+export interface Comment {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: Date;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -30,6 +37,7 @@ export interface Task {
   starred: boolean;
   recurrence: RecurrenceType;
   recurrenceEnd?: Date | null;
+  comments?: Comment[];
 }
 
 export interface Project {
@@ -72,4 +80,5 @@ export interface UIState {
   sortField: SortField;
   sortDir: SortDir;
   activeSavedViewId: string | null;
+  currentUser: string;
 }
