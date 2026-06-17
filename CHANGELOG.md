@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-06-18
+
+### Tier-2, Tier-3 & Tier-4 features (local-first, no backend)
+
+#### Tier-2 — Management
+- **Today view** includes overdue open tasks.
+- **Bulk operations** — selection mode + batch complete/reopen/star/project/priority/delete.
+- **Project labels** — sidebar grouping by optional label.
+- **Custom views** — save/apply/delete filter+sort+search presets (persisted).
+- **Project templates** — gallery (Umzug, Produkt-Launch, Wochenplanung, Event) → project + tasks.
+
+#### Tier-3 — Collaboration (local)
+- **Task comments** with author + timestamp.
+- **Activity log** — tracks created/completed/reopened/deleted/project-created (last 200, persisted).
+- **Reports** — totals, completion rate, overdue, done-this-week, per-project & per-priority charts.
+- **Team & permissions** — local members with roles (admin/editor/viewer) + task assignee.
+- **User settings** — persisted profile name + theme.
+
+#### Tier-4 — Advanced
+- **Dark mode** — persisted theme applied via `data-theme`.
+- **Hashtag quick-add** — `#Projekt` / `@Kategorie` tokens auto-resolve or create.
+- **Print/PDF export** — print stylesheet hides chrome; browser "Save as PDF".
+- **Email-to-task** — paste email → Inbox task (Subject line → title).
+- **Attachments** — files as localStorage data-URLs (≤ 400 KB).
+
+#### Notes
+- Deferred: native Mobile App (separate build target) and touch Mobile Gestures (needs hardware).
+- `npm run build` + `npm run lint` green at every feature commit; dev server transforms cleanly.
+
+---
+
 ## [1.1.0] - 2026-06-18
 
 ### Tier-1 Core Features Complete (14/14) — full pipeline build
