@@ -30,6 +30,7 @@ function App() {
   const updateProject = useStore((s) => s.updateProject);
   const deleteProject = useStore((s) => s.deleteProject);
   const setView = useStore((s) => s.setView);
+  const setSearchQuery = useStore((s) => s.setSearchQuery);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
@@ -124,6 +125,29 @@ function App() {
             Hinzufügen
           </button>
         </div>
+
+        {ui.currentView === 'search' && (
+          <div className="search-bar">
+            <span className="search-icon">🔍</span>
+            <input
+              autoFocus
+              type="text"
+              className="search-input"
+              placeholder="Aufgaben durchsuchen (Titel & Beschreibung)…"
+              value={ui.searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {ui.searchQuery && (
+              <button
+                className="search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Löschen"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
 
         {ui.currentView === 'categories' && <CategoryBar />}
 

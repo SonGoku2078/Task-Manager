@@ -260,7 +260,15 @@ export const useStore = create<AppState>()(
       selectProject: (id) =>
         set((state) => ({ ui: { ...state.ui, selectedProjectId: id } })),
 
-      setView: (view) => set((state) => ({ ui: { ...state.ui, currentView: view } })),
+      setView: (view) =>
+        set((state) => ({
+          ui: {
+            ...state.ui,
+            currentView: view,
+            // Search query is scoped to the search view.
+            searchQuery: view === 'search' ? state.ui.searchQuery : '',
+          },
+        })),
 
       setCurrentDate: (date) =>
         set((state) => ({ ui: { ...state.ui, currentDate: date } })),

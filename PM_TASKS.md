@@ -38,7 +38,7 @@ Triagiert, gruppiert nach Tier.
 - [x] **[TIER-1] Calendar View** — Date-based task visualization
 - [x] **[TIER-1] Recurring Tasks** — Daily/Weekly/Monthly automation
 - [x] **[TIER-1] Filter & Sort** — By project, category, priority, date
-- [ ] **[TIER-1] Full-Text Search** — Find tasks by title/description
+- [x] **[TIER-1] Full-Text Search** — Find tasks by title/description
 
 **MEDIUM Priority:**
 - [ ] **[TIER-1] Keyboard Shortcuts** — Basic navigation (Enter, Escape, Tab)
@@ -105,6 +105,7 @@ Archive of finished features.
 | 009 | Calendar View | 2026-06-18 | docs/pipeline/09-calendar.md |
 | 010 | Recurring Tasks | 2026-06-18 | docs/pipeline/10-recurring.md |
 | 011 | Filter & Sort | 2026-06-18 | docs/pipeline/11-filter-sort.md |
+| 012 | Full-Text Search | 2026-06-18 | docs/pipeline/12-search.md |
 
 ---
 
