@@ -205,6 +205,13 @@ function App() {
             <span className="task-count">{visibleTasks.length}</span>
             <button
               className="header-icon-btn"
+              title="Drucken / als PDF speichern"
+              onClick={() => window.print()}
+            >
+              🖨
+            </button>
+            <button
+              className="header-icon-btn"
               title={bulkMode ? 'Auswahl beenden' : 'Mehrere auswählen'}
               onClick={() => (bulkMode ? exitBulk() : setBulkMode(true))}
             >
@@ -229,6 +236,10 @@ function App() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="print-meta">
+          Nozbe · {headerTitle} · {new Date().toLocaleDateString('de-DE')}
         </div>
 
         {ui.currentView === 'templates' ? (
