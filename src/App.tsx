@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from './store';
-import { selectVisibleTasks } from './selectors';
+import { selectVisibleTasks, selectPriorityTasks } from './selectors';
 import type { ViewType } from './types';
 import './App.css';
 import Sidebar from './components/Sidebar';
@@ -31,7 +31,10 @@ function App() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  const visibleTasks = selectVisibleTasks(tasks, ui);
+  const visibleTasks =
+    ui.currentView === 'priority'
+      ? selectPriorityTasks(tasks, 5)
+      : selectVisibleTasks(tasks, ui);
   const selectedTask = ui.selectedTaskId
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
@@ -113,7 +116,20 @@ function App() {
           </button>
         </div>
 
-        <TaskList tasks={visibleTasks} />
+        {ui.currentView === 'priority' && (
+          <div className="view-hint">
+            Deine Top 5 nächsten Schritte — markierte (★) und hoch-priorisierte Aufgaben zuerst.
+          </div>
+        )}
+
+        <TaskList
+          tasks={visibleTasks}
+          emptyHint={
+            ui.currentView === 'priority'
+              ? 'Keine offenen Aufgaben — markiere welche mit ★ oder setze Priorität „Hoch".'
+              : undefined
+          }
+        />
       </div>
 
       {selectedTask && <TaskDetailPanel task={selectedTask} />}
