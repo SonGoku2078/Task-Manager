@@ -19,6 +19,50 @@
   --hover-bg: #f7f8f9;
 }
 
+[data-theme='dark'] {
+  --main-bg: #1b1f23;
+  --text-primary: #e6e8ea;
+  --text-secondary: #8a9199;
+  --border-light: #2c333a;
+  --hover-bg: #242a30;
+  --accent-soft: rgba(76, 175, 80, 0.16);
+}
+
+/* Dark-mode surfaces for components that hard-code light backgrounds. */
+[data-theme='dark'] .task-detail-panel,
+[data-theme='dark'] .report-card,
+[data-theme='dark'] .template-card,
+[data-theme='dark'] .detail-input,
+[data-theme='dark'] .detail-select,
+[data-theme='dark'] .detail-textarea,
+[data-theme='dark'] .settings-input,
+[data-theme='dark'] .member-role,
+[data-theme='dark'] .quick-add-input,
+[data-theme='dark'] .search-input,
+[data-theme='dark'] .filter-select,
+[data-theme='dark'] .cat-pill,
+[data-theme='dark'] .cat-add-input,
+[data-theme='dark'] .bulk-btn,
+[data-theme='dark'] .bulk-select,
+[data-theme='dark'] .theme-btn,
+[data-theme='dark'] .cat-chip {
+  background: var(--main-bg);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+[data-theme='dark'] .quick-add,
+[data-theme='dark'] .filter-bar,
+[data-theme='dark'] .search-bar,
+[data-theme='dark'] .category-bar,
+[data-theme='dark'] .bulk-bar {
+  background: var(--hover-bg);
+}
+
+[data-theme='dark'] .task-detail-panel {
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--main-bg);

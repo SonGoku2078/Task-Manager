@@ -36,6 +36,12 @@ function App() {
   const ui = useStore((s) => s.ui);
   const projects = useStore((s) => s.projects);
   const savedViews = useStore((s) => s.savedViews);
+  const theme = useStore((s) => s.settings.theme);
+
+  // Apply the selected theme to the document root.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
   const addTask = useStore((s) => s.addTask);
   const selectTask = useStore((s) => s.selectTask);
   const updateProject = useStore((s) => s.updateProject);

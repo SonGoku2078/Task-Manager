@@ -65,7 +65,7 @@ Triagiert, gruppiert nach Tier.
 - [ ] **[TIER-4] Email Tasks** — Forward emails to task inbox
 - [ ] **[TIER-4] Hashtag Quick-Add** — #project #category syntax
 - [ ] **[TIER-4] Print/PDF Export** — Export tasks as documents
-- [ ] **[TIER-4] Dark Mode** — Night theme
+- [x] **[TIER-4] Dark Mode** — Night theme
 - [ ] **[TIER-4] Mobile App** — Electron/React Native version
 
 ---
