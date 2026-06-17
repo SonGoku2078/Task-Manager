@@ -17,8 +17,30 @@ export default function SettingsView() {
   const addMember = useStore((s) => s.addMember);
   const updateMember = useStore((s) => s.updateMember);
   const deleteMember = useStore((s) => s.deleteMember);
+  const addTask = useStore((s) => s.addTask);
+  const setView = useStore((s) => s.setView);
 
   const [memberName, setMemberName] = useState('');
+  const [emailText, setEmailText] = useState('');
+  const [importInfo, setImportInfo] = useState('');
+
+  const inboxAddress = 'inbox@nozbe-clone.local';
+
+  const importEmail = () => {
+    const raw = emailText.trim();
+    if (!raw) return;
+    const lines = raw.split('\n');
+    const subjectLine = lines.find((l) => /^subject:/i.test(l.trim()));
+    const title = subjectLine
+      ? subjectLine.replace(/^subject:/i, '').trim()
+      : lines[0].trim();
+    const body = subjectLine
+      ? raw
+      : lines.slice(1).join('\n').trim();
+    addTask({ title: title || 'E-Mail-Aufgabe', description: body, projectId: null });
+    setEmailText('');
+    setImportInfo(`Aufgabe „${title || 'E-Mail-Aufgabe'}" in der Inbox angelegt.`);
+  };
 
   const submitMember = () => {
     const name = memberName.trim();
@@ -113,6 +135,36 @@ export default function SettingsView() {
             Einladen
           </button>
         </div>
+      </section>
+
+      <section className="settings-section">
+        <h3 className="settings-heading">E-Mail zu Aufgabe</h3>
+        <p className="settings-hint">
+          Demo ohne echten Mailserver: Deine (fiktive) Inbox-Adresse lautet{' '}
+          <code className="settings-code">{inboxAddress}</code>. Füge unten eine
+          E-Mail ein (optional mit „Subject:"-Zeile) — daraus wird eine Aufgabe in
+          deiner Inbox.
+        </p>
+        <textarea
+          className="settings-input settings-textarea"
+          placeholder={'Subject: Angebot prüfen\n\nBitte das Angebot von Firma X bis Freitag prüfen.'}
+          value={emailText}
+          onChange={(e) => setEmailText(e.target.value)}
+        />
+        <div className="email-import-actions">
+          <button className="btn btn-primary" onClick={importEmail}>
+            Als Aufgabe anlegen
+          </button>
+          {importInfo && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => setView('inbox')}
+            >
+              Zur Inbox
+            </button>
+          )}
+        </div>
+        {importInfo && <p className="settings-hint">✅ {importInfo}</p>}
       </section>
     </div>
   );
