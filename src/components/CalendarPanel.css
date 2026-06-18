@@ -110,16 +110,23 @@
   pointer-events: none;
 }
 
+.cal-day.selected {
+  background: rgba(76, 175, 80, 0.42);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
 .cal-day.today {
   background: var(--accent);
   color: #fff;
   font-weight: 600;
 }
 
-.cal-day.selected {
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 600;
+/* A day that is both today and selected: keep the solid accent + white ring. */
+.cal-day.today.selected {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 
 .cal-day-dot {

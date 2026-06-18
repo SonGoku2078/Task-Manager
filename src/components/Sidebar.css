@@ -107,35 +107,16 @@
   color: #fff;
 }
 
-/* ---- Collapsed (icon-only) mode: active when a contextual panel is open ---- */
+/* ---- Collapsed (icon-only) mode: active when a contextual panel is open ----
+   IMPORTANT: only the width shrinks and labels hide. Padding, alignment, item
+   height/margin and the icon's left offset stay identical to full mode, so every
+   icon keeps the exact same x/y position — no mouse repositioning needed. */
 .sidebar.collapsed {
   width: 60px;
-  padding: 10px 0;
-  align-items: center;
-}
-
-.sidebar.collapsed .sidebar-brand {
-  justify-content: center;
-  padding: 0;
-}
-
-.sidebar.collapsed .sidebar-items {
-  align-items: center;
-}
-
-.sidebar.collapsed .sidebar-item {
-  /* Keep height/margin identical to full mode so icons stay at the same Y position. */
-  width: 44px;
-  padding: 0;
-  justify-content: center;
 }
 
 .sidebar.collapsed .sidebar-label {
   display: none;
-}
-
-.sidebar.collapsed .sidebar-separator {
-  width: 32px;
 }
 
 .sidebar.collapsed .saved-view-del {
