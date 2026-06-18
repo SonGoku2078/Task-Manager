@@ -75,6 +75,49 @@ export async function fetchNozbeList(
   return data;
 }
 
+export interface NozbeAuth {
+  token: string;
+  clientId: string;
+  userId?: string;
+}
+
+// Login: email + password + an existing (registered) client_id → fresh access token.
+// Live endpoint is GET /login (the documented /oauth/authorize 404s). A valid client_id
+// is required ("default"/"nozbe" are rejected). The password is only sent to Nozbe (via
+// the dev proxy) and never stored. Response shape varies, so parsing is best-effort.
+export async function loginNozbe(
+  email: string,
+  password: string,
+  clientId: string
+): Promise<NozbeAuth> {
+  if (!clientId.trim()) {
+    throw new Error('Client-ID erforderlich (aus deiner Nozbe-/config.ps1).');
+  }
+  const url = `${NOZBE_API_BASE}/login?email=${encodeURIComponent(
+    email
+  )}&password=${encodeURIComponent(password)}&client_id=${encodeURIComponent(clientId)}`;
+  const res = await fetch(url);
+  const text = (await res.text()).trim();
+
+  // The API returns HTTP 200 even for "BAD CLIENT_ID" — inspect the body.
+  if (/bad client_id|invalid|error|unauthor|wrong|denied/i.test(text)) {
+    throw new Error(`Login fehlgeschlagen: ${text.slice(0, 120)}`);
+  }
+
+  let token: string;
+  try {
+    const json = JSON.parse(text);
+    token = String(json.oauth_token || json.access_token || json.key || json.token || '');
+  } catch {
+    // Plain-text token response.
+    token = /^[\w.-]{16,}$/.test(text) ? text : '';
+  }
+  if (!token) {
+    throw new Error(`Unerwartete Login-Antwort: ${text.slice(0, 120)}`);
+  }
+  return { token, clientId };
+}
+
 // Write a task update back to Nozbe (PUT /task, form-encoded). Only fields we set.
 export async function pushNozbeTask(
   token: string,
