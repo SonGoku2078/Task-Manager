@@ -23,8 +23,11 @@ export const isOverdue = (task: Task) =>
   !!task.dueDate && !task.completed && task.dueDate < startOfDay(new Date());
 
 const matchesSearch = (task: Task, query: string) => {
-  if (!query.trim()) return true;
-  const q = query.toLowerCase();
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  // Search by task number, with or without a leading "#".
+  const numQ = q.replace(/^#/, '');
+  if (/^\d+$/.test(numQ) && String(task.number) === numQ) return true;
   return (
     task.title.toLowerCase().includes(q) ||
     task.description.toLowerCase().includes(q)
@@ -53,6 +56,9 @@ export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
   return [...tasks].sort((a, b) => {
     let cmp = 0;
     switch (sortField) {
+      case 'number':
+        cmp = a.number - b.number;
+        break;
       case 'priority':
         cmp = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
         break;
@@ -75,8 +81,10 @@ export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
 
 // Tasks visible in the current main view, after view scoping + filters + search + sort.
 export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
-  // Subtasks are managed under their parent, never in the flat lists.
-  let result = tasks.filter((t) => !t.parentId);
+  // Subtasks are managed under their parent and hidden from flat lists —
+  // except in search, where they must be findable.
+  let result =
+    ui.currentView === 'search' ? tasks : tasks.filter((t) => !t.parentId);
 
   switch (ui.currentView) {
     case 'inbox':
@@ -87,7 +95,19 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
       result = result.filter((t) => t.completed);
       break;
     case 'priority':
-      result = result.filter((t) => !t.completed && (t.starred || t.priority === 'high'));
+      // Nozbe-style: open tasks that are overdue OR starred. Base order:
+      // overdue first, then starred, then by due date.
+      result = result
+        .filter((t) => !t.completed && (t.starred || isOverdue(t)))
+        .sort((a, b) => {
+          const ao = isOverdue(a) ? 0 : 1;
+          const bo = isOverdue(b) ? 0 : 1;
+          if (ao !== bo) return ao - bo;
+          if (a.starred !== b.starred) return a.starred ? -1 : 1;
+          const ad = a.dueDate ? a.dueDate.getTime() : Infinity;
+          const bd = b.dueDate ? b.dueDate.getTime() : Infinity;
+          return ad - bd;
+        });
       break;
     case 'projects':
       if (ui.selectedProjectId) {
@@ -96,10 +116,8 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
       break;
     case 'today': {
       const now = new Date();
-      // Today = due today (incl. completed) OR overdue and still open.
-      result = result.filter(
-        (t) => t.dueDate && (isSameDay(t.dueDate, now) || isOverdue(t))
-      );
+      // Today = the day's agenda (due today). Overdue lives in Priorität.
+      result = result.filter((t) => t.dueDate && isSameDay(t.dueDate, now));
       break;
     }
     case 'search':

@@ -441,8 +441,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                 if (e.key === 'Enter') submitComment();
               }}
             />
-            <button className="btn btn-primary comment-send" onClick={submitComment}>
-              Senden
+            <button className="btn btn-primary comment-send" onClick={submitComment} title="Kommentar hinzufügen (Enter)">
+              +
             </button>
           </div>
         </div>

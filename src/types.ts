@@ -31,7 +31,13 @@ export type ViewType =
   | 'reports'
   | 'settings';
 
-export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
+export type SortField =
+  | 'manual'
+  | 'number'
+  | 'priority'
+  | 'dueDate'
+  | 'title'
+  | 'createdAt';
 export type SortDir = 'asc' | 'desc';
 
 // Which contextual secondary panel is open. When not 'none', the sidebar collapses to icons.

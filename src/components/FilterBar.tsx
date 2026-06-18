@@ -4,6 +4,7 @@ import './FilterBar.css';
 
 const SORT_LABELS: Record<SortField, string> = {
   manual: 'Standard',
+  number: 'Nummer',
   priority: 'Priorität',
   dueDate: 'Fälligkeit',
   title: 'Titel',

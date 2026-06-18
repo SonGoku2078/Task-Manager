@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
-import { selectVisibleTasks, selectPriorityTasks } from './selectors';
+import { selectVisibleTasks } from './selectors';
 import { parseQuickAdd } from './quickParse';
 import type { ViewType } from './types';
 import './App.css';
@@ -127,10 +127,7 @@ function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [selectTask, setView, deleteTask]);
 
-  const visibleTasks =
-    ui.currentView === 'priority'
-      ? selectPriorityTasks(tasks, 5)
-      : selectVisibleTasks(tasks, ui);
+  const visibleTasks = selectVisibleTasks(tasks, ui);
   const selectedTask = ui.selectedTaskId
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
@@ -319,7 +316,7 @@ function App() {
 
         {ui.currentView === 'categories' && <CategoryBar />}
 
-        {['inbox', 'projects', 'today', 'search', 'categories', 'custom', 'completed'].includes(
+        {['inbox', 'priority', 'projects', 'today', 'search', 'categories', 'custom', 'completed'].includes(
           ui.currentView
         ) && <FilterBar />}
 
@@ -334,7 +331,7 @@ function App() {
 
         {ui.currentView === 'priority' && (
           <div className="view-hint">
-            Deine Top 5 nächsten Schritte — markierte (★) und hoch-priorisierte Aufgaben zuerst.
+            Überfällige und mit ★ markierte Aufgaben — alles, was deine Aufmerksamkeit braucht.
           </div>
         )}
 

@@ -78,8 +78,25 @@ const plainEntry = (
 const pushLog = (log: ActivityEntry[], entry: ActivityEntry): ActivityEntry[] =>
   [entry, ...log].slice(0, ACTIVITY_CAP);
 
-const pushLogs = (log: ActivityEntry[], entries: ActivityEntry[]): ActivityEntry[] =>
-  [...entries.slice().reverse(), ...log].slice(0, ACTIVITY_CAP);
+// Coalesce consecutive edits of the SAME field on the SAME task into one entry
+// (keeping the original `from`, updating `to`) so a burst of keystrokes shows up
+// as a single net change instead of one entry per keystroke.
+const mergeOrPush = (
+  log: ActivityEntry[],
+  entry: ActivityEntry
+): ActivityEntry[] => {
+  const top = log[0];
+  if (
+    entry.kind === 'updated' &&
+    top &&
+    top.kind === 'updated' &&
+    top.taskId === entry.taskId &&
+    top.field === entry.field
+  ) {
+    return [{ ...top, to: entry.to, at: entry.at }, ...log.slice(1)];
+  }
+  return pushLog(log, entry);
+};
 
 // Human-readable representation of a field value for the change log.
 const fmtVal = (
@@ -339,7 +356,7 @@ export const useStore = create<AppState>()(
                 to: fmtVal(f.key, after[f.key], ctx),
               })
             );
-            if (entries.length) activityLog = pushLogs(state.activityLog, entries);
+            for (const e of entries) activityLog = mergeOrPush(activityLog, e);
           }
           return { tasks, activityLog };
         }),
