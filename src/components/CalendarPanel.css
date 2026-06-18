@@ -133,6 +133,35 @@
   color: #fff;
 }
 
+.cal-multi-hint {
+  font-size: 11px;
+  color: #8a9199;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.cal-multi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #cdd2d6;
+  background: rgba(76, 175, 80, 0.16);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.cal-multi-clear {
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
 .calendar-export {
   margin-top: 8px;
   border-top: 1px solid var(--border-dark);

@@ -120,6 +120,7 @@ export interface UIState {
   selectedProjectId: string | null;
   currentView: ViewType;
   currentDate: Date;
+  selectedDates: string[]; // multi-day calendar selection (YYYY-MM-DD keys)
   searchQuery: string;
   filters: Filters;
   sortField: SortField;

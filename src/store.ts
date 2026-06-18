@@ -82,6 +82,7 @@ const defaultUIState: UIState = {
   selectedProjectId: null,
   currentView: 'inbox',
   currentDate: new Date(),
+  selectedDates: [],
   searchQuery: '',
   filters: {
     projectId: null,
@@ -154,6 +155,7 @@ interface AppState {
   setView: (view: ViewType) => void;
   setSidePanel: (panel: SidePanel) => void;
   setCurrentDate: (date: Date) => void;
+  setSelectedDates: (dates: string[]) => void;
   setSearchQuery: (q: string) => void;
   setFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   resetFilters: () => void;
@@ -482,6 +484,9 @@ export const useStore = create<AppState>()(
 
       setCurrentDate: (date) =>
         set((state) => ({ ui: { ...state.ui, currentDate: date } })),
+
+      setSelectedDates: (dates) =>
+        set((state) => ({ ui: { ...state.ui, selectedDates: dates } })),
 
       setSearchQuery: (q) => set((state) => ({ ui: { ...state.ui, searchQuery: q } })),
 

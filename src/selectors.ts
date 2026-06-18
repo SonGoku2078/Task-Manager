@@ -13,6 +13,12 @@ export const isSameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+// Stable day key (YYYY-MM-DD) for set membership / multi-day selection.
+export const dateKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+
 export const isOverdue = (task: Task) =>
   !!task.dueDate && !task.completed && task.dueDate < startOfDay(new Date());
 
@@ -89,11 +95,14 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
     case 'search':
       // handled by search query below
       break;
-    case 'calendar':
-      result = result.filter(
-        (t) => t.dueDate && isSameDay(t.dueDate, ui.currentDate)
+    case 'calendar': {
+      // Show tasks for all selected days (fallback to the anchor day).
+      const keys = new Set(
+        ui.selectedDates.length ? ui.selectedDates : [dateKey(ui.currentDate)]
       );
+      result = result.filter((t) => t.dueDate && keys.has(dateKey(t.dueDate)));
       break;
+    }
   }
 
   result = result.filter(

@@ -133,11 +133,13 @@ function App() {
     : activeSavedView
       ? `🔎 ${activeSavedView.name}`
       : ui.currentView === 'calendar'
-      ? ui.currentDate.toLocaleDateString('de-DE', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        })
+      ? ui.selectedDates.length > 1
+        ? `${ui.selectedDates.length} Tage ausgewählt`
+        : ui.currentDate.toLocaleDateString('de-DE', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          })
       : VIEW_TITLES[ui.currentView];
 
   const handleAddTask = () => {
