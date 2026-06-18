@@ -75,6 +75,36 @@ export async function fetchNozbeList(
   return data;
 }
 
+// Write a task update back to Nozbe (PUT /task, form-encoded). Only fields we set.
+export async function pushNozbeTask(
+  token: string,
+  clientId: string,
+  nozbeId: string,
+  fields: Record<string, string | number>
+): Promise<void> {
+  const url = `${NOZBE_API_BASE}/task?access_token=${encodeURIComponent(
+    token
+  )}&client_id=${encodeURIComponent(clientId)}`;
+  const body = new URLSearchParams({ id: nozbeId });
+  for (const [k, v] of Object.entries(fields)) body.set(k, String(v));
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+  if (!res.ok) {
+    throw new Error(`Nozbe PUT /task antwortete ${res.status}`);
+  }
+}
+
+// Convenience: mark a Nozbe task completed/open.
+export const pushNozbeCompleted = (
+  token: string,
+  clientId: string,
+  nozbeId: string,
+  completed: boolean
+) => pushNozbeTask(token, clientId, nozbeId, { completed: completed ? 1 : 0 });
+
 // Pure mapper: Nozbe objects → our domain objects. Task numbers are assigned later
 // by the store (which owns nextTaskNumber); here they default to 0.
 export function mapNozbe(raw: NozbeExport): MappedImport {

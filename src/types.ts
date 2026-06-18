@@ -10,9 +10,16 @@ export interface Member {
   color: string;
 }
 
+export interface NozbeConnection {
+  token: string;
+  clientId: string;
+  syncCompleted: boolean; // write completion changes back to Nozbe
+}
+
 export interface Settings {
   userName: string;
   theme: Theme;
+  nozbe?: NozbeConnection; // present when connected to a Nozbe account
 }
 
 export type ViewType =

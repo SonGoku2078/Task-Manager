@@ -18,6 +18,8 @@ umgesetzt sind und welche **einen Server/DB brauchen** (nur vorbereitet/dokument
 | Erledigte Aufgaben grau / Mehrtages-Kalender / kontextuelles Panel | ✅ | frühere Iterationen |
 | **Nozbe-Import** (echte Aufgaben/Projekte/Kontexte) | ✅ (lokal) | `src/nozbe.ts` (Mapper+Client), `replaceWithNozbe` (store), Einstellungen→Nozbe-Import, `vite.config.ts` Dev-Proxy `/nozbe-api`, `scripts/nozbe-export.ps1` |
 
+| **Nozbe-Sync (Erledigt zurückschreiben)** | ✅ (lokal/dev) | `pushNozbeCompleted` (`src/nozbe.ts`), `toggleTask`/`bulkUpdate` (store), Verbindung+Schalter in Einstellungen |
+
 ### Nozbe-Import — Details
 - **Zwei Wege:** (1) Direkt in der App via Nozbe-API (Vite Dev-Proxy gegen CORS, nur unter
   `npm run dev`; Token nur transient im Browser-State, nicht persistiert). (2) JSON-Export per
@@ -37,7 +39,7 @@ umgesetzt sind und welche **einen Server/DB brauchen** (nur vorbereitet/dokument
 | **Mehrbenutzer-Rechte real durchsetzen** | Aktuell sind Rollen (`Member`) nur organisatorisch. | Datenmodell (Member/Rolle/Assignee) vorhanden. |
 | **Live-`webcal://`-Kalender-Abo** | Auto-aktualisierender Feed muss serverseitig generiert/gehostet werden. | Lokal gibt es `.ics`-Export (`src/ics.ts`); serverseitig dieselbe Logik als Endpoint. |
 | **Nozbe-Direkt-Import im Production-Build** | Ohne Dev-Proxy blockt CORS; Token gehört nicht in den Browser. | Backend proxyt die Nozbe-API/hält Credentials; `NOZBE_API_BASE` zeigt dann dorthin. JSON-Import funktioniert schon jetzt überall. |
-| **Zwei-Wege-Sync mit Nozbe** | Schreiben zurück (PUT/POST) + Konfliktauflösung + inkrementelles Sync braucht Server-State. | API-Schreib-Endpoints sind dokumentiert (nozbe-connect); Mapper ist umkehrbar aufgebaut. |
+| **Voller Zwei-Wege-Sync** | Erledigt-Status wird bereits zurückgeschrieben (lokal/dev). Weitere Felder (Titel/Datum/Projekt…), Anlegen/Löschen in Nozbe, Konfliktauflösung und inkrementelles Sync brauchen Server-State + robustes Error-Handling. | `pushNozbeTask` ist generisch (beliebige Felder); im Production-Build braucht es das Backend statt Dev-Proxy. |
 | **Native Mobile App / Touch-Gesten** | Eigener Build-Target bzw. Touch-Hardware. | — (separates Epic) |
 
 ## Migrations-Leitfaden (lokal → Server)

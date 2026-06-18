@@ -20,7 +20,7 @@ import type {
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
-import type { MappedImport } from './nozbe';
+import { pushNozbeCompleted, type MappedImport } from './nozbe';
 
 const DATE_KEYS = new Set([
   'dueDate',
@@ -276,7 +276,22 @@ interface AppState {
   deleteMember: (id: string) => void;
   setUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
+
+  // Nozbe connection + live sync
+  connectNozbe: (token: string, clientId: string) => void;
+  disconnectNozbe: () => void;
+  setNozbeSync: (enabled: boolean) => void;
 }
+
+// Fire-and-forget: push a completion change to Nozbe if connected + sync enabled.
+const syncCompletion = (state: AppState, task: Task, completed: boolean) => {
+  const nz = state.settings.nozbe;
+  if (nz?.syncCompleted && nz.token && nz.clientId && task.nozbeId) {
+    void pushNozbeCompleted(nz.token, nz.clientId, task.nozbeId, completed).catch(
+      (e) => console.warn('Nozbe-Sync fehlgeschlagen:', e)
+    );
+  }
+};
 
 const PROJECT_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4'];
 
@@ -396,7 +411,8 @@ export const useStore = create<AppState>()(
           };
         }),
 
-      toggleTask: (id) =>
+      toggleTask: (id) => {
+        const before = get().tasks.find((t) => t.id === id);
         set((state) => {
           const target = state.tasks.find((t) => t.id === id);
           if (!target) return {};
@@ -440,7 +456,10 @@ export const useStore = create<AppState>()(
             }
           }
           return { tasks, activityLog, nextTaskNumber };
-        }),
+        });
+        // Write the completion change back to Nozbe (if connected + enabled).
+        if (before) syncCompletion(get(), before, !before.completed);
+      },
 
       toggleStar: (id) =>
         set((state) => ({
@@ -521,15 +540,21 @@ export const useStore = create<AppState>()(
           ),
         })),
 
-      bulkUpdate: (ids, updates) =>
-        set((state) => {
-          const idSet = new Set(ids);
-          return {
-            tasks: state.tasks.map((t) =>
-              idSet.has(t.id) ? { ...t, ...updates, updatedAt: new Date() } : t
-            ),
-          };
-        }),
+      bulkUpdate: (ids, updates) => {
+        const idSet = new Set(ids);
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            idSet.has(t.id) ? { ...t, ...updates, updatedAt: new Date() } : t
+          ),
+        }));
+        // Sync bulk completion changes to Nozbe.
+        if (updates.completed !== undefined) {
+          const s = get();
+          s.tasks
+            .filter((t) => idSet.has(t.id) && t.nozbeId)
+            .forEach((t) => syncCompletion(s, t, updates.completed as boolean));
+        }
+      },
 
       bulkDelete: (ids) =>
         set((state) => {
@@ -800,6 +825,37 @@ export const useStore = create<AppState>()(
 
       setTheme: (theme) =>
         set((state) => ({ settings: { ...state.settings, theme } })),
+
+      connectNozbe: (token, clientId) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            nozbe: {
+              token,
+              clientId,
+              syncCompleted: state.settings.nozbe?.syncCompleted ?? true,
+            },
+          },
+        })),
+
+      disconnectNozbe: () =>
+        set((state) => {
+          const { nozbe: _omit, ...rest } = state.settings;
+          void _omit;
+          return { settings: rest };
+        }),
+
+      setNozbeSync: (enabled) =>
+        set((state) =>
+          state.settings.nozbe
+            ? {
+                settings: {
+                  ...state.settings,
+                  nozbe: { ...state.settings.nozbe, syncCompleted: enabled },
+                },
+              }
+            : {}
+        ),
     }),
     {
       name: 'nozbe-clone-state',

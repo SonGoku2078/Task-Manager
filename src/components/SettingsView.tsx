@@ -21,15 +21,20 @@ export default function SettingsView() {
   const addTask = useStore((s) => s.addTask);
   const setView = useStore((s) => s.setView);
   const replaceWithNozbe = useStore((s) => s.replaceWithNozbe);
+  const connectNozbe = useStore((s) => s.connectNozbe);
+  const disconnectNozbe = useStore((s) => s.disconnectNozbe);
+  const setNozbeSync = useStore((s) => s.setNozbeSync);
 
   const [memberName, setMemberName] = useState('');
   const [emailText, setEmailText] = useState('');
   const [importInfo, setImportInfo] = useState('');
 
-  const [nzToken, setNzToken] = useState('');
-  const [nzClientId, setNzClientId] = useState('');
+  const [nzToken, setNzToken] = useState(settings.nozbe?.token ?? '');
+  const [nzClientId, setNzClientId] = useState(settings.nozbe?.clientId ?? '');
   const [nzBusy, setNzBusy] = useState(false);
   const [nzStatus, setNzStatus] = useState('');
+
+  const connected = !!settings.nozbe;
 
   const inboxAddress = 'inbox@nozbe-clone.local';
 
@@ -198,11 +203,15 @@ export default function SettingsView() {
       </section>
 
       <section className="settings-section">
-        <h3 className="settings-heading">Nozbe-Import</h3>
+        <h3 className="settings-heading">
+          Nozbe-Verbindung {connected && <span className="nz-badge">verbunden</span>}
+        </h3>
         <p className="settings-hint">
-          Importiert deine echten Nozbe-Classic-Aufgaben (Projekte, Kontexte → Kategorien,
-          Aufgaben). <strong>Achtung:</strong> ersetzt die bestehenden lokalen Daten. Der Token
-          wird nur für diesen Vorgang verwendet und <strong>nicht gespeichert</strong>.
+          Verbinde dein Nozbe-Classic-Konto, um Aufgaben zu importieren und den Erledigt-Status
+          live zurück zu Nozbe zu synchronisieren. <strong>Hinweis:</strong> Der Token wird beim
+          Verbinden lokal (im Browser) gespeichert; mit „Trennen" wird er gelöscht. Sync läuft
+          über einen Dev-Proxy und funktioniert nur unter
+          <code className="settings-code"> npm run dev</code>.
         </p>
 
         <label className="settings-label">Access Token</label>
@@ -226,6 +235,51 @@ export default function SettingsView() {
         />
 
         <div className="email-import-actions" style={{ marginTop: 12 }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              if (nzToken.trim() && nzClientId.trim()) {
+                connectNozbe(nzToken.trim(), nzClientId.trim());
+                setNzStatus('✅ Verbunden. Token lokal gespeichert.');
+              } else {
+                setNzStatus('Bitte Access Token und Client-ID eingeben.');
+              }
+            }}
+          >
+            {connected ? 'Verbindung aktualisieren' : 'Verbinden & speichern'}
+          </button>
+          {connected && (
+            <button
+              className="btn btn-danger"
+              onClick={() => {
+                disconnectNozbe();
+                setNzStatus('Verbindung getrennt, Token gelöscht.');
+              }}
+            >
+              Trennen
+            </button>
+          )}
+        </div>
+
+        {connected && (
+          <label className="nz-sync-toggle">
+            <input
+              type="checkbox"
+              checked={settings.nozbe?.syncCompleted ?? false}
+              onChange={(e) => setNozbeSync(e.target.checked)}
+            />
+            Erledigt-Status live zu Nozbe synchronisieren (Abhaken hier → erledigt in Nozbe)
+          </label>
+        )}
+
+        <h3 className="settings-heading" style={{ marginTop: 20 }}>
+          Import
+        </h3>
+        <p className="settings-hint">
+          Importiert Projekte, Kontexte (→ Kategorien) und Aufgaben.{' '}
+          <strong>Achtung:</strong> ersetzt die bestehenden lokalen Daten.
+        </p>
+        <div className="email-import-actions">
           <button className="btn btn-primary" onClick={importDirect} disabled={nzBusy}>
             {nzBusy ? 'Importiere…' : 'Aus Nozbe importieren'}
           </button>
@@ -243,10 +297,9 @@ export default function SettingsView() {
           </label>
         </div>
         <p className="settings-hint">
-          Direkt-Import läuft über einen Dev-Proxy und funktioniert nur unter
-          <code className="settings-code"> npm run dev</code>. Alternativ per
-          <code className="settings-code"> scripts/nozbe-export.ps1</code> exportieren und die
-          JSON-Datei hochladen.
+          Direkt-Import nur unter <code className="settings-code">npm run dev</code> (Dev-Proxy).
+          Alternativ per <code className="settings-code">scripts/nozbe-export.ps1</code> exportieren
+          und die JSON-Datei hochladen.
         </p>
         {nzStatus && <p className="settings-hint">{nzStatus}</p>}
       </section>
