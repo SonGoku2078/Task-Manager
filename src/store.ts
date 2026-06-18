@@ -11,7 +11,7 @@ import type {
   SidePanel,
   SavedView,
   ActivityEntry,
-  ActivityAction,
+  ActivityKind,
   Member,
   MemberRole,
   Settings,
@@ -42,23 +42,97 @@ const dateReviver = (key: string, value: unknown) => {
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
-const ACTIVITY_CAP = 200;
+const ACTIVITY_CAP = 500;
 
-const makeEntry = (
-  action: ActivityAction,
+// Build a task-related activity entry (created/updated/completed/comment/…).
+const taskEntry = (
+  kind: ActivityKind,
+  task: Pick<Task, 'id' | 'number' | 'title'>,
+  actor: string,
+  extra: { field?: string; from?: string; to?: string } = {}
+): ActivityEntry => ({
+  id: uid('act'),
+  at: new Date(),
+  actor,
+  kind,
+  taskId: task.id,
+  taskNumber: task.number,
+  taskTitle: task.title,
+  ...extra,
+});
+
+// Build a non-task entry (e.g. project-created).
+const plainEntry = (
+  kind: ActivityKind,
   subject: string,
   actor: string
 ): ActivityEntry => ({
   id: uid('act'),
   at: new Date(),
-  action,
-  subject,
   actor,
+  kind,
+  taskTitle: subject,
 });
 
 // Append an entry, keeping only the most recent ACTIVITY_CAP.
 const pushLog = (log: ActivityEntry[], entry: ActivityEntry): ActivityEntry[] =>
   [entry, ...log].slice(0, ACTIVITY_CAP);
+
+const pushLogs = (log: ActivityEntry[], entries: ActivityEntry[]): ActivityEntry[] =>
+  [...entries.slice().reverse(), ...log].slice(0, ACTIVITY_CAP);
+
+// Human-readable representation of a field value for the change log.
+const fmtVal = (
+  field: string,
+  value: unknown,
+  ctx: { projects: Project[]; categories: Category[]; members: Member[] }
+): string => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (field === 'dueDate' || field === 'recurrenceEnd') {
+    const d = value as Date;
+    return d instanceof Date && !isNaN(d.getTime())
+      ? d.toLocaleDateString('de-DE')
+      : '—';
+  }
+  if (field === 'projectId') {
+    return ctx.projects.find((p) => p.id === value)?.name ?? '—';
+  }
+  if (field === 'assigneeId') {
+    return ctx.members.find((m) => m.id === value)?.name ?? '—';
+  }
+  if (field === 'categoryIds') {
+    const ids = value as string[];
+    if (!ids.length) return '—';
+    return ids
+      .map((id) => ctx.categories.find((c) => c.id === id)?.name ?? id)
+      .join(', ');
+  }
+  if (field === 'priority') {
+    return { low: 'Niedrig', medium: 'Mittel', high: 'Hoch' }[value as string] ?? String(value);
+  }
+  if (typeof value === 'boolean') return value ? 'ja' : 'nein';
+  return String(value);
+};
+
+// Fields whose changes are recorded in the activity log, with German labels.
+const TRACKED_FIELDS: { key: keyof Task; label: string }[] = [
+  { key: 'title', label: 'Titel' },
+  { key: 'description', label: 'Beschreibung' },
+  { key: 'dueDate', label: 'Fälligkeit' },
+  { key: 'priority', label: 'Priorität' },
+  { key: 'projectId', label: 'Projekt' },
+  { key: 'categoryIds', label: 'Kategorien' },
+  { key: 'starred', label: 'Markierung' },
+  { key: 'recurrence', label: 'Wiederholung' },
+  { key: 'assigneeId', label: 'Zuweisung' },
+];
+
+const sameValue = (a: unknown, b: unknown): boolean => {
+  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+  if (Array.isArray(a) && Array.isArray(b))
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  return a === b;
+};
 
 // Advance a date by one recurrence step.
 const nextRecurrence = (date: Date, type: Task['recurrence']): Date => {
@@ -89,6 +163,8 @@ const defaultUIState: UIState = {
     categoryId: null,
     priority: null,
     completed: null,
+    dueFrom: null,
+    dueTo: null,
   },
   sortField: 'manual',
   sortDir: 'asc',
@@ -105,6 +181,7 @@ export interface NewTaskInput {
   title: string;
   description?: string;
   projectId?: string | null;
+  parentId?: string | null;
   dueDate?: Date | null;
   priority?: Task['priority'];
   categoryIds?: string[];
@@ -120,10 +197,12 @@ interface AppState {
   activityLog: ActivityEntry[];
   members: Member[];
   settings: Settings;
+  nextTaskNumber: number;
   ui: UIState;
 
   // Task CRUD
   addTask: (input: NewTaskInput) => Task;
+  addSubtask: (parentId: string, title: string) => Task | null;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTask: (id: string) => void;
@@ -186,15 +265,19 @@ export const useStore = create<AppState>()(
       activityLog: [],
       members: [],
       settings: defaultSettings,
+      nextTaskNumber: dummyTasks.length + 1,
       ui: defaultUIState,
 
       addTask: (input) => {
         const now = new Date();
+        const number = get().nextTaskNumber;
         const task: Task = {
           id: uid('task'),
+          number,
           title: input.title,
           description: input.description ?? '',
           projectId: input.projectId ?? null,
+          parentId: input.parentId ?? null,
           dueDate: input.dueDate ?? null,
           priority: input.priority ?? 'medium',
           categoryIds: input.categoryIds ?? [],
@@ -207,34 +290,82 @@ export const useStore = create<AppState>()(
         };
         set((state) => ({
           tasks: [...state.tasks, task],
+          nextTaskNumber: state.nextTaskNumber + 1,
           activityLog: pushLog(
             state.activityLog,
-            makeEntry('created', task.title, state.settings.userName)
+            taskEntry('created', task, state.settings.userName)
+          ),
+        }));
+        return task;
+      },
+
+      addSubtask: (parentId, title) => {
+        const parent = get().tasks.find((t) => t.id === parentId);
+        if (!parent) return null;
+        const task = get().addTask({
+          title,
+          parentId,
+          projectId: parent.projectId,
+        });
+        set((state) => ({
+          activityLog: pushLog(
+            state.activityLog,
+            taskEntry('subtask', parent, state.settings.userName, { to: title })
           ),
         }));
         return task;
       },
 
       updateTask: (id, updates) =>
-        set((state) => ({
-          tasks: state.tasks.map((t) =>
+        set((state) => {
+          const before = state.tasks.find((t) => t.id === id);
+          const tasks = state.tasks.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
-          ),
-        })),
+          );
+          let activityLog = state.activityLog;
+          if (before) {
+            const after = { ...before, ...updates };
+            const ctx = {
+              projects: state.projects,
+              categories: state.categories,
+              members: state.members,
+            };
+            const entries = TRACKED_FIELDS.filter(
+              (f) => f.key in updates && !sameValue(before[f.key], after[f.key])
+            ).map((f) =>
+              taskEntry('updated', after, state.settings.userName, {
+                field: f.label,
+                from: fmtVal(f.key, before[f.key], ctx),
+                to: fmtVal(f.key, after[f.key], ctx),
+              })
+            );
+            if (entries.length) activityLog = pushLogs(state.activityLog, entries);
+          }
+          return { tasks, activityLog };
+        }),
 
       deleteTask: (id) =>
         set((state) => {
+          // Cascade: remove the task and all of its descendant subtasks.
+          const toRemove = new Set<string>();
+          const collect = (pid: string) => {
+            toRemove.add(pid);
+            state.tasks
+              .filter((t) => t.parentId === pid)
+              .forEach((c) => collect(c.id));
+          };
+          collect(id);
           const removed = state.tasks.find((t) => t.id === id);
           return {
-            tasks: state.tasks.filter((t) => t.id !== id),
+            tasks: state.tasks.filter((t) => !toRemove.has(t.id)),
             activityLog: removed
               ? pushLog(
                   state.activityLog,
-                  makeEntry('deleted', removed.title, state.settings.userName)
+                  taskEntry('deleted', removed, state.settings.userName)
                 )
               : state.activityLog,
             ui:
-              state.ui.selectedTaskId === id
+              state.ui.selectedTaskId && toRemove.has(state.ui.selectedTaskId)
                 ? { ...state.ui, selectedTaskId: null }
                 : state.ui,
           };
@@ -250,14 +381,15 @@ export const useStore = create<AppState>()(
           );
           const activityLog = pushLog(
             state.activityLog,
-            makeEntry(
+            taskEntry(
               completing ? 'completed' : 'reopened',
-              target.title,
+              target,
               state.settings.userName
             )
           );
 
           // Recurring task: spawn the next occurrence when completed.
+          let nextTaskNumber = state.nextTaskNumber;
           if (
             completing &&
             target.recurrence !== 'none' &&
@@ -271,14 +403,18 @@ export const useStore = create<AppState>()(
               tasks.push({
                 ...target,
                 id: uid('task'),
+                number: nextTaskNumber,
                 completed: false,
                 dueDate: nextDue,
                 createdAt: now,
                 updatedAt: now,
+                comments: [],
+                attachments: [],
               });
+              nextTaskNumber += 1;
             }
           }
-          return { tasks, activityLog };
+          return { tasks, activityLog, nextTaskNumber };
         }),
 
       toggleStar: (id) =>
@@ -289,24 +425,33 @@ export const useStore = create<AppState>()(
         })),
 
       addComment: (taskId, text) =>
-        set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === taskId
-              ? {
-                  ...t,
-                  comments: [
-                    ...(t.comments ?? []),
-                    {
-                      id: uid('cmt'),
-                      text,
-                      author: state.settings.userName,
-                      createdAt: new Date(),
-                    },
-                  ],
-                }
-              : t
-          ),
-        })),
+        set((state) => {
+          const target = state.tasks.find((t) => t.id === taskId);
+          return {
+            tasks: state.tasks.map((t) =>
+              t.id === taskId
+                ? {
+                    ...t,
+                    comments: [
+                      ...(t.comments ?? []),
+                      {
+                        id: uid('cmt'),
+                        text,
+                        author: state.settings.userName,
+                        createdAt: new Date(),
+                      },
+                    ],
+                  }
+                : t
+            ),
+            activityLog: target
+              ? pushLog(
+                  state.activityLog,
+                  taskEntry('comment', target, state.settings.userName, { to: text })
+                )
+              : state.activityLog,
+          };
+        }),
 
       deleteComment: (taskId, commentId) =>
         set((state) => ({
@@ -318,13 +463,24 @@ export const useStore = create<AppState>()(
         })),
 
       addAttachment: (taskId, attachment) =>
-        set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === taskId
-              ? { ...t, attachments: [...(t.attachments ?? []), attachment] }
-              : t
-          ),
-        })),
+        set((state) => {
+          const target = state.tasks.find((t) => t.id === taskId);
+          return {
+            tasks: state.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, attachments: [...(t.attachments ?? []), attachment] }
+                : t
+            ),
+            activityLog: target
+              ? pushLog(
+                  state.activityLog,
+                  taskEntry('attachment', target, state.settings.userName, {
+                    to: attachment.name,
+                  })
+                )
+              : state.activityLog,
+          };
+        }),
 
       deleteAttachment: (taskId, attachmentId) =>
         set((state) => ({
@@ -373,7 +529,7 @@ export const useStore = create<AppState>()(
           projects: [...state.projects, project],
           activityLog: pushLog(
             state.activityLog,
-            makeEntry('project-created', project.name, state.settings.userName)
+            plainEntry('project-created', project.name, state.settings.userName)
           ),
         }));
         return project;
@@ -407,11 +563,14 @@ export const useStore = create<AppState>()(
           icon: template.icon,
         };
         const now = new Date();
+        const startNumber = get().nextTaskNumber;
         const tasks: Task[] = template.tasks.map((t, i) => ({
           id: uid('task'),
+          number: startNumber + i,
           title: t.title,
           description: '',
           projectId: project.id,
+          parentId: null,
           dueDate: null,
           priority: t.priority ?? 'medium',
           categoryIds: [],
@@ -426,9 +585,10 @@ export const useStore = create<AppState>()(
         set((state) => ({
           projects: [...state.projects, project],
           tasks: [...state.tasks, ...tasks],
+          nextTaskNumber: state.nextTaskNumber + tasks.length,
           activityLog: pushLog(
             state.activityLog,
-            makeEntry('project-created', project.name, state.settings.userName)
+            plainEntry('project-created', project.name, state.settings.userName)
           ),
         }));
         return project;
@@ -589,7 +749,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'nozbe-clone-state',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage, { reviver: dateReviver }),
       partialize: (state) => ({
         tasks: state.tasks,
@@ -599,7 +759,34 @@ export const useStore = create<AppState>()(
         activityLog: state.activityLog,
         members: state.members,
         settings: state.settings,
+        nextTaskNumber: state.nextTaskNumber,
       }),
+      // v1 → v2: backfill task numbers + parentId + nextTaskNumber.
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as {
+          tasks?: Task[];
+          nextTaskNumber?: number;
+          activityLog?: unknown[];
+          [k: string]: unknown;
+        };
+        if (version < 2 && Array.isArray(state.tasks)) {
+          const ordered = [...state.tasks].sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+          const numberById = new Map<string, number>();
+          ordered.forEach((t, i) => numberById.set(t.id, i + 1));
+          state.tasks = state.tasks.map((t) => ({
+            ...t,
+            number: t.number ?? numberById.get(t.id) ?? 0,
+            parentId: t.parentId ?? null,
+          }));
+          state.nextTaskNumber = state.tasks.length + 1;
+          // The activity-log entry shape changed incompatibly in v2; start fresh.
+          state.activityLog = [];
+        }
+        return state;
+      },
     }
   )
 );

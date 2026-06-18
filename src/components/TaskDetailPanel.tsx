@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import type { ClipboardEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
+import { taskShareUrl } from '../config';
 import './TaskDetailPanel.css';
 
 interface TaskDetailPanelProps {
@@ -29,19 +31,63 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const deleteComment = useStore((s) => s.deleteComment);
   const addAttachment = useStore((s) => s.addAttachment);
   const deleteAttachment = useStore((s) => s.deleteAttachment);
+  const tasks = useStore((s) => s.tasks);
+  const addSubtask = useStore((s) => s.addSubtask);
+  const toggleTask = useStore((s) => s.toggleTask);
 
   const [commentText, setCommentText] = useState('');
+  const [subtaskTitle, setSubtaskTitle] = useState('');
   const [attachError, setAttachError] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
   const comments = task.comments ?? [];
   const attachments = task.attachments ?? [];
+  const subtasks = tasks.filter((t) => t.parentId === task.id);
+  const doneSubtasks = subtasks.filter((s) => s.completed).length;
+  const parent = task.parentId ? tasks.find((t) => t.id === task.parentId) : null;
 
-  const MAX_ATTACH_BYTES = 400 * 1024; // 400 KB cap (localStorage-friendly)
+  const MAX_ATTACH_BYTES = 1.5 * 1024 * 1024; // 1.5 MB (localStorage gesamt ~5 MB)
+
+  const submitSubtask = () => {
+    const t = subtaskTitle.trim();
+    if (t) {
+      addSubtask(task.id, t);
+      setSubtaskTitle('');
+    }
+  };
+
+  const copyLink = async () => {
+    const url = taskShareUrl(task.number);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      /* clipboard may be blocked; still update the hash below */
+    }
+    window.location.hash = `#/t/${task.number}`;
+    setLinkCopied(true);
+    window.setTimeout(() => setLinkCopied(false), 1500);
+  };
+
+  const handlePaste = (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          handleFile(file);
+          e.preventDefault();
+        }
+      }
+    }
+  };
 
   const handleFile = (file: File | undefined) => {
     setAttachError('');
     if (!file) return;
     if (file.size > MAX_ATTACH_BYTES) {
-      setAttachError(`Datei zu groß (max. 400 KB). „${file.name}" ist ${formatSize(file.size)}.`);
+      setAttachError(
+        `Datei zu groß (max. 1.5 MB). „${file.name}" ist ${formatSize(file.size)}.`
+      );
       return;
     }
     const reader = new FileReader();
@@ -75,10 +121,20 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   };
 
   return (
-    <div className="task-detail-panel">
+    <div className="task-detail-panel" onPaste={handlePaste}>
       <div className="panel-header">
-        <h3>Aufgabe</h3>
+        <h3>
+          <span className="detail-number">#{task.number}</span>{' '}
+          {parent ? 'Unteraufgabe' : 'Aufgabe'}
+        </h3>
         <div className="panel-header-actions">
+          <button
+            className="detail-link"
+            onClick={copyLink}
+            title="Link zu dieser Aufgabe kopieren"
+          >
+            {linkCopied ? '✓ kopiert' : '🔗'}
+          </button>
           <button
             className={`detail-star ${task.starred ? 'starred' : ''}`}
             onClick={() => toggleStar(task.id)}
@@ -93,6 +149,15 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
       </div>
 
       <div className="panel-content">
+        {parent && (
+          <button
+            className="detail-parent-link"
+            onClick={() => selectTask(parent.id)}
+            title="Zur Hauptaufgabe"
+          >
+            ↑ Hauptaufgabe: #{parent.number} {parent.title}
+          </button>
+        )}
         <div className="detail-field">
           <label className="detail-label">Titel</label>
           <input
@@ -249,6 +314,49 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           </div>
         )}
 
+        {!parent && (
+          <div className="detail-field">
+            <label className="detail-label">
+              Unteraufgaben{' '}
+              {subtasks.length > 0 && `(${doneSubtasks}/${subtasks.length})`}
+            </label>
+            <div className="subtask-list">
+              {subtasks.map((s) => (
+                <div key={s.id} className="subtask-item">
+                  <input
+                    type="checkbox"
+                    className="subtask-check"
+                    checked={s.completed}
+                    onChange={() => toggleTask(s.id)}
+                  />
+                  <span className="subtask-num">#{s.number}</span>
+                  <span
+                    className={`subtask-title ${s.completed ? 'done' : ''}`}
+                    onClick={() => selectTask(s.id)}
+                  >
+                    {s.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="subtask-add">
+              <input
+                type="text"
+                className="detail-input"
+                placeholder="Unteraufgabe hinzufügen…"
+                value={subtaskTitle}
+                onChange={(e) => setSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSubtask();
+                }}
+              />
+              <button className="btn btn-primary subtask-send" onClick={submitSubtask}>
+                +
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="detail-field">
           <label className="detail-label">
             Anhänge {attachments.length > 0 && `(${attachments.length})`}
@@ -286,6 +394,10 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               }}
             />
           </label>
+          <p className="attach-hint">
+            Tipp: Screenshot/Datei direkt hier einfügen (Strg/Cmd+V). Max. 1.5 MB pro
+            Datei (lokaler Speicher ~5 MB gesamt).
+          </p>
           {attachError && <p className="attach-error">{attachError}</p>}
         </div>
 

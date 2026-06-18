@@ -14,7 +14,8 @@ const navItems: { id: ViewType; icon: string; label: string }[] = [
 
 const bottomItems: { id: ViewType; icon: string; label: string }[] = [
   { id: 'search', icon: '🔍', label: 'Suchen' },
-  { id: 'activity', icon: '✅', label: 'Erledigt' },
+  { id: 'completed', icon: '✅', label: 'Erledigt' },
+  { id: 'activity', icon: '📜', label: 'Aktivität' },
   { id: 'reports', icon: '📊', label: 'Berichte' },
   { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
 ];

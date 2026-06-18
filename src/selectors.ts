@@ -37,6 +37,12 @@ const matchesFilters = (task: Task, ui: UIState) => {
   if (f.categoryId && !task.categoryIds.includes(f.categoryId)) return false;
   if (f.priority && task.priority !== f.priority) return false;
   if (f.completed !== null && task.completed !== f.completed) return false;
+  if (f.dueFrom || f.dueTo) {
+    if (!task.dueDate) return false;
+    const k = dateKey(task.dueDate);
+    if (f.dueFrom && k < f.dueFrom) return false;
+    if (f.dueTo && k > f.dueTo) return false;
+  }
   return true;
 };
 
@@ -69,12 +75,16 @@ export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
 
 // Tasks visible in the current main view, after view scoping + filters + search + sort.
 export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
-  let result = tasks;
+  // Subtasks are managed under their parent, never in the flat lists.
+  let result = tasks.filter((t) => !t.parentId);
 
   switch (ui.currentView) {
     case 'inbox':
       // Inbox = tasks not assigned to any project.
       result = result.filter((t) => !t.projectId);
+      break;
+    case 'completed':
+      result = result.filter((t) => t.completed);
       break;
     case 'priority':
       result = result.filter((t) => !t.completed && (t.starred || t.priority === 'high'));
@@ -115,7 +125,7 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
 // Top non-completed tasks for the Priority list (starred & high priority first).
 export const selectPriorityTasks = (tasks: Task[], limit = 5): Task[] => {
   return [...tasks]
-    .filter((t) => !t.completed)
+    .filter((t) => !t.completed && !t.parentId)
     .sort((a, b) => {
       if (a.starred !== b.starred) return a.starred ? -1 : 1;
       if (a.priority !== b.priority)

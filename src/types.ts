@@ -27,6 +27,7 @@ export type ViewType =
   | 'custom'
   | 'templates'
   | 'activity'
+  | 'completed'
   | 'reports'
   | 'settings';
 
@@ -49,13 +50,16 @@ export interface Attachment {
   type: string;
   size: number;
   dataUrl: string;
+  url?: string; // server-hosted URL (used after backend migration; local uses dataUrl)
 }
 
 export interface Task {
   id: string;
+  number: number; // human-friendly sequential id (#N), stable, used in share URLs
   title: string;
   description: string;
   projectId: string | null;
+  parentId?: string | null; // set for subtasks; root tasks are null/undefined
   dueDate: Date | null;
   priority: Priority;
   categoryIds: string[];
@@ -84,19 +88,28 @@ export interface Category {
   color: string;
 }
 
-export type ActivityAction =
+export type ActivityKind =
   | 'created'
+  | 'updated'
   | 'completed'
   | 'reopened'
   | 'deleted'
+  | 'comment'
+  | 'attachment'
+  | 'subtask'
   | 'project-created';
 
 export interface ActivityEntry {
   id: string;
   at: Date;
-  action: ActivityAction;
-  subject: string;
   actor: string;
+  kind: ActivityKind;
+  taskId?: string; // present for task-related entries (enables grouping + open)
+  taskNumber?: number;
+  taskTitle: string; // task title or project name
+  field?: string; // for 'updated': which field changed
+  from?: string; // human-readable previous value
+  to?: string; // human-readable new value
 }
 
 export interface Filters {
@@ -104,6 +117,8 @@ export interface Filters {
   categoryId: string | null;
   priority: Priority | null;
   completed: boolean | null; // null = both, false = open, true = done
+  dueFrom: string | null; // YYYY-MM-DD inclusive lower bound on dueDate
+  dueTo: string | null; // YYYY-MM-DD inclusive upper bound on dueDate
 }
 
 export interface SavedView {

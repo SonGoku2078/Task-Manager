@@ -55,9 +55,11 @@ const generateTasks = (): Task[] => {
 
     return {
       id: `task-seed-${idx}`,
+      number: idx + 1,
       title,
       description: '',
       projectId: defaultProjects[Math.floor(Math.random() * defaultProjects.length)].id,
+      parentId: null,
       dueDate,
       priority: priorities[Math.floor(Math.random() * priorities.length)],
       categoryIds,

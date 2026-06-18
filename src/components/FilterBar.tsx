@@ -15,6 +15,7 @@ export default function FilterBar() {
   const sortField = useStore((s) => s.ui.sortField);
   const sortDir = useStore((s) => s.ui.sortDir);
   const projects = useStore((s) => s.projects);
+  const categories = useStore((s) => s.categories);
   const setFilter = useStore((s) => s.setFilter);
   const resetFilters = useStore((s) => s.resetFilters);
   const setSort = useStore((s) => s.setSort);
@@ -25,7 +26,9 @@ export default function FilterBar() {
     filters.projectId !== null ||
     filters.categoryId !== null ||
     filters.priority !== null ||
-    filters.completed !== null;
+    filters.completed !== null ||
+    filters.dueFrom !== null ||
+    filters.dueTo !== null;
 
   return (
     <div className="filter-bar">
@@ -38,6 +41,19 @@ export default function FilterBar() {
         {projects.map((p) => (
           <option key={p.id} value={p.id}>
             {p.icon} {p.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="filter-select"
+        value={filters.categoryId ?? ''}
+        onChange={(e) => setFilter('categoryId', e.target.value || null)}
+      >
+        <option value="">Alle Kategorien</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
           </option>
         ))}
       </select>
@@ -67,6 +83,23 @@ export default function FilterBar() {
         <option value="open">Offen</option>
         <option value="done">Erledigt</option>
       </select>
+
+      <span className="filter-date-label" title="Fälligkeit von – bis">📅</span>
+      <input
+        type="date"
+        className="filter-select filter-date"
+        value={filters.dueFrom ?? ''}
+        onChange={(e) => setFilter('dueFrom', e.target.value || null)}
+        title="Fällig ab"
+      />
+      <span className="filter-date-sep">–</span>
+      <input
+        type="date"
+        className="filter-select filter-date"
+        value={filters.dueTo ?? ''}
+        onChange={(e) => setFilter('dueTo', e.target.value || null)}
+        title="Fällig bis"
+      />
 
       <div className="filter-spacer" />
 

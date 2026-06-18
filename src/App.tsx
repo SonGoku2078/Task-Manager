@@ -13,8 +13,10 @@ import CategoryBar from './components/CategoryBar';
 import FilterBar from './components/FilterBar';
 import BulkActionBar from './components/BulkActionBar';
 import TemplatesGallery from './components/TemplatesGallery';
+import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
 import SettingsView from './components/SettingsView';
+import { parseTaskHash } from './config';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -27,7 +29,8 @@ const VIEW_TITLES: Record<ViewType, string> = {
   search: 'Suche',
   custom: 'Gespeicherte Ansicht',
   templates: 'Vorlagen',
-  activity: 'Erledigt',
+  activity: 'Aktivität',
+  completed: 'Erledigt',
   reports: 'Berichte',
   settings: 'Einstellungen',
 };
@@ -43,6 +46,20 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // Deep-link support: open the task referenced by #/t/<number> in the URL.
+  useEffect(() => {
+    const openFromHash = () => {
+      const n = parseTaskHash(window.location.hash);
+      if (n == null) return;
+      const state = useStore.getState();
+      const task = state.tasks.find((t) => t.number === n);
+      if (task) state.selectTask(task.id);
+    };
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+    return () => window.removeEventListener('hashchange', openFromHash);
+  }, []);
   const addTask = useStore((s) => s.addTask);
   const selectTask = useStore((s) => s.selectTask);
   const updateProject = useStore((s) => s.updateProject);
@@ -250,18 +267,14 @@ function App() {
         {ui.currentView === 'templates' ? (
           <TemplatesGallery />
         ) : ui.currentView === 'activity' ? (
-          <TaskList
-            tasks={[...tasks]
-              .filter((t) => t.completed)
-              .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())}
-            emptyHint="Noch nichts erledigt. Hake Aufgaben ab — sie erscheinen hier und lassen sich wieder öffnen."
-          />
+          <ActivityLog />
         ) : ui.currentView === 'reports' ? (
           <ReportsView />
         ) : ui.currentView === 'settings' ? (
           <SettingsView />
         ) : (
         <>
+        {ui.currentView !== 'completed' && (
         <div className="quick-add">
           <input
             ref={quickAddRef}
@@ -279,6 +292,7 @@ function App() {
             Hinzufügen
           </button>
         </div>
+        )}
 
         {ui.currentView === 'search' && (
           <div className="search-bar">
@@ -305,7 +319,7 @@ function App() {
 
         {ui.currentView === 'categories' && <CategoryBar />}
 
-        {['inbox', 'projects', 'today', 'search', 'categories', 'custom'].includes(
+        {['inbox', 'projects', 'today', 'search', 'categories', 'custom', 'completed'].includes(
           ui.currentView
         ) && <FilterBar />}
 
@@ -329,7 +343,9 @@ function App() {
           emptyHint={
             ui.currentView === 'priority'
               ? 'Keine offenen Aufgaben — markiere welche mit ★ oder setze Priorität Hoch.'
-              : undefined
+              : ui.currentView === 'completed'
+                ? 'Noch nichts erledigt (oder Filter zu eng). Hake Aufgaben ab — sie erscheinen hier.'
+                : undefined
           }
           selectionMode={bulkMode}
           selectedIds={selectedIds}

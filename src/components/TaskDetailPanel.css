@@ -99,6 +99,114 @@
   gap: 8px;
 }
 
+.detail-number {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--hover-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.detail-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-secondary);
+  padding: 0 2px;
+  white-space: nowrap;
+}
+
+.detail-link:hover {
+  color: var(--accent);
+}
+
+.detail-parent-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-light);
+  background: var(--hover-bg);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-parent-link:hover {
+  border-color: var(--accent);
+}
+
+.subtask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtask-check {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.subtask-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.subtask-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtask-title:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.subtask-title.done {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.subtask-add {
+  display: flex;
+  gap: 6px;
+}
+
+.subtask-send {
+  width: 38px;
+}
+
+.attach-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
 .detail-star {
   background: none;
   border: none;
