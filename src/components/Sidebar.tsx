@@ -21,16 +21,36 @@ const bottomItems: { id: ViewType; icon: string; label: string }[] = [
 
 export default function Sidebar() {
   const currentView = useStore((s) => s.ui.currentView);
+  const sidePanel = useStore((s) => s.ui.sidePanel);
   const setView = useStore((s) => s.setView);
+  const setSidePanel = useStore((s) => s.setSidePanel);
   const savedViews = useStore((s) => s.savedViews);
   const applySavedView = useStore((s) => s.applySavedView);
   const deleteSavedView = useStore((s) => s.deleteSavedView);
   const activeSavedViewId = useStore((s) => s.ui.activeSavedViewId);
 
+  const collapsed = sidePanel !== 'none';
+
+  const handleNav = (id: ViewType) => {
+    if (id === 'projects' || id === 'calendar') {
+      // Toggle the contextual panel: open it (collapse sidebar) or close it.
+      if (sidePanel === id) {
+        setSidePanel('none');
+      } else {
+        setView(id);
+        setSidePanel(id);
+      }
+    } else {
+      setSidePanel('none');
+      setView(id);
+    }
+  };
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-brand" title="Nozbe">
-        ✅
+        <span className="sidebar-icon">✅</span>
+        <span className="sidebar-label">Nozbe</span>
       </div>
 
       <div className="sidebar-items">
@@ -38,7 +58,7 @@ export default function Sidebar() {
           <button
             key={item.id}
             className={`sidebar-item ${currentView === item.id ? 'active' : ''}`}
-            onClick={() => setView(item.id)}
+            onClick={() => handleNav(item.id)}
             title={item.label}
           >
             <span className="sidebar-icon">{item.icon}</span>
@@ -57,7 +77,10 @@ export default function Sidebar() {
                 className={`sidebar-item saved-view-item ${
                   activeSavedViewId === v.id ? 'active' : ''
                 }`}
-                onClick={() => applySavedView(v.id)}
+                onClick={() => {
+                  setSidePanel('none');
+                  applySavedView(v.id);
+                }}
                 title={v.name}
               >
                 <span className="sidebar-icon">🔎</span>
@@ -86,7 +109,7 @@ export default function Sidebar() {
           <button
             key={item.id}
             className={`sidebar-item ${currentView === item.id ? 'active' : ''}`}
-            onClick={() => setView(item.id)}
+            onClick={() => handleNav(item.id)}
             title={item.label}
           >
             <span className="sidebar-icon">{item.icon}</span>

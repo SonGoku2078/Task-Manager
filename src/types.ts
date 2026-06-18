@@ -33,6 +33,9 @@ export type ViewType =
 export type SortField = 'manual' | 'priority' | 'dueDate' | 'title' | 'createdAt';
 export type SortDir = 'asc' | 'desc';
 
+// Which contextual secondary panel is open. When not 'none', the sidebar collapses to icons.
+export type SidePanel = 'none' | 'projects' | 'calendar';
+
 export interface Comment {
   id: string;
   text: string;
@@ -122,4 +125,5 @@ export interface UIState {
   sortField: SortField;
   sortDir: SortDir;
   activeSavedViewId: string | null;
+  sidePanel: SidePanel;
 }

@@ -51,6 +51,7 @@ function App() {
   const addCategory = useStore((s) => s.addCategory);
   const categories = useStore((s) => s.categories);
   const setView = useStore((s) => s.setView);
+  const setSidePanel = useStore((s) => s.setSidePanel);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
   const deleteTask = useStore((s) => s.deleteTask);
 
@@ -174,8 +175,8 @@ function App() {
   return (
     <div className="app-container">
       <Sidebar />
-      {ui.currentView === 'projects' && <ProjectsPanel />}
-      {ui.currentView === 'calendar' && <CalendarPanel />}
+      {ui.sidePanel === 'projects' && <ProjectsPanel />}
+      {ui.sidePanel === 'calendar' && <CalendarPanel />}
       <div className="main-content">
         <div className="task-header">
           {currentProject ? (
@@ -229,6 +230,7 @@ function App() {
                     )
                   ) {
                     deleteProject(currentProject.id);
+                    setSidePanel('none');
                     setView('inbox');
                   }
                 }}

@@ -8,6 +8,7 @@ import type {
   Filters,
   SortField,
   ViewType,
+  SidePanel,
   SavedView,
   ActivityEntry,
   ActivityAction,
@@ -91,6 +92,7 @@ const defaultUIState: UIState = {
   sortField: 'manual',
   sortDir: 'asc',
   activeSavedViewId: null,
+  sidePanel: 'none',
 };
 
 const defaultSettings: Settings = {
@@ -150,6 +152,7 @@ interface AppState {
   selectTask: (id: string | null) => void;
   selectProject: (id: string | null) => void;
   setView: (view: ViewType) => void;
+  setSidePanel: (panel: SidePanel) => void;
   setCurrentDate: (date: Date) => void;
   setSearchQuery: (q: string) => void;
   setFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
@@ -473,6 +476,9 @@ export const useStore = create<AppState>()(
             activeSavedViewId: view === 'custom' ? state.ui.activeSavedViewId : null,
           },
         })),
+
+      setSidePanel: (panel) =>
+        set((state) => ({ ui: { ...state.ui, sidePanel: panel } })),
 
       setCurrentDate: (date) =>
         set((state) => ({ ui: { ...state.ui, currentDate: date } })),
