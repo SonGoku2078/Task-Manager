@@ -132,6 +132,12 @@
   gap: 8px;
 }
 
+.nz-file-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
 .settings-textarea {
   min-height: 90px;
   resize: vertical;

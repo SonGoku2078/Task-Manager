@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Nozbe exports may contain real personal data — never commit
+nozbe-export.json
+outputs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

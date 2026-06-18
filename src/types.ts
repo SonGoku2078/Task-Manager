@@ -78,6 +78,7 @@ export interface Task {
   comments?: Comment[];
   assigneeId?: string | null;
   attachments?: Attachment[];
+  nozbeId?: string; // source id when imported from Nozbe (traceability / re-import)
 }
 
 export interface Project {
@@ -86,12 +87,14 @@ export interface Project {
   color: string;
   icon: string;
   label?: string; // optional grouping label (e.g. "Arbeit", "Privat")
+  nozbeId?: string;
 }
 
 export interface Category {
   id: string;
   name: string;
   color: string;
+  nozbeId?: string;
 }
 
 export type ActivityKind =

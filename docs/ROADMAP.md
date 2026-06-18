@@ -16,6 +16,16 @@ umgesetzt sind und welche **einen Server/DB brauchen** (nur vorbereitet/dokument
 | Screenshots/Dateien per Paste anhängen | ✅ | `onPaste` im Detail-Panel; Limit 1.5 MB/Datei + Warnung |
 | URL-Referenz je Aufgabe (`#/t/<nr>`) + „Link kopieren" | ✅ | `src/config.ts` (`taskShareUrl`, `parseTaskHash`), Hash-Routing in `App.tsx` |
 | Erledigte Aufgaben grau / Mehrtages-Kalender / kontextuelles Panel | ✅ | frühere Iterationen |
+| **Nozbe-Import** (echte Aufgaben/Projekte/Kontexte) | ✅ (lokal) | `src/nozbe.ts` (Mapper+Client), `replaceWithNozbe` (store), Einstellungen→Nozbe-Import, `vite.config.ts` Dev-Proxy `/nozbe-api`, `scripts/nozbe-export.ps1` |
+
+### Nozbe-Import — Details
+- **Zwei Wege:** (1) Direkt in der App via Nozbe-API (Vite Dev-Proxy gegen CORS, nur unter
+  `npm run dev`; Token nur transient im Browser-State, nicht persistiert). (2) JSON-Export per
+  `scripts/nozbe-export.ps1` → Datei in der App hochladen (Token bleibt außerhalb der App).
+- **Modus:** Ersetzen — lokale Tasks/Projekte/Kategorien werden gespiegelt; `nozbeId` bleibt erhalten.
+- **Mapping-Verlust (bewusst):** Nozbe-`recur` (0–7) → grobe `none/daily/weekly/monthly`; Nozbe hat
+  keine Priorität (alles `medium`), `next` → `starred`.
+- **Tauschpunkt Server:** `NOZBE_API_BASE` in `src/config.ts` (Dev: `/nozbe-api`; später Backend).
 
 ## 🕓 Vorbereitet, aber erst mit Server/DB voll funktionsfähig
 
@@ -26,6 +36,8 @@ umgesetzt sind und welche **einen Server/DB brauchen** (nur vorbereitet/dokument
 | **Geräteübergreifende Synchronisation** | Kein gemeinsamer Speicher. | Store-Actions sind die einzige Mutations-Schicht → später leicht gegen API-Calls/Optimistic-Sync austauschbar. |
 | **Mehrbenutzer-Rechte real durchsetzen** | Aktuell sind Rollen (`Member`) nur organisatorisch. | Datenmodell (Member/Rolle/Assignee) vorhanden. |
 | **Live-`webcal://`-Kalender-Abo** | Auto-aktualisierender Feed muss serverseitig generiert/gehostet werden. | Lokal gibt es `.ics`-Export (`src/ics.ts`); serverseitig dieselbe Logik als Endpoint. |
+| **Nozbe-Direkt-Import im Production-Build** | Ohne Dev-Proxy blockt CORS; Token gehört nicht in den Browser. | Backend proxyt die Nozbe-API/hält Credentials; `NOZBE_API_BASE` zeigt dann dorthin. JSON-Import funktioniert schon jetzt überall. |
+| **Zwei-Wege-Sync mit Nozbe** | Schreiben zurück (PUT/POST) + Konfliktauflösung + inkrementelles Sync braucht Server-State. | API-Schreib-Endpoints sind dokumentiert (nozbe-connect); Mapper ist umkehrbar aufgebaut. |
 | **Native Mobile App / Touch-Gesten** | Eigener Build-Target bzw. Touch-Hardware. | — (separates Epic) |
 
 ## Migrations-Leitfaden (lokal → Server)

@@ -20,6 +20,7 @@ import type {
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
+import type { MappedImport } from './nozbe';
 
 const DATE_KEYS = new Set([
   'dueDate',
@@ -232,6 +233,13 @@ interface AppState {
   // Bulk operations
   bulkUpdate: (ids: string[], updates: Partial<Task>) => void;
   bulkDelete: (ids: string[]) => void;
+
+  // Import: replace tasks/projects/categories with mapped Nozbe data.
+  replaceWithNozbe: (data: MappedImport) => {
+    projects: number;
+    categories: number;
+    tasks: number;
+  };
 
   // Project CRUD
   addProject: (name: string, color?: string, icon?: string) => Project;
@@ -534,6 +542,35 @@ export const useStore = create<AppState>()(
                 : state.ui,
           };
         }),
+
+      replaceWithNozbe: (data) => {
+        const tasks = data.tasks.map((t, i) => ({ ...t, number: i + 1 }));
+        set((state) => ({
+          tasks,
+          projects: data.projects,
+          categories: data.categories,
+          nextTaskNumber: tasks.length + 1,
+          activityLog: [
+            plainEntry(
+              'created',
+              `Nozbe-Import: ${tasks.length} Aufgaben, ${data.projects.length} Projekte, ${data.categories.length} Kategorien`,
+              state.settings.userName
+            ),
+          ],
+          ui: {
+            ...state.ui,
+            selectedTaskId: null,
+            selectedProjectId: null,
+            sidePanel: 'none',
+            currentView: 'inbox',
+          },
+        }));
+        return {
+          projects: data.projects.length,
+          categories: data.categories.length,
+          tasks: tasks.length,
+        };
+      },
 
       addProject: (name, color, icon) => {
         const project: Project = {

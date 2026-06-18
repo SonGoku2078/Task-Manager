@@ -13,6 +13,12 @@ export const parseTaskHash = (hash: string): number | null => {
   return m ? Number(m[1]) : null;
 };
 
+// Base for Nozbe Classic API calls. In dev this is the Vite proxy path (`/nozbe-api`,
+// see vite.config.ts) which forwards to https://api.nozbe.com:3000 and dodges CORS.
+// After a backend exists, point this at the server endpoint that proxies/holds credentials.
+export const NOZBE_API_BASE = '/nozbe-api';
+export const NOZBE_WEB_URL = 'https://app.nozbe.com';
+
 // Full shareable URL for a task. Local: current page + hash. Server: BASE_URL + hash.
 export const taskShareUrl = (taskNumber: number) => {
   const base =

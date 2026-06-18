@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import type { MemberRole } from '../types';
+import { importFromNozbeApi, mapNozbe, type NozbeExport } from '../nozbe';
 import './SettingsView.css';
 
 const ROLE_LABELS: Record<MemberRole, string> = {
@@ -19,12 +20,71 @@ export default function SettingsView() {
   const deleteMember = useStore((s) => s.deleteMember);
   const addTask = useStore((s) => s.addTask);
   const setView = useStore((s) => s.setView);
+  const replaceWithNozbe = useStore((s) => s.replaceWithNozbe);
 
   const [memberName, setMemberName] = useState('');
   const [emailText, setEmailText] = useState('');
   const [importInfo, setImportInfo] = useState('');
 
+  const [nzToken, setNzToken] = useState('');
+  const [nzClientId, setNzClientId] = useState('');
+  const [nzBusy, setNzBusy] = useState(false);
+  const [nzStatus, setNzStatus] = useState('');
+
   const inboxAddress = 'inbox@nozbe-clone.local';
+
+  const applyImport = (data: ReturnType<typeof mapNozbe>) => {
+    if (
+      !window.confirm(
+        `${data.tasks.length} Aufgaben, ${data.projects.length} Projekte, ${data.categories.length} Kategorien importieren?\n\nACHTUNG: Bestehende lokale Aufgaben/Projekte/Kategorien werden ERSETZT.`
+      )
+    ) {
+      setNzStatus('Abgebrochen.');
+      return;
+    }
+    const r = replaceWithNozbe(data);
+    setNzStatus(
+      `✅ Importiert: ${r.tasks} Aufgaben, ${r.projects} Projekte, ${r.categories} Kategorien.`
+    );
+  };
+
+  const importDirect = async () => {
+    if (!nzToken.trim() || !nzClientId.trim()) {
+      setNzStatus('Bitte Access Token und Client-ID eingeben.');
+      return;
+    }
+    setNzBusy(true);
+    setNzStatus('Lade aus Nozbe…');
+    try {
+      const data = await importFromNozbeApi(nzToken.trim(), nzClientId.trim());
+      applyImport(data);
+    } catch (err) {
+      setNzStatus(
+        `❌ Fehler: ${err instanceof Error ? err.message : String(err)} (Direkt-Import funktioniert nur unter "npm run dev").`
+      );
+    } finally {
+      setNzBusy(false);
+    }
+  };
+
+  const importJsonFile = (file: File | undefined) => {
+    if (!file) return;
+    setNzStatus('Lese Datei…');
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        // Accept {tasks,projects,contexts} or a bare task array.
+        const raw: NozbeExport = Array.isArray(parsed) ? { tasks: parsed } : parsed;
+        applyImport(mapNozbe(raw));
+      } catch (err) {
+        setNzStatus(
+          `❌ Ungültige JSON-Datei: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const importEmail = () => {
     const raw = emailText.trim();
@@ -135,6 +195,60 @@ export default function SettingsView() {
             Einladen
           </button>
         </div>
+      </section>
+
+      <section className="settings-section">
+        <h3 className="settings-heading">Nozbe-Import</h3>
+        <p className="settings-hint">
+          Importiert deine echten Nozbe-Classic-Aufgaben (Projekte, Kontexte → Kategorien,
+          Aufgaben). <strong>Achtung:</strong> ersetzt die bestehenden lokalen Daten. Der Token
+          wird nur für diesen Vorgang verwendet und <strong>nicht gespeichert</strong>.
+        </p>
+
+        <label className="settings-label">Access Token</label>
+        <input
+          className="settings-input"
+          type="password"
+          value={nzToken}
+          onChange={(e) => setNzToken(e.target.value)}
+          placeholder="OAuth access_token"
+          autoComplete="off"
+        />
+        <label className="settings-label" style={{ marginTop: 10 }}>
+          Client-ID
+        </label>
+        <input
+          className="settings-input"
+          value={nzClientId}
+          onChange={(e) => setNzClientId(e.target.value)}
+          placeholder="client_id"
+          autoComplete="off"
+        />
+
+        <div className="email-import-actions" style={{ marginTop: 12 }}>
+          <button className="btn btn-primary" onClick={importDirect} disabled={nzBusy}>
+            {nzBusy ? 'Importiere…' : 'Aus Nozbe importieren'}
+          </button>
+          <label className="btn btn-secondary nz-file-btn">
+            JSON-Datei importieren
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => {
+                importJsonFile(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        </div>
+        <p className="settings-hint">
+          Direkt-Import läuft über einen Dev-Proxy und funktioniert nur unter
+          <code className="settings-code"> npm run dev</code>. Alternativ per
+          <code className="settings-code"> scripts/nozbe-export.ps1</code> exportieren und die
+          JSON-Datei hochladen.
+        </p>
+        {nzStatus && <p className="settings-hint">{nzStatus}</p>}
       </section>
 
       <section className="settings-section">
