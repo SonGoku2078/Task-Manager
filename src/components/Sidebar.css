@@ -15,7 +15,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px 14px;
+  height: 40px;
+  padding: 0 12px;
+  margin-bottom: 8px;
   font-size: 18px;
   font-weight: 700;
   color: #fff;
@@ -114,7 +116,7 @@
 
 .sidebar.collapsed .sidebar-brand {
   justify-content: center;
-  padding: 6px 0 14px;
+  padding: 0;
 }
 
 .sidebar.collapsed .sidebar-items {
@@ -122,10 +124,9 @@
 }
 
 .sidebar.collapsed .sidebar-item {
+  /* Keep height/margin identical to full mode so icons stay at the same Y position. */
   width: 44px;
-  height: 44px;
   padding: 0;
-  margin: 2px 0;
   justify-content: center;
 }
 
