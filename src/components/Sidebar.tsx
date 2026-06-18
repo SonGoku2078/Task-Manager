@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useStore } from '../store';
 import type { ViewType } from '../types';
 import './Sidebar.css';
@@ -13,60 +12,26 @@ const navItems: { id: ViewType; icon: string; label: string }[] = [
   { id: 'templates', icon: '📋', label: 'Vorlagen' },
 ];
 
+const bottomItems: { id: ViewType; icon: string; label: string }[] = [
+  { id: 'search', icon: '🔍', label: 'Suchen' },
+  { id: 'activity', icon: '✅', label: 'Erledigt' },
+  { id: 'reports', icon: '📊', label: 'Berichte' },
+  { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
+];
+
 export default function Sidebar() {
   const currentView = useStore((s) => s.ui.currentView);
   const setView = useStore((s) => s.setView);
-  const projects = useStore((s) => s.projects);
-  const tasks = useStore((s) => s.tasks);
-  const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
-  const selectProject = useStore((s) => s.selectProject);
-  const addProject = useStore((s) => s.addProject);
   const savedViews = useStore((s) => s.savedViews);
   const applySavedView = useStore((s) => s.applySavedView);
   const deleteSavedView = useStore((s) => s.deleteSavedView);
   const activeSavedViewId = useStore((s) => s.ui.activeSavedViewId);
 
-  const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState('');
-
-  const openCount = (projectId: string) =>
-    tasks.filter((t) => t.projectId === projectId && !t.completed).length;
-
-  // Group projects by their optional label; unlabeled first.
-  const groupedProjects = (() => {
-    const order: (string | undefined)[] = [];
-    const map = new Map<string | undefined, typeof projects>();
-    for (const p of projects) {
-      const key = p.label || undefined;
-      if (!map.has(key)) {
-        map.set(key, []);
-        order.push(key);
-      }
-      map.get(key)!.push(p);
-    }
-    // Unlabeled group first, then labeled alphabetically.
-    order.sort((a, b) => {
-      if (a === undefined) return -1;
-      if (b === undefined) return 1;
-      return a.localeCompare(b);
-    });
-    return order.map((label) => ({ label, items: map.get(label)! }));
-  })();
-
-  const submitProject = () => {
-    const name = newName.trim();
-    if (name) {
-      const project = addProject(name);
-      selectProject(project.id);
-      setView('projects');
-    }
-    setNewName('');
-    setAdding(false);
-  };
-
   return (
     <div className="sidebar">
-      <div className="sidebar-brand">✅ Nozbe</div>
+      <div className="sidebar-brand" title="Nozbe">
+        ✅
+      </div>
 
       <div className="sidebar-items">
         {navItems.map((item) => (
@@ -74,83 +39,29 @@ export default function Sidebar() {
             key={item.id}
             className={`sidebar-item ${currentView === item.id ? 'active' : ''}`}
             onClick={() => setView(item.id)}
+            title={item.label}
           >
             <span className="sidebar-icon">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="sidebar-label">{item.label}</span>
           </button>
         ))}
       </div>
 
-      <div className="sidebar-separator" />
-
-      <div className="sidebar-section-label">
-        Projekte
-        <button className="sidebar-add" onClick={() => setAdding(true)} title="Projekt hinzufügen">
-          +
-        </button>
-      </div>
-      {adding && (
-        <div className="sidebar-add-row">
-          <input
-            autoFocus
-            className="sidebar-add-input"
-            placeholder="Projektname…"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submitProject();
-              if (e.key === 'Escape') {
-                setAdding(false);
-                setNewName('');
-              }
-            }}
-            onBlur={submitProject}
-          />
-        </div>
-      )}
-      {groupedProjects.map(({ label, items }) => (
-        <div key={label ?? '__none'}>
-          {label && <div className="sidebar-group-label">{label}</div>}
-          <div className="sidebar-items">
-            {items.map((p) => (
-              <button
-                key={p.id}
-                className={`sidebar-item project-item ${
-                  currentView === 'projects' && selectedProjectId === p.id
-                    ? 'active'
-                    : ''
-                }`}
-                onClick={() => {
-                  selectProject(p.id);
-                  setView('projects');
-                }}
-              >
-                <span className="sidebar-icon" style={{ color: p.color }}>
-                  {p.icon}
-                </span>
-                <span className="project-name">{p.name}</span>
-                <span className="project-count">{openCount(p.id)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-
       {savedViews.length > 0 && (
         <>
           <div className="sidebar-separator" />
-          <div className="sidebar-section-label">Ansichten</div>
           <div className="sidebar-items">
             {savedViews.map((v) => (
               <div
                 key={v.id}
-                className={`sidebar-item project-item ${
+                className={`sidebar-item saved-view-item ${
                   activeSavedViewId === v.id ? 'active' : ''
                 }`}
                 onClick={() => applySavedView(v.id)}
+                title={v.name}
               >
                 <span className="sidebar-icon">🔎</span>
-                <span className="project-name">{v.name}</span>
+                <span className="sidebar-label">{v.name}</span>
                 <button
                   className="saved-view-del"
                   title="Ansicht löschen"
@@ -167,37 +78,21 @@ export default function Sidebar() {
         </>
       )}
 
+      <div className="sidebar-spacer" />
       <div className="sidebar-separator" />
 
       <div className="sidebar-items">
-        <button
-          className={`sidebar-item ${currentView === 'search' ? 'active' : ''}`}
-          onClick={() => setView('search')}
-        >
-          <span className="sidebar-icon">🔍</span>
-          <span>Suchen</span>
-        </button>
-        <button
-          className={`sidebar-item ${currentView === 'activity' ? 'active' : ''}`}
-          onClick={() => setView('activity')}
-        >
-          <span className="sidebar-icon">📜</span>
-          <span>Aktivität</span>
-        </button>
-        <button
-          className={`sidebar-item ${currentView === 'reports' ? 'active' : ''}`}
-          onClick={() => setView('reports')}
-        >
-          <span className="sidebar-icon">📊</span>
-          <span>Berichte</span>
-        </button>
-        <button
-          className={`sidebar-item ${currentView === 'settings' ? 'active' : ''}`}
-          onClick={() => setView('settings')}
-        >
-          <span className="sidebar-icon">⚙️</span>
-          <span>Einstellungen</span>
-        </button>
+        {bottomItems.map((item) => (
+          <button
+            key={item.id}
+            className={`sidebar-item ${currentView === item.id ? 'active' : ''}`}
+            onClick={() => setView(item.id)}
+            title={item.label}
+          >
+            <span className="sidebar-icon">{item.icon}</span>
+            <span className="sidebar-label">{item.label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );

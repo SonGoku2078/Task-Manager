@@ -27,6 +27,19 @@
   background: #e8f5ea;
 }
 
+/* Completed tasks are dimmed to light grey across all lists. */
+.task-item.is-completed {
+  opacity: 0.55;
+}
+
+.task-item.is-completed .task-checkbox {
+  accent-color: #9ca3af;
+}
+
+.task-item.is-completed .priority-dot {
+  background: #c8ccd0;
+}
+
 .priority-dot {
   width: 8px;
   height: 8px;

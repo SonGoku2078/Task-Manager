@@ -1,5 +1,6 @@
 import { useStore } from '../store';
 import { isSameDay, tasksOnDate } from '../selectors';
+import { downloadICS } from '../ics';
 import './CalendarPanel.css';
 
 const monthNames = [
@@ -90,6 +91,20 @@ export default function CalendarPanel() {
             </button>
           );
         })}
+      </div>
+
+      <div className="calendar-export">
+        <button
+          className="ics-export-btn"
+          onClick={() => downloadICS(tasks)}
+          title="Aufgaben mit Fälligkeit als .ics-Datei exportieren"
+        >
+          📥 Als .ics exportieren
+        </button>
+        <p className="ics-hint">
+          In Google/Apple Kalender importierbar. Hinweis: ein automatisch
+          aktualisierendes Abo (webcal://) bräuchte einen Server.
+        </p>
       </div>
     </div>
   );

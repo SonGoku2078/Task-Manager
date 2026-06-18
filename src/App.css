@@ -85,23 +85,9 @@ body {
   min-width: 0;
 }
 
-/* Responsive: collapse auxiliary panels on smaller viewports. */
-@media (max-width: 1080px) {
-  .calendar-panel {
-    display: none;
-  }
-}
-
+/* Responsive: detail panel becomes an overlay on small viewports.
+   The contextual projects/calendar panels stay visible — they are the view itself. */
 @media (max-width: 860px) {
-  .sidebar {
-    width: 64px;
-  }
-  .sidebar-item span:not(.sidebar-icon):not(.project-count),
-  .sidebar-brand,
-  .sidebar-section-label,
-  .project-count {
-    display: none;
-  }
   .task-detail-panel {
     position: fixed;
     top: 0;
@@ -204,6 +190,7 @@ body {
   }
   .sidebar,
   .calendar-panel,
+  .projects-panel,
   .task-detail-panel,
   .quick-add,
   .filter-bar,

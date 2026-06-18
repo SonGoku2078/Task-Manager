@@ -1,0 +1,132 @@
+.projects-panel {
+  width: 240px;
+  background: var(--calendar-bg);
+  border-right: 1px solid var(--border-dark);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.projects-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.projects-panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.projects-add-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #ddd;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.projects-add-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.projects-search,
+.projects-add-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-dark);
+  border-radius: 6px;
+  background: #1f242a;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.projects-search:focus,
+.projects-add-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.projects-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.projects-group-label {
+  padding: 8px 8px 2px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b747b;
+  font-weight: 700;
+}
+
+.projects-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 8px;
+  border: none;
+  background: none;
+  color: #c2c8cd;
+  font-size: 14px;
+  font-family: inherit;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.projects-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.projects-item.active {
+  background: rgba(76, 175, 80, 0.18);
+  color: #7bd88f;
+  font-weight: 600;
+}
+
+.projects-dot {
+  width: 9px;
+  height: 9px;
+  min-width: 9px;
+  border-radius: 50%;
+}
+
+.projects-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projects-item-count {
+  font-size: 11px;
+  color: #888;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.projects-empty {
+  font-size: 13px;
+  color: #888;
+  padding: 8px;
+}

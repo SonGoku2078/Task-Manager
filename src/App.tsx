@@ -6,13 +6,13 @@ import type { ViewType } from './types';
 import './App.css';
 import Sidebar from './components/Sidebar';
 import CalendarPanel from './components/CalendarPanel';
+import ProjectsPanel from './components/ProjectsPanel';
 import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
 import CategoryBar from './components/CategoryBar';
 import FilterBar from './components/FilterBar';
 import BulkActionBar from './components/BulkActionBar';
 import TemplatesGallery from './components/TemplatesGallery';
-import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
 import SettingsView from './components/SettingsView';
 
@@ -27,7 +27,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   search: 'Suche',
   custom: 'Gespeicherte Ansicht',
   templates: 'Vorlagen',
-  activity: 'Aktivität',
+  activity: 'Erledigt',
   reports: 'Berichte',
   settings: 'Einstellungen',
 };
@@ -174,7 +174,8 @@ function App() {
   return (
     <div className="app-container">
       <Sidebar />
-      <CalendarPanel />
+      {ui.currentView === 'projects' && <ProjectsPanel />}
+      {ui.currentView === 'calendar' && <CalendarPanel />}
       <div className="main-content">
         <div className="task-header">
           {currentProject ? (
@@ -245,7 +246,12 @@ function App() {
         {ui.currentView === 'templates' ? (
           <TemplatesGallery />
         ) : ui.currentView === 'activity' ? (
-          <ActivityLog />
+          <TaskList
+            tasks={[...tasks]
+              .filter((t) => t.completed)
+              .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())}
+            emptyHint="Noch nichts erledigt. Hake Aufgaben ab — sie erscheinen hier und lassen sich wieder öffnen."
+          />
         ) : ui.currentView === 'reports' ? (
           <ReportsView />
         ) : ui.currentView === 'settings' ? (

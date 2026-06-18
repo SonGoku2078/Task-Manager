@@ -1,156 +1,98 @@
 .sidebar {
-  width: 220px;
+  width: 60px;
   background: var(--sidebar-bg);
   color: #fff;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
 }
 
 .sidebar-brand {
-  padding: 18px 16px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
+  font-size: 22px;
+  padding: 4px 0 12px;
+  line-height: 1;
 }
 
 .sidebar-items {
   display: flex;
   flex-direction: column;
-}
-
-/* sidebar nav items are <button>; reset native styling */
-.sidebar-item {
-  border: none;
-  background: none;
-  text-align: left;
-  width: 100%;
-  font-family: inherit;
-}
-
-.sidebar-section-label {
-  padding: 8px 16px 4px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #777;
-  font-weight: 600;
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.sidebar-add {
-  background: none;
-  border: none;
-  color: #999;
-  font-size: 16px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 4px;
-  border-radius: 4px;
-}
-
-.sidebar-add:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-add-row {
-  padding: 4px 12px 8px;
-}
-
-.sidebar-add-input {
   width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border-dark);
-  border-radius: 6px;
-  background: #1f1f1f;
-  color: #fff;
-  font-size: 13px;
-  font-family: inherit;
 }
 
-.sidebar-add-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.sidebar-group-label {
-  padding: 8px 16px 2px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #6b747b;
-  font-weight: 700;
-}
-
-.project-item .project-name {
+.sidebar-spacer {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.project-count {
-  font-size: 11px;
-  color: #888;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 1px 7px;
-  min-width: 20px;
-  text-align: center;
-}
-
-.saved-view-del {
+/* Icon-only nav item; label is shown via native title tooltip. */
+.sidebar-item {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  margin: 2px 0;
   border: none;
   background: none;
-  color: #6b747b;
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-  padding: 0 2px;
-}
-
-.saved-view-del:hover {
-  color: #fff;
-}
-
-.sidebar-item {
-  padding: 10px 16px;
-  cursor: pointer;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  transition: background 0.15s, color 0.15s;
+  justify-content: center;
+  cursor: pointer;
   color: #aab2b8;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
   user-select: none;
 }
 
 .sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
 .sidebar-item.active {
-  background: rgba(76, 175, 80, 0.18);
+  background: rgba(76, 175, 80, 0.2);
   color: #7bd88f;
-  font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .sidebar-icon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Hidden in the icon-only rail; kept for tooltips / accessibility. */
+.sidebar-label {
+  display: none;
 }
 
 .sidebar-separator {
+  width: 32px;
   height: 1px;
   background: var(--border-dark);
   margin: 8px 0;
+}
+
+.saved-view-del {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: var(--alert-red);
+  color: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.saved-view-item:hover .saved-view-del {
+  display: flex;
 }
