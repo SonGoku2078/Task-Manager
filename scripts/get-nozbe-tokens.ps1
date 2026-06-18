@@ -14,6 +14,7 @@
 
 param(
     [string]$Email,
+    [string]$Password,                       # optional; sonst sichere Abfrage
     [string]$ClientId,                       # = API-Key
     [string]$ApiBaseUrl = "https://api.nozbe.com:3000"
 )
@@ -24,18 +25,18 @@ Write-Host ""
 
 # --- 1) Credentials abfragen ---
 if (-not $Email)    { $Email    = Read-Host "Nozbe E-Mail (User)" }
-$securePw = Read-Host "Nozbe Passwort" -AsSecureString
+if (-not $Password) {
+    $securePw = Read-Host "Nozbe Passwort" -AsSecureString
+    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePw)
+    $Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+}
 if (-not $ClientId) { $ClientId = Read-Host "API-Key / Client-ID" }
 
-if (-not $Email -or -not $ClientId) {
-    Write-Host "E-Mail und API-Key/Client-ID sind erforderlich." -ForegroundColor Red
+if (-not $Email -or -not $Password -or -not $ClientId) {
+    Write-Host "E-Mail, Passwort und API-Key/Client-ID sind erforderlich." -ForegroundColor Red
     exit 1
 }
-
-# SecureString -> Klartext (nur fuer den Request)
-$bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePw)
-$Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
 
 # --- 2) Login aufrufen ---
 Add-Type -AssemblyName System.Web
