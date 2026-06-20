@@ -1,104 +1,76 @@
-# Nozbe Classic - Tokens beschaffen (interaktiv)
+# Nozbe Classic - OAuth-Tokens ermitteln (bewiesener Flow)
 #
-# Fragt deine Credentials ab (E-Mail, Passwort, API-Key/Client-ID) und zeigt dir den
-# Access Token + die Client-ID, die du in der App eintraegst
-# (Einstellungen -> Nozbe-Verbindung).
+#   1) GET /oauth/secret/data?email=...&password=...  -> client_id + client_secret
+#   2) API-Key (= access_token, aus Nozbe-Settings) + client_id -> Daten abfragen
+#      GET /list?access_token=<API-Key>&client_id=<client_id>&type=task
 #
-# Aufruf:
-#   .\scripts\get-nozbe-tokens.ps1
-#   (oder Werte direkt uebergeben:)
-#   .\scripts\get-nozbe-tokens.ps1 -Email du@example.com -ClientId DEIN_API_KEY
+# Eingaben:  E-Mail + Passwort + API-Schluessel (Nozbe -> Einstellungen -> API-Schluessel)
+# Ergebnis:  Access Token + Client-ID fuer die App
+#            (Einstellungen -> Nozbe-Verbindung -> "Verbinden & speichern")
 #
-# Sicherheit: Das Passwort wird als SecureString eingelesen und nur an Nozbe gesendet.
-#   Ein Access Token = Vollzugriff auf dein Konto - trage ihn bevorzugt direkt in die App ein.
+# Sicherheit: Passwort als SecureString, nur an Nozbe gesendet. Token = Vollzugriff.
 
 param(
     [string]$Email,
-    [string]$Password,                       # optional; sonst sichere Abfrage
-    [string]$ClientId,                       # = API-Key
+    [string]$Password,                                       # optional; sonst sichere Abfrage
+    [string]$ApiKey,                                         # = access_token aus Nozbe-Settings
     [string]$ApiBaseUrl = "https://api.nozbe.com:3000"
 )
 
 Write-Host ""
-Write-Host "=== Nozbe Classic - Token abrufen ===" -ForegroundColor Cyan
+Write-Host "=== Nozbe Classic - Tokens ermitteln ===" -ForegroundColor Cyan
 Write-Host ""
 
-# --- 1) Credentials abfragen ---
-if (-not $Email)    { $Email    = Read-Host "Nozbe E-Mail (User)" }
+# --- Eingaben ---
+if (-not $Email)    { $Email = Read-Host "Nozbe E-Mail" }
 if (-not $Password) {
-    $securePw = Read-Host "Nozbe Passwort" -AsSecureString
-    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePw)
-    $Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    $s = Read-Host "Nozbe Passwort" -AsSecureString
+    $b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
+    $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($b)
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b)
 }
-if (-not $ClientId) { $ClientId = Read-Host "API-Key / Client-ID" }
-
-if (-not $Email -or -not $Password -or -not $ClientId) {
-    Write-Host "E-Mail, Passwort und API-Key/Client-ID sind erforderlich." -ForegroundColor Red
-    exit 1
-}
-
-# --- 2) Login aufrufen ---
-Add-Type -AssemblyName System.Web
-$uri = "$ApiBaseUrl/login?email=$([System.Web.HttpUtility]::UrlEncode($Email))" +
-       "&password=$([System.Web.HttpUtility]::UrlEncode($Password))" +
-       "&client_id=$([System.Web.HttpUtility]::UrlEncode($ClientId))"
-
-Write-Host ""
-Write-Host "Rufe $ApiBaseUrl/login auf ..." -ForegroundColor Yellow
 
 try {
-    $resp = Invoke-WebRequest -Uri $uri -Method Get -UseBasicParsing -TimeoutSec 20
-    $content = $resp.Content.Trim()
+    # --- 1) OAuth: client_id + client_secret aus E-Mail + Passwort ---
+    Write-Host "1) Authentifizierung (oauth/secret/data) ..." -ForegroundColor Yellow
+    $emailEnc = [System.Uri]::EscapeDataString($Email)
+    $pwEnc    = [System.Uri]::EscapeDataString($Password)
+    $oauthUri = "$ApiBaseUrl/oauth/secret/data?email=$emailEnc&password=$pwEnc"
 
-    Write-Host "HTTP $($resp.StatusCode)" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "--- ROHE ANTWORT ---" -ForegroundColor Magenta
-    Write-Host $content
-    Write-Host "--------------------"
+    $oauthResp = Invoke-WebRequest -Uri $oauthUri -Method Get -UseBasicParsing -TimeoutSec 20
+    $oauthData = $oauthResp.Content | ConvertFrom-Json
+    $clientId     = [string]$oauthData.client_id
+    $clientSecret = [string]$oauthData.client_secret
 
-    # Fehlerkennung (API liefert teils HTTP 200 trotz Fehler)
-    if ($content -match '(?i)bad client_id|invalid|error|unauthor|wrong|denied') {
-        Write-Host ""
-        Write-Host "Login fehlgeschlagen. Pruefe E-Mail / Passwort / API-Key." -ForegroundColor Red
+    if (-not $clientId) {
+        Write-Host "Keine client_id erhalten. Antwort:" -ForegroundColor Red
+        Write-Host $oauthResp.Content
         exit 1
     }
+    Write-Host "   OK - client_id ermittelt." -ForegroundColor Green
 
-    # Token aus der Antwort lesen (JSON oder Klartext)
-    $token = $null
-    try {
-        $j = $content | ConvertFrom-Json
-        foreach ($f in @('oauth_token','access_token','key','token')) {
-            if (-not $token -and $j.$f) { $token = [string]$j.$f }
-        }
-    } catch {}
-    if (-not $token -and ($content -match '^[\w.\-]{16,}$')) { $token = $content }
+    # --- 2) API-Key abfragen + Daten testen ---
+    if (-not $ApiKey) { $ApiKey = Read-Host "API-Schluessel (Nozbe -> Einstellungen -> API-Schluessel)" }
 
+    Write-Host "2) Teste Datenzugriff (/list) ..." -ForegroundColor Yellow
+    $testUri = "$ApiBaseUrl/list?access_token=$ApiKey&client_id=$clientId&type=task"
+    $tasks = (Invoke-WebRequest -Uri $testUri -Method Get -UseBasicParsing -TimeoutSec 30).Content | ConvertFrom-Json
+    $count = @($tasks).Count
+
+    # --- Ergebnis ---
     Write-Host ""
-    if ($token) {
-        Write-Host "=== ERFOLG ===" -ForegroundColor Green
-        Write-Host "Access Token : $token" -ForegroundColor Green
-        Write-Host "Client-ID    : $ClientId" -ForegroundColor Green
-        Write-Host ""
-        Write-Host "-> Beide Werte in der App eintragen:" -ForegroundColor Cyan
-        Write-Host "   Einstellungen -> Nozbe-Verbindung -> 'Verbinden & speichern'" -ForegroundColor Cyan
-
-        # Optionaler Schnelltest
-        try {
-            $u = "$ApiBaseUrl/list?access_token=$token&client_id=$ClientId&type=task"
-            $r = Invoke-WebRequest -Uri $u -Method Get -UseBasicParsing -TimeoutSec 20
-            $tasks = $r.Content | ConvertFrom-Json
-            Write-Host ""
-            Write-Host "Test OK - Aufgaben im Konto: $(@($tasks).Count)" -ForegroundColor Green
-        } catch {
-            Write-Host "Hinweis: Token-Test (/list) fehlgeschlagen: $($_.Exception.Message)" -ForegroundColor Yellow
-        }
-    } else {
-        Write-Host "Konnte keinen Token automatisch erkennen - siehe rohe Antwort oben." -ForegroundColor Yellow
-    }
+    Write-Host "=== ERFOLG - $count Aufgaben geladen ===" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "In der App eintragen (Einstellungen -> Nozbe-Verbindung):" -ForegroundColor Cyan
+    Write-Host "  Access Token : $ApiKey"   -ForegroundColor Green
+    Write-Host "  Client-ID    : $clientId" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "(client_secret: $clientSecret)" -ForegroundColor DarkGray
 }
 catch {
-    Write-Host "Fehler beim Login-Request: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Fehler: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Pruefe E-Mail / Passwort / API-Schluessel." -ForegroundColor Yellow
     exit 1
 }
 finally {
