@@ -1,5 +1,9 @@
 .projects-panel {
   width: 240px;
+  min-width: 200px;
+  max-width: 560px;
+  flex-shrink: 0;
+  position: relative;
   background: var(--calendar-bg);
   border-right: 1px solid var(--border-dark);
   padding: 16px 12px;
@@ -8,6 +12,22 @@
   gap: 12px;
   overflow: hidden;
 }
+
+/* Drag handle on the right edge to resize the panel. */
+.projects-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 2;
+}
+.projects-resize:hover {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
 
 .projects-panel-head {
   display: flex;
@@ -99,6 +119,37 @@
   background: rgba(76, 175, 80, 0.18);
   color: #7bd88f;
   font-weight: 600;
+}
+
+/* Non-pinned projects dim when at least one project is marked active. */
+.projects-item.dimmed {
+  opacity: 0.45;
+}
+.projects-item.dimmed:hover {
+  opacity: 1;
+}
+
+.projects-item.dragging {
+  opacity: 0.4;
+}
+.projects-item.drag-over {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+/* Marker shown on active ("pinned") projects in the list. */
+.projects-active-dot {
+  flex-shrink: 0;
+  font-size: 9px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.projects-item-label {
+  font-size: 10px;
+  color: #6b747b;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .projects-dot {

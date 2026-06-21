@@ -87,7 +87,7 @@ export default function ReportsView() {
           const pct = row.total === 0 ? 0 : Math.round((row.done / row.total) * 100);
           return (
             <div className="report-row" key={row.id}>
-              <span className="report-row-name">{row.name}</span>
+              <span className="report-row-name" title={row.name}>{row.name}</span>
               <div className="report-row-bar">
                 <div className="report-row-fill" style={{ width: `${pct}%` }} />
               </div>

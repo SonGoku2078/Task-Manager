@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import { isOverdue } from '../selectors';
@@ -24,6 +25,13 @@ export default function TaskList({
   const selectedTaskId = useStore((s) => s.ui.selectedTaskId);
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
+  const reorderTasks = useStore((s) => s.reorderTasks);
+
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  // Drag & drop is for re-ordering only, not while bulk-selecting.
+  const dragEnabled = !selectionMode;
 
   if (tasks.length === 0) {
     return (
@@ -44,7 +52,27 @@ export default function TaskList({
             key={task.id}
             className={`task-item ${selectedTaskId === task.id ? 'selected' : ''} ${
               task.completed ? 'is-completed' : ''
-            } ${selectionMode && selectedIds?.has(task.id) ? 'bulk-selected' : ''}`}
+            } ${selectionMode && selectedIds?.has(task.id) ? 'bulk-selected' : ''} ${
+              overId === task.id ? 'drag-over' : ''
+            } ${dragId === task.id ? 'dragging' : ''}`}
+            draggable={dragEnabled}
+            onDragStart={() => dragEnabled && setDragId(task.id)}
+            onDragOver={(e) => {
+              if (!dragEnabled || !dragId) return;
+              e.preventDefault();
+              setOverId(task.id);
+            }}
+            onDragLeave={() => setOverId((cur) => (cur === task.id ? null : cur))}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragEnabled && dragId) reorderTasks(dragId, task.id);
+              setDragId(null);
+              setOverId(null);
+            }}
+            onDragEnd={() => {
+              setDragId(null);
+              setOverId(null);
+            }}
             onClick={() =>
               selectionMode ? onToggleSelect?.(task.id) : selectTask(task.id)
             }

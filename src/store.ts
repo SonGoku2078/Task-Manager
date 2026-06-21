@@ -17,6 +17,7 @@ import type {
   Settings,
   Theme,
   Attachment,
+  ProjectSort,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
@@ -234,6 +235,13 @@ interface AppState {
   bulkUpdate: (ids: string[], updates: Partial<Task>) => void;
   bulkDelete: (ids: string[]) => void;
 
+  // Manual ordering (drag & drop)
+  reorderTasks: (draggedId: string, targetId: string) => void;
+  reorderProjects: (draggedId: string, targetId: string) => void;
+
+  // Wipe all local tasks + projects + categories (fresh start / clean re-import).
+  clearAll: () => void;
+
   // Import: replace tasks/projects/categories with mapped Nozbe data.
   replaceWithNozbe: (data: MappedImport) => {
     projects: number;
@@ -245,6 +253,7 @@ interface AppState {
   addProject: (name: string, color?: string, icon?: string) => Project;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+  toggleProjectPinned: (id: string) => void;
 
   createProjectFromTemplate: (template: ProjectTemplate) => Project;
 
@@ -276,6 +285,9 @@ interface AppState {
   deleteMember: (id: string) => void;
   setUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
+  setAddToTop: (v: boolean) => void;
+  setProjectSort: (sort: ProjectSort) => void;
+  setProjectsPanelWidth: (px: number) => void;
 
   // Nozbe connection + live sync
   connectNozbe: (token: string, clientId: string) => void;
@@ -329,7 +341,10 @@ export const useStore = create<AppState>()(
           recurrenceEnd: null,
         };
         set((state) => ({
-          tasks: [...state.tasks, task],
+          // Honour the quick-add direction toggle: prepend or append.
+          tasks: state.settings.addToTop
+            ? [task, ...state.tasks]
+            : [...state.tasks, task],
           nextTaskNumber: state.nextTaskNumber + 1,
           activityLog: pushLog(
             state.activityLog,
@@ -568,6 +583,62 @@ export const useStore = create<AppState>()(
           };
         }),
 
+      // Move dragged task to the position of target (drop-before). Forces manual sort
+      // so the new order is actually shown.
+      reorderTasks: (draggedId, targetId) =>
+        set((state) => {
+          if (draggedId === targetId) return {};
+          const list = [...state.tasks];
+          const from = list.findIndex((t) => t.id === draggedId);
+          const to = list.findIndex((t) => t.id === targetId);
+          if (from === -1 || to === -1) return {};
+          const [moved] = list.splice(from, 1);
+          const insertAt = list.findIndex((t) => t.id === targetId);
+          list.splice(insertAt, 0, moved);
+          return {
+            tasks: list,
+            ui: { ...state.ui, sortField: 'manual' as SortField },
+          };
+        }),
+
+      reorderProjects: (draggedId, targetId) =>
+        set((state) => {
+          if (draggedId === targetId) return {};
+          const list = [...state.projects];
+          const from = list.findIndex((p) => p.id === draggedId);
+          const to = list.findIndex((p) => p.id === targetId);
+          if (from === -1 || to === -1) return {};
+          const [moved] = list.splice(from, 1);
+          const insertAt = list.findIndex((p) => p.id === targetId);
+          list.splice(insertAt, 0, moved);
+          return {
+            projects: list,
+            settings: { ...state.settings, projectSort: 'manual' as ProjectSort },
+          };
+        }),
+
+      clearAll: () =>
+        set((state) => ({
+          tasks: [],
+          projects: [],
+          categories: [],
+          nextTaskNumber: 1,
+          activityLog: [
+            plainEntry(
+              'deleted',
+              'Alle Aufgaben, Projekte und Kategorien gelöscht',
+              state.settings.userName
+            ),
+          ],
+          ui: {
+            ...state.ui,
+            selectedTaskId: null,
+            selectedProjectId: null,
+            sidePanel: 'none',
+            currentView: 'inbox',
+          },
+        })),
+
       replaceWithNozbe: (data) => {
         const tasks = data.tasks.map((t, i) => ({ ...t, number: i + 1 }));
         set((state) => ({
@@ -605,7 +676,8 @@ export const useStore = create<AppState>()(
           icon: icon ?? '📁',
         };
         set((state) => ({
-          projects: [...state.projects, project],
+          // New projects appear at the top of the list.
+          projects: [project, ...state.projects],
           activityLog: pushLog(
             state.activityLog,
             plainEntry('project-created', project.name, state.settings.userName)
@@ -618,6 +690,13 @@ export const useStore = create<AppState>()(
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id ? { ...p, ...updates } : p
+          ),
+        })),
+
+      toggleProjectPinned: (id) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id ? { ...p, pinned: !p.pinned } : p
           ),
         })),
 
@@ -825,6 +904,20 @@ export const useStore = create<AppState>()(
 
       setTheme: (theme) =>
         set((state) => ({ settings: { ...state.settings, theme } })),
+
+      setAddToTop: (v) =>
+        set((state) => ({ settings: { ...state.settings, addToTop: v } })),
+
+      setProjectSort: (sort) =>
+        set((state) => ({ settings: { ...state.settings, projectSort: sort } })),
+
+      setProjectsPanelWidth: (px) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            projectsPanelWidth: Math.max(200, Math.min(560, Math.round(px))),
+          },
+        })),
 
       connectNozbe: (token, clientId) =>
         set((state) => ({

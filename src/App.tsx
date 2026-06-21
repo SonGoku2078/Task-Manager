@@ -64,6 +64,7 @@ function App() {
   const selectTask = useStore((s) => s.selectTask);
   const updateProject = useStore((s) => s.updateProject);
   const deleteProject = useStore((s) => s.deleteProject);
+  const toggleProjectPinned = useStore((s) => s.toggleProjectPinned);
   const addProject = useStore((s) => s.addProject);
   const addCategory = useStore((s) => s.addCategory);
   const categories = useStore((s) => s.categories);
@@ -71,6 +72,8 @@ function App() {
   const setSidePanel = useStore((s) => s.setSidePanel);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
   const deleteTask = useStore((s) => s.deleteTask);
+  const addToTop = useStore((s) => s.settings.addToTop ?? false);
+  const setAddToTop = useStore((s) => s.setAddToTop);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const quickAddRef = useRef<HTMLInputElement>(null);
@@ -197,6 +200,19 @@ function App() {
         <div className="task-header">
           {currentProject ? (
             <div className="project-title-group">
+              <button
+                role="switch"
+                aria-checked={!!currentProject.pinned}
+                className={`project-active-switch ${currentProject.pinned ? 'on' : ''}`}
+                title={
+                  currentProject.pinned
+                    ? 'Projekt ist aktiv — klicken zum Deaktivieren'
+                    : 'Projekt inaktiv — klicken zum Aktivieren'
+                }
+                onClick={() => toggleProjectPinned(currentProject.id)}
+              >
+                <span className="project-active-knob" />
+              </button>
               <input
                 className="project-title-input"
                 value={currentProject.name}
@@ -273,6 +289,17 @@ function App() {
         <>
         {ui.currentView !== 'completed' && (
         <div className="quick-add">
+          <button
+            className="quick-add-dir"
+            title={
+              addToTop
+                ? 'Neue Aufgaben oben einfügen (klicken: nach unten)'
+                : 'Neue Aufgaben unten anhängen (klicken: nach oben)'
+            }
+            onClick={() => setAddToTop(!addToTop)}
+          >
+            {addToTop ? '↥' : '↧'}
+          </button>
           <input
             ref={quickAddRef}
             type="text"

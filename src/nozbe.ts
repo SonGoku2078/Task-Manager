@@ -171,13 +171,23 @@ export const pushNozbeCompleted = (
 export function mapNozbe(raw: NozbeExport): MappedImport {
   const now = new Date();
 
-  const projects: Project[] = (raw.projects ?? []).map((p, i) => ({
-    id: `nzp-${p.id}`,
-    nozbeId: String(p.id),
-    name: p.name?.trim() || 'Unbenanntes Projekt',
-    color: PALETTE[i % PALETTE.length],
-    icon: '📁',
-  }));
+  // Nozbe's own "Inbox" is a pseudo-project; its tasks belong in our dedicated Inbox
+  // view (projectId === null), not in a real project named "Inbox". Drop it from the
+  // project list and treat its tasks as project-less.
+  // (A task keeps a project only if that project survives below; Inbox tasks therefore
+  // fall back to projectId === null automatically.)
+  const isInboxProject = (p: NozbeProject) =>
+    (p.name ?? '').trim().toLowerCase() === 'inbox';
+
+  const projects: Project[] = (raw.projects ?? [])
+    .filter((p) => !isInboxProject(p))
+    .map((p, i) => ({
+      id: `nzp-${p.id}`,
+      nozbeId: String(p.id),
+      name: p.name?.trim() || 'Unbenanntes Projekt',
+      color: PALETTE[i % PALETTE.length],
+      icon: '📁',
+    }));
 
   const categories: Category[] = (raw.contexts ?? []).map((c, i) => ({
     id: `nzc-${c.id}`,

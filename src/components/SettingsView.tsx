@@ -24,6 +24,7 @@ export default function SettingsView() {
   const connectNozbe = useStore((s) => s.connectNozbe);
   const disconnectNozbe = useStore((s) => s.disconnectNozbe);
   const setNozbeSync = useStore((s) => s.setNozbeSync);
+  const clearAll = useStore((s) => s.clearAll);
 
   const [memberName, setMemberName] = useState('');
   const [emailText, setEmailText] = useState('');
@@ -372,6 +373,33 @@ export default function SettingsView() {
           Alternativ per <code className="settings-code">scripts/nozbe-export.ps1</code> exportieren
           und die JSON-Datei hochladen.
         </p>
+        {nzStatus && <p className="settings-hint">{nzStatus}</p>}
+      </section>
+
+      <section className="settings-section">
+        <h3 className="settings-heading">Daten zurücksetzen</h3>
+        <p className="settings-hint">
+          Löscht <strong>alle</strong> lokalen Aufgaben, Projekte und Kategorien — z. B.
+          um vor einem frischen Nozbe-Import sauber zu starten. Die Nozbe-Verbindung
+          bleibt bestehen. <strong>Kann nicht rückgängig gemacht werden.</strong>
+        </p>
+        <div className="email-import-actions">
+          <button
+            className="btn btn-danger"
+            onClick={() => {
+              if (
+                window.confirm(
+                  'Wirklich ALLE Aufgaben, Projekte und Kategorien löschen? Das kann nicht rückgängig gemacht werden.'
+                )
+              ) {
+                clearAll();
+                setNzStatus('🗑️ Alle Aufgaben, Projekte und Kategorien gelöscht.');
+              }
+            }}
+          >
+            Alle Aufgaben & Projekte löschen
+          </button>
+        </div>
         {nzStatus && <p className="settings-hint">{nzStatus}</p>}
       </section>
 

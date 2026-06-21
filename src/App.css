@@ -126,6 +126,37 @@ body {
   flex: 1;
 }
 
+/* Active/inactive toggle for the open project. */
+.project-active-switch {
+  flex-shrink: 0;
+  width: 38px;
+  height: 21px;
+  border-radius: 11px;
+  border: none;
+  padding: 0;
+  position: relative;
+  cursor: pointer;
+  background: #c9ced3;
+  transition: background 0.15s;
+}
+.project-active-switch.on {
+  background: var(--accent);
+}
+.project-active-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+}
+.project-active-switch.on .project-active-knob {
+  transform: translateX(17px);
+}
+
 .project-title-input {
   font-size: 18px;
   font-weight: 600;
@@ -298,6 +329,22 @@ body {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-light);
   background: #fafafa;
+}
+
+.quick-add-dir {
+  width: 38px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--main-bg);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+.quick-add-dir:hover {
+  background: var(--hover-bg);
 }
 
 .quick-add-input {

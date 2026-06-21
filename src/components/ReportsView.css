@@ -47,6 +47,7 @@
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 12px;
+  color: var(--text-primary);
 }
 
 .rate-bar {
@@ -85,8 +86,10 @@
 }
 
 .report-row-name {
-  width: 130px;
+  width: 300px;
+  flex-shrink: 0;
   font-size: 13px;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

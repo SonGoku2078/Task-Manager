@@ -16,10 +16,15 @@ export interface NozbeConnection {
   syncCompleted: boolean; // write completion changes back to Nozbe
 }
 
+export type ProjectSort = 'manual' | 'name' | 'color';
+
 export interface Settings {
   userName: string;
   theme: Theme;
   nozbe?: NozbeConnection; // present when connected to a Nozbe account
+  addToTop?: boolean; // quick-add: insert new tasks at the top of the list
+  projectSort?: ProjectSort; // ordering of the projects panel
+  projectsPanelWidth?: number; // user-resized width of the projects panel (px)
 }
 
 export type ViewType =
@@ -94,6 +99,7 @@ export interface Project {
   color: string;
   icon: string;
   label?: string; // optional grouping label (e.g. "Arbeit", "Privat")
+  pinned?: boolean; // user-marked "active" project: floats to the top, others dim
   nozbeId?: string;
 }
 
