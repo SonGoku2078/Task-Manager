@@ -135,8 +135,8 @@ export default function ProjectsPanel() {
           >
             {p.pinned && <span className="projects-active-dot" title="Aktiv">●</span>}
             <span className="projects-dot" style={{ background: p.color }} />
-            <span className="projects-item-name" title={`${p.icon} ${p.name}`}>
-              {p.icon} {p.name}
+            <span className="projects-item-name" title={p.name}>
+              {p.name}
               {p.label && <span className="projects-item-label">{p.label}</span>}
             </span>
             <span className="projects-item-count">{openCount(p.id)}</span>
