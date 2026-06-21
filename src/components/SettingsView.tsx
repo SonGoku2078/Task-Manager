@@ -45,19 +45,19 @@ export default function SettingsView() {
       setNzStatus('Bitte E-Mail und Passwort eingeben.');
       return;
     }
-    if (!nzClientId.trim()) {
-      setNzStatus('Bitte zuerst deine Client-ID eintragen (Feld oben, aus config.ps1).');
+    if (!nzToken.trim()) {
+      setNzStatus('Bitte deinen API-Schlüssel eingeben (Nozbe → Einstellungen → API-Schlüssel).');
       return;
     }
     setNzLoginBusy(true);
     setNzStatus('Melde bei Nozbe an…');
     try {
-      const auth = await loginNozbe(nzEmail.trim(), nzPassword, nzClientId.trim());
+      const auth = await loginNozbe(nzEmail.trim(), nzPassword, nzToken.trim());
       setNzToken(auth.token);
       setNzClientId(auth.clientId);
       connectNozbe(auth.token, auth.clientId);
       setNzPassword('');
-      setNzStatus('✅ Eingeloggt & verbunden. Token erzeugt und lokal gespeichert.');
+      setNzStatus('✅ Eingeloggt & verbunden. Client-ID automatisch ermittelt, Token lokal gespeichert.');
     } catch (err) {
       setNzStatus(
         `❌ ${err instanceof Error ? err.message : String(err)} (Login funktioniert nur unter "npm run dev").`
@@ -245,17 +245,8 @@ export default function SettingsView() {
           <code className="settings-code"> npm run dev</code>.
         </p>
 
-        <label className="settings-label">Client-ID</label>
-        <input
-          className="settings-input"
-          value={nzClientId}
-          onChange={(e) => setNzClientId(e.target.value)}
-          placeholder="client_id (aus deiner nozbe-connect/config.ps1)"
-          autoComplete="off"
-        />
-
         <div className="nz-login">
-          <h4 className="nz-subhead">Per Login einen frischen Token erzeugen</h4>
+          <h4 className="nz-subhead">Anmelden & verbinden</h4>
           <label className="settings-label">Nozbe E-Mail</label>
           <input
             className="settings-input"
@@ -279,26 +270,38 @@ export default function SettingsView() {
               if (e.key === 'Enter') doLogin();
             }}
           />
+          <label className="settings-label" style={{ marginTop: 10 }}>
+            API-Schlüssel
+          </label>
+          <input
+            className="settings-input"
+            type="password"
+            value={nzToken}
+            onChange={(e) => setNzToken(e.target.value)}
+            placeholder="API-Schlüssel (Nozbe → Einstellungen → API-Schlüssel)"
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') doLogin();
+            }}
+          />
           <div className="email-import-actions" style={{ marginTop: 12 }}>
             <button className="btn btn-primary" onClick={doLogin} disabled={nzLoginBusy}>
-              {nzLoginBusy ? 'Melde an…' : 'Einloggen & Token holen'}
+              {nzLoginBusy ? 'Melde an…' : 'Einloggen & verbinden'}
             </button>
           </div>
           <p className="settings-hint">
-            Nutzt die <strong>Client-ID oben</strong> + dein Login. Das Passwort wird nur an
-            Nozbe gesendet (über den Dev-Proxy) und <strong>nicht gespeichert</strong>. Tipp:
-            Wenn du Token + Client-ID schon in deiner <code className="settings-code">config.ps1</code>
-            hast, kannst du sie auch direkt eintragen — Login ist dann nicht nötig.
+            E-Mail + Passwort ermitteln deine <strong>Client-ID</strong> automatisch; der
+            API-Schlüssel ist dein Access Token. Das Passwort wird nur an Nozbe gesendet (über
+            den Dev-Proxy) und <strong>nicht gespeichert</strong>.
           </p>
         </div>
 
-        <label className="settings-label">Access Token</label>
+        <label className="settings-label">Client-ID (automatisch ermittelt)</label>
         <input
           className="settings-input"
-          type="password"
-          value={nzToken}
-          onChange={(e) => setNzToken(e.target.value)}
-          placeholder="access_token (aus config.ps1 oder per Login oben)"
+          value={nzClientId}
+          onChange={(e) => setNzClientId(e.target.value)}
+          placeholder="wird beim Einloggen automatisch gesetzt"
           autoComplete="off"
         />
 

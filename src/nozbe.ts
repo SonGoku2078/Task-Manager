@@ -81,40 +81,58 @@ export interface NozbeAuth {
   userId?: string;
 }
 
-// Login: email + password + an existing (registered) client_id → fresh access token.
-// Live endpoint is GET /login (the documented /oauth/authorize 404s). A valid client_id
-// is required ("default"/"nozbe" are rejected). The password is only sent to Nozbe (via
-// the dev proxy) and never stored. Response shape varies, so parsing is best-effort.
-export async function loginNozbe(
+// Derive the OAuth client_id (+ client_secret) from email + password. This is the
+// documented & verified endpoint: GET /oauth/secret/data?email=…&password=… → JSON
+// { client_id, client_secret }. The password is only sent to Nozbe (via the dev proxy)
+// and never stored.
+export async function fetchNozbeSecret(
   email: string,
-  password: string,
-  clientId: string
-): Promise<NozbeAuth> {
-  if (!clientId.trim()) {
-    throw new Error('Client-ID erforderlich (aus deiner Nozbe-/config.ps1).');
-  }
-  const url = `${NOZBE_API_BASE}/login?email=${encodeURIComponent(
+  password: string
+): Promise<{ clientId: string; clientSecret: string }> {
+  const url = `${NOZBE_API_BASE}/oauth/secret/data?email=${encodeURIComponent(
     email
-  )}&password=${encodeURIComponent(password)}&client_id=${encodeURIComponent(clientId)}`;
+  )}&password=${encodeURIComponent(password)}`;
   const res = await fetch(url);
   const text = (await res.text()).trim();
 
-  // The API returns HTTP 200 even for "BAD CLIENT_ID" — inspect the body.
-  if (/bad client_id|invalid|error|unauthor|wrong|denied/i.test(text)) {
-    throw new Error(`Login fehlgeschlagen: ${text.slice(0, 120)}`);
-  }
-
-  let token: string;
+  let json: Record<string, unknown>;
   try {
-    const json = JSON.parse(text);
-    token = String(json.oauth_token || json.access_token || json.key || json.token || '');
+    json = JSON.parse(text);
   } catch {
-    // Plain-text token response.
-    token = /^[\w.-]{16,}$/.test(text) ? text : '';
+    throw new Error(`Unerwartete Antwort von Nozbe: ${text.slice(0, 120)}`);
   }
-  if (!token) {
-    throw new Error(`Unerwartete Login-Antwort: ${text.slice(0, 120)}`);
+  // The API returns { error: "Bad login or password" } on wrong credentials.
+  if (json.error) {
+    throw new Error(`Anmeldung fehlgeschlagen: ${String(json.error)}`);
   }
+  const clientId = String(json.client_id ?? '');
+  const clientSecret = String(json.client_secret ?? '');
+  if (!clientId) {
+    throw new Error(`Keine client_id erhalten: ${text.slice(0, 120)}`);
+  }
+  return { clientId, clientSecret };
+}
+
+// Full login (proven flow): email + password derive the client_id, and the API-Key from
+// Nozbe (Einstellungen → API-Schlüssel) IS the access token. We verify the pair against
+// /list before returning, so a bad API-Key fails here rather than silently later.
+export async function loginNozbe(
+  email: string,
+  password: string,
+  apiKey: string
+): Promise<NozbeAuth> {
+  if (!email.trim() || !password) {
+    throw new Error('E-Mail und Passwort erforderlich.');
+  }
+  if (!apiKey.trim()) {
+    throw new Error('API-Schlüssel erforderlich (Nozbe → Einstellungen → API-Schlüssel).');
+  }
+  const token = apiKey.trim();
+  const { clientId } = await fetchNozbeSecret(email.trim(), password);
+
+  // Verify the access_token + client_id pair actually loads data.
+  await fetchNozbeList(token, clientId, 'task');
+
   return { token, clientId };
 }
 
