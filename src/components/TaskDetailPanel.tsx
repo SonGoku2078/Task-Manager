@@ -362,17 +362,23 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             Anhänge {attachments.length > 0 && `(${attachments.length})`}
           </label>
           <div className="attach-list">
-            {attachments.map((a) => (
+            {attachments.map((a) => {
+              const remote = !!a.url && !a.dataUrl;
+              return (
               <div key={a.id} className="attach-item">
                 <a
-                  href={a.dataUrl}
-                  download={a.name}
+                  href={a.url || a.dataUrl}
+                  download={remote ? undefined : a.name}
+                  target={remote ? '_blank' : undefined}
+                  rel={remote ? 'noopener noreferrer' : undefined}
                   className="attach-link"
-                  title={`${a.name} (${formatSize(a.size)})`}
+                  title={remote ? a.name : `${a.name} (${formatSize(a.size)})`}
                 >
-                  📎 {a.name}
+                  {a.type === 'link' ? '🔗' : '📎'} {a.name}
                 </a>
-                <span className="attach-size">{formatSize(a.size)}</span>
+                <span className="attach-size">
+                  {remote ? '↗' : formatSize(a.size)}
+                </span>
                 <button
                   className="attach-del"
                   title="Entfernen"
@@ -381,7 +387,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                   ×
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
           <label className="attach-add-btn">
             + Datei anhängen

@@ -1,4 +1,11 @@
-import type { Task, Project, Category, RecurrenceType } from './types';
+import type {
+  Task,
+  Project,
+  Category,
+  RecurrenceType,
+  Comment,
+  Attachment,
+} from './types';
 import { NOZBE_API_BASE } from './config';
 
 // Raw shapes from the Nozbe Classic REST API (loosely typed — extra fields ignored).
@@ -53,6 +60,98 @@ const mapRecur = (r: number | string | undefined): RecurrenceType => {
   if (n === 3 || n === 4) return 'weekly';
   if (n === 5 || n === 7) return 'monthly';
   return 'none';
+};
+
+// ISO ("2026-06-19T11:47:31+00:00") or "YYYY-MM-DD HH:MM:SS" → Date, fallback now.
+const toDate = (s: unknown, fallback: Date): Date => {
+  if (typeof s === 'string' && s.trim()) {
+    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T'));
+    if (!isNaN(d.getTime())) return d;
+  }
+  return fallback;
+};
+
+// Nozbe ts ("1782074061.984698", unix seconds) → Date, or fallback.
+const tsToDate = (ts: unknown, fallback: Date): Date => {
+  const n = parseFloat(String(ts));
+  return isFinite(n) && n > 0 ? new Date(n * 1000) : fallback;
+};
+
+interface NozbeComment {
+  id?: string;
+  deleted?: boolean;
+  body?: unknown;
+  type?: string;
+  uploadinfo?: { name?: string; url?: string; description?: string };
+  _user_name?: string;
+  _created_at_gmt?: string;
+  _created_at?: string;
+  [k: string]: unknown;
+}
+
+// Split out a Nozbe task's comments into our comments / attachments / subtasks.
+// Nozbe Classic has no real description, sub-tasks or attachment fields — those live
+// inside the comment stream (markdown = note, file/*_widget = attachment, checklist = subtasks).
+const splitComments = (
+  raw: NozbeComment[],
+  created: Date
+): { comments: Comment[]; attachments: Attachment[]; checklist: { title: string; done: boolean }[] } => {
+  const comments: Comment[] = [];
+  const attachments: Attachment[] = [];
+  const checklist: { title: string; done: boolean }[] = [];
+
+  raw.filter((c) => c && !c.deleted).forEach((c, i) => {
+    const at = toDate(c._created_at_gmt || c._created_at, created);
+    const author = c._user_name?.trim() || 'Nozbe';
+    const cid = c.id || `c${i}`;
+    switch (c.type) {
+      case 'file':
+        attachments.push({
+          id: `nza-${cid}`,
+          name: c.uploadinfo?.name || 'Datei',
+          type: '',
+          size: 0,
+          dataUrl: '',
+          url: c.uploadinfo?.url,
+        });
+        break;
+      case 'evernote_widget':
+      case 'onedrive_widget':
+        (Array.isArray(c.body) ? c.body : []).forEach(
+          (w: { name?: string; link?: string }, j: number) =>
+            attachments.push({
+              id: `nza-${cid}-${j}`,
+              name: w.name || 'Link',
+              type: 'link',
+              size: 0,
+              dataUrl: '',
+              url: w.link,
+            })
+        );
+        break;
+      case 'checklist':
+        String(c.body ?? '')
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .forEach((line) => {
+            // "(-) text" = open, "(+) text" / "(x) text" = done.
+            const m = line.match(/^\(([\-+x ])\)\s*(.*)$/i);
+            checklist.push(
+              m
+                ? { title: m[2] || '(leer)', done: /[+x]/i.test(m[1]) }
+                : { title: line, done: false }
+            );
+          });
+        break;
+      default: // markdown / anything textual → a real comment
+        if (typeof c.body === 'string' && c.body.trim()) {
+          comments.push({ id: `nzc-${cid}`, text: c.body.trim(), author, createdAt: at });
+        }
+    }
+  });
+
+  return { comments, attachments, checklist };
 };
 
 // Fetch one resource type from the Nozbe Classic API (via the dev proxy in dev).
@@ -199,7 +298,8 @@ export function mapNozbe(raw: NozbeExport): MappedImport {
   const projectIds = new Set(projects.map((p) => p.id));
   const categoryIds = new Set(categories.map((c) => c.id));
 
-  const tasks: Task[] = (raw.tasks ?? []).map((t) => {
+  // Each Nozbe task becomes one parent task plus zero or more checklist sub-tasks.
+  const tasks: Task[] = (raw.tasks ?? []).flatMap((t) => {
     const conIds = (t.con_list ?? [])
       .map((c) => (typeof c === 'string' ? c : c?.id))
       .filter((id): id is string => !!id)
@@ -211,8 +311,20 @@ export function mapNozbe(raw: NozbeExport): MappedImport {
         ? `nzp-${t.project_id}`
         : null;
 
-    return {
-      id: `nzt-${t.id}`,
+    const createdAt = toDate(
+      (t as Record<string, unknown>)._created_at_org,
+      tsToDate(t.ts, now)
+    );
+    const updatedAt = tsToDate(t.ts, createdAt);
+
+    const { comments, attachments, checklist } = splitComments(
+      (t.comments as NozbeComment[]) ?? [],
+      createdAt
+    );
+
+    const parentId = `nzt-${t.id}`;
+    const parent: Task = {
+      id: parentId,
       nozbeId: String(t.id),
       number: 0,
       title: t.name?.trim() || '(ohne Titel)',
@@ -223,12 +335,35 @@ export function mapNozbe(raw: NozbeExport): MappedImport {
       priority: 'medium',
       categoryIds: conIds,
       completed: !!Number(t.completed),
-      createdAt: now,
-      updatedAt: now,
+      createdAt,
+      updatedAt,
       starred: !!t.next,
       recurrence: mapRecur(t.recur),
       recurrenceEnd: null,
+      comments: comments.length ? comments : undefined,
+      attachments: attachments.length ? attachments : undefined,
     };
+
+    // Checklist items → sub-tasks under the parent.
+    const subtasks: Task[] = checklist.map((c, i) => ({
+      id: `${parentId}-sub-${i}`,
+      number: 0,
+      title: c.title,
+      description: '',
+      projectId,
+      parentId,
+      dueDate: null,
+      priority: 'medium',
+      categoryIds: [],
+      completed: c.done,
+      createdAt,
+      updatedAt,
+      starred: false,
+      recurrence: 'none',
+      recurrenceEnd: null,
+    }));
+
+    return [parent, ...subtasks];
   });
 
   return { projects, categories, tasks };
