@@ -288,6 +288,7 @@ interface AppState {
   setAddToTop: (v: boolean) => void;
   setProjectSort: (sort: ProjectSort) => void;
   setProjectsPanelWidth: (px: number) => void;
+  setDetailPanelWidth: (px: number) => void;
 
   // Nozbe connection + live sync
   connectNozbe: (token: string, clientId: string) => void;
@@ -916,6 +917,14 @@ export const useStore = create<AppState>()(
           settings: {
             ...state.settings,
             projectsPanelWidth: Math.max(200, Math.min(560, Math.round(px))),
+          },
+        })),
+
+      setDetailPanelWidth: (px) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            detailPanelWidth: Math.max(320, Math.min(720, Math.round(px))),
           },
         })),
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ClipboardEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
@@ -8,6 +8,25 @@ import './TaskDetailPanel.css';
 interface TaskDetailPanelProps {
   task: Task;
 }
+
+// Split text on URLs and render the URLs as clickable links.
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+const renderWithLinks = (text: string) =>
+  text.split(URL_RE).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="comment-url"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
 
 const toDateInput = (d: Date | null) =>
   d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
@@ -34,6 +53,29 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const tasks = useStore((s) => s.tasks);
   const addSubtask = useStore((s) => s.addSubtask);
   const toggleTask = useStore((s) => s.toggleTask);
+
+  const storedWidth = useStore((s) => s.settings.detailPanelWidth);
+  const setDetailPanelWidth = useStore((s) => s.setDetailPanelWidth);
+  const [width, setWidth] = useState(storedWidth ?? 420);
+
+  useEffect(() => {
+    if (storedWidth) setWidth(storedWidth);
+  }, [storedWidth]);
+
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const clamp = (px: number) => Math.max(320, Math.min(720, px));
+    const onMove = (ev: MouseEvent) => {
+      setWidth(clamp(window.innerWidth - ev.clientX));
+    };
+    const onUp = (ev: MouseEvent) => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      setDetailPanelWidth(clamp(window.innerWidth - ev.clientX));
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   const [commentText, setCommentText] = useState('');
   const [subtaskTitle, setSubtaskTitle] = useState('');
@@ -121,7 +163,12 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   };
 
   return (
-    <div className="task-detail-panel" onPaste={handlePaste}>
+    <div className="task-detail-panel" onPaste={handlePaste} style={{ width }}>
+      <div
+        className="detail-resize"
+        title="Breite ziehen"
+        onMouseDown={startResize}
+      />
       <div className="panel-header">
         <h3>
           <span className="detail-number">#{task.number}</span>{' '}
@@ -433,7 +480,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                     ×
                   </button>
                 </div>
-                <div className="comment-text">{c.text}</div>
+                <div className="comment-text">{renderWithLinks(c.text)}</div>
               </div>
             ))}
           </div>

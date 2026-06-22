@@ -25,6 +25,7 @@ export interface Settings {
   addToTop?: boolean; // quick-add: insert new tasks at the top of the list
   projectSort?: ProjectSort; // ordering of the projects panel
   projectsPanelWidth?: number; // user-resized width of the projects panel (px)
+  detailPanelWidth?: number; // user-resized width of the task detail panel (px)
 }
 
 export type ViewType =

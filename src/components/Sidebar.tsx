@@ -49,9 +49,8 @@ export default function Sidebar() {
 
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-brand" title="Nozbe">
-        <span className="sidebar-icon">✅</span>
-        <span className="sidebar-label">Nozbe</span>
+      <div className="sidebar-brand" title="SelfManaged">
+        <span className="sidebar-label">SelfManaged</span>
       </div>
 
       <div className="sidebar-items">

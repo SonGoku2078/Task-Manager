@@ -274,7 +274,7 @@ function App() {
         </div>
 
         <div className="print-meta">
-          Nozbe · {headerTitle} · {new Date().toLocaleDateString('de-DE')}
+          SelfManaged · {headerTitle} · {new Date().toLocaleDateString('de-DE')}
         </div>
 
         {ui.currentView === 'templates' ? (
