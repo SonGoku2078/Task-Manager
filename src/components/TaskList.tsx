@@ -115,6 +115,16 @@ export default function TaskList({
                     🔁
                   </span>
                 )}
+                {(task.comments?.length ?? 0) > 0 && (
+                  <span
+                    className="task-comments"
+                    title={`${task.comments!.length} Kommentar${
+                      task.comments!.length === 1 ? '' : 'e'
+                    }`}
+                  >
+                    💬 {task.comments!.length}
+                  </span>
+                )}
                 {taskCats.map((c) => (
                   <span key={c.id} className="task-cat" style={{ background: c.color }}>
                     {c.name}
