@@ -1,0 +1,44 @@
+.clearable-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Opt-in: fill the available width inside a horizontal flex row. */
+.clearable-input.grow {
+  flex: 1 1 auto;
+}
+
+.clearable-input > input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding-right: 30px;
+}
+
+.clearable-x {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 0;
+}
+
+.clearable-x:hover {
+  color: var(--text-primary);
+  background: rgba(128, 128, 128, 0.18);
+}

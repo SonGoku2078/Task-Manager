@@ -158,6 +158,8 @@ body {
 }
 
 .project-title-input {
+  flex: 1;
+  min-width: 0;
   font-size: 18px;
   font-weight: 600;
   border: 1px solid transparent;

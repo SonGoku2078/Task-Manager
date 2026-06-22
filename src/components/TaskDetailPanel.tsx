@@ -3,6 +3,7 @@ import type { ClipboardEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import { taskShareUrl } from '../config';
+import ClearableInput from './ClearableInput';
 import './TaskDetailPanel.css';
 
 interface TaskDetailPanelProps {
@@ -207,11 +208,12 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         )}
         <div className="detail-field">
           <label className="detail-label">Titel</label>
-          <input
+          <ClearableInput
             type="text"
             className="detail-input"
             value={task.title}
             onChange={(e) => updateTask(task.id, { title: e.target.value })}
+            onClear={() => updateTask(task.id, { title: '' })}
           />
         </div>
 
@@ -223,6 +225,151 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             onChange={(e) => updateTask(task.id, { description: e.target.value })}
             placeholder="Notizen hinzufügen..."
           />
+        </div>
+
+        <div className="detail-field">
+          <label className="detail-label">
+            Anhänge {attachments.length > 0 && `(${attachments.length})`}
+          </label>
+          <div className="attach-list">
+            {attachments.map((a) => {
+              const remote = !!a.url && !a.dataUrl;
+              return (
+              <div key={a.id} className="attach-item">
+                <a
+                  href={a.url || a.dataUrl}
+                  download={remote ? undefined : a.name}
+                  target={remote ? '_blank' : undefined}
+                  rel={remote ? 'noopener noreferrer' : undefined}
+                  className="attach-link"
+                  title={remote ? a.name : `${a.name} (${formatSize(a.size)})`}
+                >
+                  {a.type === 'link' ? '🔗' : '📎'} {a.name}
+                </a>
+                <span className="attach-size">
+                  {remote ? '↗' : formatSize(a.size)}
+                </span>
+                <button
+                  className="attach-del"
+                  title="Entfernen"
+                  onClick={() => deleteAttachment(task.id, a.id)}
+                >
+                  ×
+                </button>
+              </div>
+              );
+            })}
+          </div>
+          <label className="attach-add-btn">
+            + Datei anhängen
+            <input
+              type="file"
+              hidden
+              onChange={(e) => {
+                handleFile(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          <p className="attach-hint">
+            Tipp: Screenshot/Datei direkt hier einfügen (Strg/Cmd+V). Max. 1.5 MB pro
+            Datei (lokaler Speicher ~5 MB gesamt).
+          </p>
+          {attachError && <p className="attach-error">{attachError}</p>}
+        </div>
+
+        {!parent && (
+          <div className="detail-field">
+            <label className="detail-label">
+              Unteraufgaben{' '}
+              {subtasks.length > 0 && `(${doneSubtasks}/${subtasks.length})`}
+            </label>
+            <div className="subtask-list">
+              {subtasks.map((s) => (
+                <div key={s.id} className="subtask-item">
+                  <input
+                    type="checkbox"
+                    className="subtask-check"
+                    checked={s.completed}
+                    onChange={() => toggleTask(s.id)}
+                  />
+                  <span className="subtask-num">#{s.number}</span>
+                  <span
+                    className={`subtask-title ${s.completed ? 'done' : ''}`}
+                    onClick={() => selectTask(s.id)}
+                  >
+                    {s.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="subtask-add">
+              <ClearableInput
+                wrapperClassName="grow"
+                type="text"
+                className="detail-input"
+                placeholder="Unteraufgabe hinzufügen…"
+                value={subtaskTitle}
+                onChange={(e) => setSubtaskTitle(e.target.value)}
+                onClear={() => setSubtaskTitle('')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSubtask();
+                }}
+              />
+              <button className="btn btn-primary subtask-send" onClick={submitSubtask}>
+                +
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="detail-field">
+          <label className="detail-label">
+            Kommentare {comments.length > 0 && `(${comments.length})`}
+          </label>
+          <div className="comment-list">
+            {comments.map((c) => (
+              <div key={c.id} className="comment-item">
+                <div className="comment-head">
+                  <span className="comment-author">{c.author}</span>
+                  <span className="comment-date">
+                    {c.createdAt.toLocaleDateString('de-DE', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <button
+                    className="comment-del"
+                    title="Löschen"
+                    onClick={() => deleteComment(task.id, c.id)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="comment-text">{renderWithLinks(c.text)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="comment-add">
+            <ClearableInput
+              wrapperClassName="grow"
+              type="text"
+              className="detail-input"
+              placeholder="Kommentar hinzufügen…"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onClear={() => setCommentText('')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitComment();
+              }}
+            />
+            <button className="btn btn-primary comment-send" onClick={submitComment} title="Kommentar hinzufügen (Enter)">
+              +
+            </button>
+          </div>
         </div>
 
         <div className="detail-row">
@@ -360,147 +507,6 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             </select>
           </div>
         )}
-
-        {!parent && (
-          <div className="detail-field">
-            <label className="detail-label">
-              Unteraufgaben{' '}
-              {subtasks.length > 0 && `(${doneSubtasks}/${subtasks.length})`}
-            </label>
-            <div className="subtask-list">
-              {subtasks.map((s) => (
-                <div key={s.id} className="subtask-item">
-                  <input
-                    type="checkbox"
-                    className="subtask-check"
-                    checked={s.completed}
-                    onChange={() => toggleTask(s.id)}
-                  />
-                  <span className="subtask-num">#{s.number}</span>
-                  <span
-                    className={`subtask-title ${s.completed ? 'done' : ''}`}
-                    onClick={() => selectTask(s.id)}
-                  >
-                    {s.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="subtask-add">
-              <input
-                type="text"
-                className="detail-input"
-                placeholder="Unteraufgabe hinzufügen…"
-                value={subtaskTitle}
-                onChange={(e) => setSubtaskTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') submitSubtask();
-                }}
-              />
-              <button className="btn btn-primary subtask-send" onClick={submitSubtask}>
-                +
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="detail-field">
-          <label className="detail-label">
-            Anhänge {attachments.length > 0 && `(${attachments.length})`}
-          </label>
-          <div className="attach-list">
-            {attachments.map((a) => {
-              const remote = !!a.url && !a.dataUrl;
-              return (
-              <div key={a.id} className="attach-item">
-                <a
-                  href={a.url || a.dataUrl}
-                  download={remote ? undefined : a.name}
-                  target={remote ? '_blank' : undefined}
-                  rel={remote ? 'noopener noreferrer' : undefined}
-                  className="attach-link"
-                  title={remote ? a.name : `${a.name} (${formatSize(a.size)})`}
-                >
-                  {a.type === 'link' ? '🔗' : '📎'} {a.name}
-                </a>
-                <span className="attach-size">
-                  {remote ? '↗' : formatSize(a.size)}
-                </span>
-                <button
-                  className="attach-del"
-                  title="Entfernen"
-                  onClick={() => deleteAttachment(task.id, a.id)}
-                >
-                  ×
-                </button>
-              </div>
-              );
-            })}
-          </div>
-          <label className="attach-add-btn">
-            + Datei anhängen
-            <input
-              type="file"
-              hidden
-              onChange={(e) => {
-                handleFile(e.target.files?.[0]);
-                e.target.value = '';
-              }}
-            />
-          </label>
-          <p className="attach-hint">
-            Tipp: Screenshot/Datei direkt hier einfügen (Strg/Cmd+V). Max. 1.5 MB pro
-            Datei (lokaler Speicher ~5 MB gesamt).
-          </p>
-          {attachError && <p className="attach-error">{attachError}</p>}
-        </div>
-
-        <div className="detail-field">
-          <label className="detail-label">
-            Kommentare {comments.length > 0 && `(${comments.length})`}
-          </label>
-          <div className="comment-list">
-            {comments.map((c) => (
-              <div key={c.id} className="comment-item">
-                <div className="comment-head">
-                  <span className="comment-author">{c.author}</span>
-                  <span className="comment-date">
-                    {c.createdAt.toLocaleDateString('de-DE', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                  <button
-                    className="comment-del"
-                    title="Löschen"
-                    onClick={() => deleteComment(task.id, c.id)}
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="comment-text">{renderWithLinks(c.text)}</div>
-              </div>
-            ))}
-          </div>
-          <div className="comment-add">
-            <input
-              type="text"
-              className="detail-input"
-              placeholder="Kommentar hinzufügen…"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitComment();
-              }}
-            />
-            <button className="btn btn-primary comment-send" onClick={submitComment} title="Kommentar hinzufügen (Enter)">
-              +
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="panel-actions">

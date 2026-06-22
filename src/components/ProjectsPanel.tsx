@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
+import ClearableInput from './ClearableInput';
 import './ProjectsPanel.css';
 
 export default function ProjectsPanel() {
@@ -81,20 +82,22 @@ export default function ProjectsPanel() {
         </button>
       </div>
 
-      <input
+      <ClearableInput
         className="projects-search"
         placeholder="Suchen…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onClear={() => setQuery('')}
       />
 
       {adding && (
-        <input
+        <ClearableInput
           autoFocus
           className="projects-add-input"
           placeholder="Projektname…"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          onClear={() => setNewName('')}
           onKeyDown={(e) => {
             if (e.key === 'Enter') submitProject();
             if (e.key === 'Escape') {

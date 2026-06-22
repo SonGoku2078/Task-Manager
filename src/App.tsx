@@ -16,6 +16,7 @@ import TemplatesGallery from './components/TemplatesGallery';
 import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
 import SettingsView from './components/SettingsView';
+import ClearableInput from './components/ClearableInput';
 import { parseTaskHash } from './config';
 
 const VIEW_TITLES: Record<ViewType, string> = {
@@ -220,17 +221,6 @@ function App() {
                   updateProject(currentProject.id, { name: e.target.value })
                 }
               />
-              <input
-                className="project-label-input"
-                placeholder="+ Label"
-                value={currentProject.label ?? ''}
-                onChange={(e) =>
-                  updateProject(currentProject.id, {
-                    label: e.target.value || undefined,
-                  })
-                }
-                title="Projekt-Label (Gruppierung in der Seitenleiste)"
-              />
             </div>
           ) : (
             <h2>{headerTitle}</h2>
@@ -300,13 +290,15 @@ function App() {
           >
             {addToTop ? '↥' : '↧'}
           </button>
-          <input
+          <ClearableInput
             ref={quickAddRef}
+            wrapperClassName="grow"
             type="text"
             className="quick-add-input"
             placeholder={'+ Aufgabe…  #Projekt @Kategorie  (Taste n)'}
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
+            onClear={() => setNewTaskTitle('')}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAddTask();
               if (e.key === 'Escape') setNewTaskTitle('');

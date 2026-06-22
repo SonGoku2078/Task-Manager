@@ -46,6 +46,63 @@ export interface MappedImport {
 
 const PALETTE = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4', '#43a047', '#8e24aa'];
 
+// Nozbe Classic stores a project/context colour as a fixed colour *name*. Map those
+// names to the hex values Nozbe renders, so imported projects look identical to Nozbe.
+const NOZBE_COLORS: Record<string, string> = {
+  red: '#e8554e',
+  orange: '#f5a623',
+  yellow: '#f8d12f',
+  green: '#7cb342',
+  darkgreen: '#2e7d32',
+  teal: '#26a69a',
+  turquoise: '#26a69a',
+  lightblue: '#4fc3f7',
+  blue: '#2f8fed',
+  darkblue: '#1565c0',
+  purple: '#9c27b0',
+  violet: '#9c27b0',
+  pink: '#e91e63',
+  magenta: '#e91e63',
+  brown: '#8d6e63',
+  gray: '#9e9e9e',
+  grey: '#9e9e9e',
+  black: '#424242',
+};
+
+// Resolve a Nozbe colour value: hex passthrough, known colour name, else fallback.
+const mapColor = (raw: unknown, fallback: string): string => {
+  if (typeof raw === 'string') {
+    const v = raw.trim();
+    if (/^#?[0-9a-f]{6}$/i.test(v)) return v.startsWith('#') ? v : `#${v}`;
+    const named = NOZBE_COLORS[v.toLowerCase()];
+    if (named) return named;
+  }
+  return fallback;
+};
+
+// Nozbe returns its own ordering for projects/contexts. Read whichever numeric order
+// field is present so the initial import mirrors Nozbe's structure (can be re-sorted
+// by the user afterwards). Returns null when no order field exists.
+const orderOf = (o: Record<string, unknown>): number | null => {
+  for (const k of ['ord', 'order', 'seq', 'sequence', 'position', 'pos', 'sort']) {
+    const n = Number(o[k]);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+};
+
+// Stable sort by Nozbe's order field; items without an order keep their API position.
+const byNozbeOrder = <T extends Record<string, unknown>>(items: T[]): T[] =>
+  items
+    .map((item, i) => ({ item, i, ord: orderOf(item) }))
+    .sort((a, b) => {
+      if (a.ord == null && b.ord == null) return a.i - b.i;
+      if (a.ord == null) return 1;
+      if (b.ord == null) return -1;
+      return a.ord - b.ord || a.i - b.i;
+    })
+    .map((x) => x.item);
+
 // "YYYY-MM-DD HH:MM[:SS]" → Date (local), or null.
 const parseNozbeDate = (s: string | null | undefined): Date | null => {
   if (!s || typeof s !== 'string') return null;
@@ -270,6 +327,15 @@ export const pushNozbeCompleted = (
 export function mapNozbe(raw: NozbeExport): MappedImport {
   const now = new Date();
 
+  // Diagnostic: dump the raw fields of the first project & context so we can confirm
+  // which fields Nozbe actually uses for colour and ordering (open DevTools console).
+  if (raw.projects?.length) {
+    console.info('[Nozbe-Import] Beispiel-Projekt (rohe Felder):', raw.projects[0]);
+  }
+  if (raw.contexts?.length) {
+    console.info('[Nozbe-Import] Beispiel-Kategorie (rohe Felder):', raw.contexts[0]);
+  }
+
   // Nozbe's own "Inbox" is a pseudo-project; its tasks belong in our dedicated Inbox
   // view (projectId === null), not in a real project named "Inbox". Drop it from the
   // project list and treat its tasks as project-less.
@@ -278,21 +344,23 @@ export function mapNozbe(raw: NozbeExport): MappedImport {
   const isInboxProject = (p: NozbeProject) =>
     (p.name ?? '').trim().toLowerCase() === 'inbox';
 
-  const projects: Project[] = (raw.projects ?? [])
-    .filter((p) => !isInboxProject(p))
-    .map((p, i) => ({
-      id: `nzp-${p.id}`,
-      nozbeId: String(p.id),
-      name: p.name?.trim() || 'Unbenanntes Projekt',
-      color: PALETTE[i % PALETTE.length],
-      icon: '📁',
-    }));
+  const projects: Project[] = byNozbeOrder(
+    (raw.projects ?? []).filter((p) => !isInboxProject(p)) as Record<string, unknown>[]
+  ).map((p, i) => ({
+    id: `nzp-${p.id}`,
+    nozbeId: String(p.id),
+    name: (p.name as string)?.trim() || 'Unbenanntes Projekt',
+    color: mapColor(p.color, PALETTE[i % PALETTE.length]),
+    icon: '📁',
+  }));
 
-  const categories: Category[] = (raw.contexts ?? []).map((c, i) => ({
+  const categories: Category[] = byNozbeOrder(
+    (raw.contexts ?? []) as Record<string, unknown>[]
+  ).map((c, i) => ({
     id: `nzc-${c.id}`,
     nozbeId: String(c.id),
-    name: c.name?.trim() || 'Kontext',
-    color: PALETTE[i % PALETTE.length],
+    name: (c.name as string)?.trim() || 'Kontext',
+    color: mapColor(c.color, PALETTE[i % PALETTE.length]),
   }));
 
   const projectIds = new Set(projects.map((p) => p.id));
