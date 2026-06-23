@@ -1,10 +1,32 @@
 import type { Task, Project, Category, Priority } from './types';
 
+// Always-active bucket for committed single (one-off) tasks. Dated single-tasks
+// automatically show up in the calendar and Next Week.
+export const SINGLE_TASKS_PROJECT: Project = {
+  id: 'p-single',
+  name: 'Single-Tasks',
+  color: '#607d8b',
+  icon: '🗂️',
+  active: true,
+  kind: 'project',
+};
+
+// Example "Area" (ongoing responsibility) to illustrate the concept.
+export const FINANZEN_AREA: Project = {
+  id: 'a-finanzen',
+  name: 'Finanzen',
+  color: '#00897b',
+  icon: '🔁',
+  active: true,
+  kind: 'area',
+};
+
 export const defaultProjects: Project[] = [
-  { id: 'p-priority', name: 'Priorität', color: '#4caf50', icon: '📌' },
-  { id: 'p-work', name: 'Work', color: '#2196f3', icon: '💼' },
-  { id: 'p-personal', name: 'Personal', color: '#ff9800', icon: '🏠' },
-  { id: 'p-learning', name: 'Learning', color: '#9c27b0', icon: '📚' },
+  SINGLE_TASKS_PROJECT,
+  FINANZEN_AREA,
+  { id: 'p-work', name: 'Work', color: '#2196f3', icon: '💼', active: true, kind: 'project' },
+  { id: 'p-personal', name: 'Personal', color: '#ff9800', icon: '🏠', active: true, kind: 'project' },
+  { id: 'p-learning', name: 'Learning', color: '#9c27b0', icon: '📚', active: false, kind: 'project' },
 ];
 
 export const defaultCategories: Category[] = [

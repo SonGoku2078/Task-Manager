@@ -44,6 +44,7 @@ export interface Settings {
   calendarEndHour?: number; // last hour shown in the week grid (1–24)
   calendarMonthCount?: number; // months stacked in the month panel (1 or 2)
   calendarHourHeight?: number; // px per hour in the week grid (zoom: 24–160)
+  navOrder?: ViewType[]; // user-defined order of the main sidebar menus
 }
 
 export type ViewType =
@@ -54,6 +55,8 @@ export type ViewType =
   | 'calendar'
   | 'today'
   | 'week'
+  | 'someday'
+  | 'nextweek'
   | 'search'
   | 'custom'
   | 'templates'
@@ -72,7 +75,7 @@ export type SortField =
 export type SortDir = 'asc' | 'desc';
 
 // Which contextual secondary panel is open. When not 'none', the sidebar collapses to icons.
-export type SidePanel = 'none' | 'projects' | 'calendar';
+export type SidePanel = 'none' | 'projects' | 'calendar' | 'someday';
 
 export interface Comment {
   id: string;
@@ -117,6 +120,8 @@ export interface Task {
   recurUnit?: RecurUnit;
   recurMonthDay?: RecurMonthDay;
   sectionId?: string | null; // optional grouping inside a project (null = ungrouped)
+  someday?: boolean; // GTD: parked as "someday/maybe" (shown in the Someday view)
+  thisWeek?: boolean; // GTD: committed for the current week (shown in Next Week)
   comments?: Comment[];
   assigneeId?: string | null;
   attachments?: Attachment[];
@@ -130,6 +135,8 @@ export interface Section {
   name: string;
 }
 
+export type ProjectKind = 'project' | 'area';
+
 export interface Project {
   id: string;
   name: string;
@@ -137,7 +144,18 @@ export interface Project {
   icon: string;
   label?: string; // optional grouping label (e.g. "Arbeit", "Privat")
   pinned?: boolean; // user-marked "active" project: floats to the top, others dim
+  active?: boolean; // GTD: active (under Projekte) vs inactive/someday. undefined = active
+  kind?: ProjectKind; // 'area' = ongoing responsibility (e.g. Finanzen); undefined = project
   nozbeId?: string;
+}
+
+// A recurring weekly time block reserved for a project (e.g. Mo–Mi 8–12 Projekt A).
+export interface ProjectBlocker {
+  id: string;
+  projectId: string;
+  weekdays: number[]; // 0 = Monday … 6 = Sunday
+  startMinutes: number; // minutes from midnight
+  durationMin: number;
 }
 
 export interface Category {

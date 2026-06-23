@@ -1,16 +1,20 @@
-import { useStore } from '../store';
+import { useState } from 'react';
+import { useStore, DEFAULT_NAV_ORDER } from '../store';
 import type { ViewType } from '../types';
 import './Sidebar.css';
 
-const navItems: { id: ViewType; icon: string; label: string }[] = [
-  { id: 'priority', icon: '📌', label: 'Priorität' },
-  { id: 'inbox', icon: '📥', label: 'Inbox' },
-  { id: 'today', icon: '⭐', label: 'Heute' },
-  { id: 'projects', icon: '📂', label: 'Projekte' },
-  { id: 'categories', icon: '🏷️', label: 'Kategorien' },
-  { id: 'calendar', icon: '📅', label: 'Kalender' },
-  { id: 'templates', icon: '📋', label: 'Vorlagen' },
-];
+// Icon + label for every reorderable main menu (order comes from settings.navOrder).
+const navMeta: Record<string, { icon: string; label: string }> = {
+  priority: { icon: '📌', label: 'Nächste Aktion' },
+  inbox: { icon: '📥', label: 'Inbox' },
+  today: { icon: '⭐', label: 'Heute' },
+  nextweek: { icon: '🗓️', label: 'Next Week' },
+  someday: { icon: '🌥️', label: 'Someday' },
+  projects: { icon: '📂', label: 'Projekte' },
+  categories: { icon: '🏷️', label: 'Kategorien' },
+  calendar: { icon: '📅', label: 'Kalender' },
+  templates: { icon: '📋', label: 'Vorlagen' },
+};
 
 const bottomItems: { id: ViewType; icon: string; label: string }[] = [
   { id: 'search', icon: '🔍', label: 'Suchen' },
@@ -29,11 +33,20 @@ export default function Sidebar() {
   const applySavedView = useStore((s) => s.applySavedView);
   const deleteSavedView = useStore((s) => s.deleteSavedView);
   const activeSavedViewId = useStore((s) => s.ui.activeSavedViewId);
+  const navOrder = useStore((s) => s.settings.navOrder);
+  const reorderNav = useStore((s) => s.reorderNav);
+
+  const [dragId, setDragId] = useState<ViewType | null>(null);
+  const [overId, setOverId] = useState<ViewType | null>(null);
+
+  // Stored order, but tolerate added/removed menu ids across versions.
+  const order = (navOrder ?? DEFAULT_NAV_ORDER).filter((id) => navMeta[id]);
+  for (const id of DEFAULT_NAV_ORDER) if (!order.includes(id)) order.push(id);
 
   const collapsed = sidePanel !== 'none';
 
   const handleNav = (id: ViewType) => {
-    if (id === 'projects' || id === 'calendar') {
+    if (id === 'projects' || id === 'calendar' || id === 'someday') {
       // Toggle the contextual panel: open it (collapse sidebar) or close it.
       if (sidePanel === id) {
         setSidePanel('none');
@@ -54,17 +67,40 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-items">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={`sidebar-item ${currentView === item.id ? 'active' : ''}`}
-            onClick={() => handleNav(item.id)}
-            title={item.label}
-          >
-            <span className="sidebar-icon">{item.icon}</span>
-            <span className="sidebar-label">{item.label}</span>
-          </button>
-        ))}
+        {order.map((id) => {
+          const item = navMeta[id];
+          return (
+            <button
+              key={id}
+              className={`sidebar-item ${currentView === id ? 'active' : ''} ${
+                overId === id ? 'nav-drop' : ''
+              } ${dragId === id ? 'nav-dragging' : ''}`}
+              onClick={() => handleNav(id)}
+              title={item.label}
+              draggable
+              onDragStart={() => setDragId(id)}
+              onDragOver={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                setOverId(id);
+              }}
+              onDragLeave={() => setOverId((c) => (c === id ? null : c))}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragId) reorderNav(dragId, id);
+                setDragId(null);
+                setOverId(null);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setOverId(null);
+              }}
+            >
+              <span className="sidebar-icon">{item.icon}</span>
+              <span className="sidebar-label">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {savedViews.length > 0 && (

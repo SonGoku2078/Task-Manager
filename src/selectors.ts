@@ -1,4 +1,4 @@
-import type { Task, UIState, Priority } from './types';
+import type { Task, UIState, Priority, Project } from './types';
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
@@ -79,8 +79,29 @@ export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
   });
 };
 
+// Is the task's project active? Tasks without a project (Inbox/Single-Tasks) count
+// as active. Inactive projects = Someday.
+const isActiveProjectTask = (task: Task, projects: Project[]): boolean => {
+  if (!task.projectId) return true;
+  const p = projects.find((x) => x.id === task.projectId);
+  return !p || p.active !== false;
+};
+
+// Next-week window: open tasks due within the next 7 days (or already overdue).
+export const isInNextWeekWindow = (task: Task): boolean => {
+  if (!task.dueDate || task.completed) return false;
+  const today = startOfDay(new Date());
+  const end = new Date(today);
+  end.setDate(end.getDate() + 7);
+  return task.dueDate < end; // includes overdue + the coming 7 days
+};
+
 // Tasks visible in the current main view, after view scoping + filters + search + sort.
-export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
+export const selectVisibleTasks = (
+  tasks: Task[],
+  ui: UIState,
+  projects: Project[] = []
+): Task[] => {
   // Subtasks are managed under their parent and hidden from flat lists —
   // except in search, where they must be findable.
   let result =
@@ -94,11 +115,29 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
     case 'completed':
       result = result.filter((t) => t.completed);
       break;
+    case 'someday':
+      // Someday = parked tasks, or tasks in inactive projects.
+      result = result.filter(
+        (t) => t.someday || !isActiveProjectTask(t, projects)
+      );
+      break;
+    case 'nextweek':
+      // Committed for this week (manual flag) OR dated within the coming week.
+      result = result.filter(
+        (t) => !t.completed && (t.thisWeek || isInNextWeekWindow(t))
+      );
+      break;
     case 'priority':
-      // Nozbe-style: open tasks that are overdue OR starred. Base order:
-      // overdue first, then starred, then by due date.
+      // Next actions: open starred/overdue tasks from active projects/areas
+      // (and Single-Tasks/Inbox); exclude Someday + inactive-project tasks.
       result = result
-        .filter((t) => !t.completed && (t.starred || isOverdue(t)))
+        .filter(
+          (t) =>
+            !t.completed &&
+            !t.someday &&
+            isActiveProjectTask(t, projects) &&
+            (t.starred || isOverdue(t))
+        )
         .sort((a, b) => {
           const ao = isOverdue(a) ? 0 : 1;
           const bo = isOverdue(b) ? 0 : 1;

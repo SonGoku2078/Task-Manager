@@ -58,6 +58,20 @@
   color: #fff;
 }
 
+.projects-add-group {
+  display: flex;
+  gap: 6px;
+}
+
+.projects-group-head {
+  margin: 14px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8a9199;
+}
+
 .projects-search,
 .projects-add-input {
   width: 100%;

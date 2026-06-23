@@ -20,8 +20,15 @@ import type {
   ProjectSort,
   CalendarMode,
   Section,
+  ProjectBlocker,
+  ProjectKind,
 } from './types';
-import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
+import {
+  dummyTasks,
+  defaultProjects,
+  defaultCategories,
+  SINGLE_TASKS_PROJECT,
+} from './dummyData';
 import type { ProjectTemplate } from './templates';
 import { pushNozbeCompleted, type MappedImport } from './nozbe';
 
@@ -250,6 +257,7 @@ interface AppState {
   tasks: Task[];
   projects: Project[];
   sections: Section[];
+  blockers: ProjectBlocker[];
   categories: Category[];
   savedViews: SavedView[];
   activityLog: ActivityEntry[];
@@ -299,7 +307,17 @@ interface AppState {
   };
 
   // Project CRUD
-  addProject: (name: string, color?: string, icon?: string) => Project;
+  addProject: (
+    name: string,
+    color?: string,
+    icon?: string,
+    opts?: { active?: boolean; kind?: ProjectKind }
+  ) => Project;
+  toggleProjectActive: (id: string) => void;
+  reorderNav: (draggedId: string, targetId: string) => void;
+  addBlocker: (blocker: Omit<ProjectBlocker, 'id'>) => void;
+  updateBlocker: (id: string, updates: Partial<ProjectBlocker>) => void;
+  deleteBlocker: (id: string) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   toggleProjectPinned: (id: string) => void;
@@ -362,12 +380,26 @@ const syncCompletion = (state: AppState, task: Task, completed: boolean) => {
 
 const PROJECT_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4'];
 
+// Default order of the main sidebar menus (user can reorder via drag & drop).
+export const DEFAULT_NAV_ORDER: ViewType[] = [
+  'priority',
+  'inbox',
+  'today',
+  'nextweek',
+  'someday',
+  'projects',
+  'categories',
+  'calendar',
+  'templates',
+];
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       tasks: dummyTasks,
       projects: defaultProjects,
       sections: [],
+      blockers: [],
       categories: defaultCategories,
       savedViews: [],
       activityLog: [],
@@ -747,6 +779,7 @@ export const useStore = create<AppState>()(
           tasks: [],
           projects: [],
           sections: [],
+          blockers: [],
           categories: [],
           nextTaskNumber: 1,
           activityLog: [
@@ -769,8 +802,10 @@ export const useStore = create<AppState>()(
         const tasks = data.tasks.map((t, i) => ({ ...t, number: i + 1 }));
         set((state) => ({
           tasks,
-          projects: data.projects,
+          // Keep the Single-Tasks bucket available after a Nozbe import.
+          projects: [...data.projects, SINGLE_TASKS_PROJECT],
           sections: [],
+          blockers: [],
           categories: data.categories,
           nextTaskNumber: tasks.length + 1,
           activityLog: [
@@ -795,12 +830,14 @@ export const useStore = create<AppState>()(
         };
       },
 
-      addProject: (name, color, icon) => {
+      addProject: (name, color, icon, opts) => {
         const project: Project = {
           id: uid('proj'),
           name,
           color: color ?? PROJECT_COLORS[get().projects.length % PROJECT_COLORS.length],
-          icon: icon ?? '📁',
+          icon: icon ?? (opts?.kind === 'area' ? '🔁' : '📁'),
+          active: opts?.active ?? true,
+          kind: opts?.kind ?? 'project',
         };
         set((state) => ({
           // New projects appear at the top of the list.
@@ -826,6 +863,46 @@ export const useStore = create<AppState>()(
             p.id === id ? { ...p, pinned: !p.pinned } : p
           ),
         })),
+
+      // Active (under Projekte) ↔ inactive/someday. Areas stay always active.
+      toggleProjectActive: (id) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id && p.kind !== 'area'
+              ? { ...p, active: p.active === false ? true : false }
+              : p
+          ),
+        })),
+
+      addBlocker: (blocker) =>
+        set((state) => ({
+          blockers: [...state.blockers, { ...blocker, id: uid('blk') }],
+        })),
+
+      updateBlocker: (id, updates) =>
+        set((state) => ({
+          blockers: state.blockers.map((b) =>
+            b.id === id ? { ...b, ...updates } : b
+          ),
+        })),
+
+      deleteBlocker: (id) =>
+        set((state) => ({
+          blockers: state.blockers.filter((b) => b.id !== id),
+        })),
+
+      reorderNav: (draggedId, targetId) =>
+        set((state) => {
+          if (draggedId === targetId) return {};
+          const order = [...(state.settings.navOrder ?? DEFAULT_NAV_ORDER)];
+          const from = order.indexOf(draggedId as ViewType);
+          if (from === -1) return {};
+          const [moved] = order.splice(from, 1);
+          const insertAt = order.indexOf(targetId as ViewType);
+          if (insertAt === -1) return {};
+          order.splice(insertAt, 0, moved);
+          return { settings: { ...state.settings, navOrder: order } };
+        }),
 
       deleteProject: (id) =>
         set((state) => ({
@@ -1147,6 +1224,7 @@ export const useStore = create<AppState>()(
         tasks: state.tasks,
         projects: state.projects,
         sections: state.sections,
+        blockers: state.blockers,
         categories: state.categories,
         savedViews: state.savedViews,
         activityLog: state.activityLog,
@@ -1177,6 +1255,12 @@ export const useStore = create<AppState>()(
           state.nextTaskNumber = state.tasks.length + 1;
           // The activity-log entry shape changed incompatibly in v2; start fresh.
           state.activityLog = [];
+        }
+        // Always-on: ensure the Single-Tasks bucket and blockers array exist.
+        if (!Array.isArray(state.blockers)) state.blockers = [];
+        const projects = (state.projects as Project[]) ?? [];
+        if (Array.isArray(state.projects) && !projects.some((p) => p.id === 'p-single')) {
+          state.projects = [SINGLE_TASKS_PROJECT, ...projects];
         }
         return state;
       },

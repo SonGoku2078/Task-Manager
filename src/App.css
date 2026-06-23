@@ -199,6 +199,23 @@ body {
   font-weight: 600;
 }
 
+.project-pin-btn {
+  flex-shrink: 0;
+  border: 1px solid var(--border-light);
+  background: var(--main-bg);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 3px 7px;
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.project-pin-btn.on {
+  filter: none;
+  opacity: 1;
+  border-color: var(--accent);
+}
+
 .project-title-input {
   flex: 1;
   min-width: 0;

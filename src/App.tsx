@@ -22,12 +22,14 @@ import { parseTaskHash } from './config';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
-  priority: 'Priorität',
+  priority: 'Nächste Aktion',
   projects: 'Projekt',
   categories: 'Kategorien',
   calendar: 'Kalender',
   today: 'Heute',
   week: 'Diese Woche',
+  someday: 'Someday',
+  nextweek: 'Next Week',
   search: 'Suche',
   custom: 'Gespeicherte Ansicht',
   templates: 'Vorlagen',
@@ -67,6 +69,7 @@ function App() {
   const updateProject = useStore((s) => s.updateProject);
   const deleteProject = useStore((s) => s.deleteProject);
   const toggleProjectPinned = useStore((s) => s.toggleProjectPinned);
+  const toggleProjectActive = useStore((s) => s.toggleProjectActive);
   const addProject = useStore((s) => s.addProject);
   const addCategory = useStore((s) => s.addCategory);
   const categories = useStore((s) => s.categories);
@@ -134,7 +137,7 @@ function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [selectTask, setView, deleteTask]);
 
-  const visibleTasks = selectVisibleTasks(tasks, ui);
+  const visibleTasks = selectVisibleTasks(tasks, ui, projects);
   const selectedTask = ui.selectedTaskId
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
@@ -195,6 +198,9 @@ function App() {
       projectId,
       categoryIds,
       dueDate: ui.currentView === 'calendar' ? new Date(ui.currentDate) : null,
+      // GTD flags from the active view.
+      someday: ui.currentView === 'someday',
+      thisWeek: ui.currentView === 'nextweek',
     });
     setNewTaskTitle('');
     selectTask(created.id);
@@ -204,24 +210,27 @@ function App() {
     <div className="app-container">
       <Sidebar />
       {ui.sidePanel === 'projects' && <ProjectsPanel />}
+      {ui.sidePanel === 'someday' && <ProjectsPanel mode="someday" />}
       {ui.sidePanel === 'calendar' && <CalendarPanel />}
       <div className="main-content">
         <div className="task-header">
           {currentProject ? (
             <div className="project-title-group">
-              <button
-                role="switch"
-                aria-checked={!!currentProject.pinned}
-                className={`project-active-switch ${currentProject.pinned ? 'on' : ''}`}
-                title={
-                  currentProject.pinned
-                    ? 'Projekt ist aktiv — klicken zum Deaktivieren'
-                    : 'Projekt inaktiv — klicken zum Aktivieren'
-                }
-                onClick={() => toggleProjectPinned(currentProject.id)}
-              >
-                <span className="project-active-knob" />
-              </button>
+              {currentProject.kind !== 'area' && (
+                <button
+                  role="switch"
+                  aria-checked={currentProject.active !== false}
+                  className={`project-active-switch ${currentProject.active !== false ? 'on' : ''}`}
+                  title={
+                    currentProject.active !== false
+                      ? 'Aktiv — klicken für Someday (inaktiv)'
+                      : 'Someday (inaktiv) — klicken zum Aktivieren'
+                  }
+                  onClick={() => toggleProjectActive(currentProject.id)}
+                >
+                  <span className="project-active-knob" />
+                </button>
+              )}
               <input
                 className="project-title-input"
                 value={currentProject.name}
@@ -229,6 +238,15 @@ function App() {
                   updateProject(currentProject.id, { name: e.target.value })
                 }
               />
+              {currentProject.kind !== 'area' && (
+                <button
+                  className={`project-pin-btn ${currentProject.pinned ? 'on' : ''}`}
+                  title={currentProject.pinned ? 'Angepinnt (oben) — lösen' : 'Anpinnen (nach oben)'}
+                  onClick={() => toggleProjectPinned(currentProject.id)}
+                >
+                  📌
+                </button>
+              )}
             </div>
           ) : (
             <h2>{headerTitle}</h2>

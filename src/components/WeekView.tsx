@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '../store';
 import {
   startOfWeek,
@@ -12,6 +12,7 @@ import type { Task } from '../types';
 import './WeekView.css';
 
 const weekDayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const weekdayIndex = (d: Date) => (d.getDay() + 6) % 7; // 0 = Monday
 
 interface WeekViewProps {
   mode: 'week' | 'rolling';
@@ -35,10 +36,28 @@ export default function WeekView({ mode }: WeekViewProps) {
   const hourHeight = useStore((s) => s.settings.calendarHourHeight ?? 48);
   const setCalendarHours = useStore((s) => s.setCalendarHours);
   const setCalendarHourHeight = useStore((s) => s.setCalendarHourHeight);
+  const blockers = useStore((s) => s.blockers);
+  const addBlocker = useStore((s) => s.addBlocker);
+  const deleteBlocker = useStore((s) => s.deleteBlocker);
 
   const today = new Date();
   // Set true during a resize so the trailing click doesn't open the detail panel.
   const suppressClick = useRef(false);
+
+  // Blocker editor state.
+  const [showBlockers, setShowBlockers] = useState(false);
+  const activeProjects = projects.filter((p) => p.active !== false);
+  const [blkProject, setBlkProject] = useState('');
+  const [blkDays, setBlkDays] = useState<number[]>([0, 1, 2]);
+  const [blkFrom, setBlkFrom] = useState(8);
+  const [blkTo, setBlkTo] = useState(12);
+
+  const projectById = (id: string) => projects.find((p) => p.id === id);
+  // The project's current next action = first open starred (else first open) task.
+  const nextActionOf = (projectId: string): Task | undefined => {
+    const open = tasks.filter((t) => t.projectId === projectId && !t.completed && !t.parentId);
+    return open.find((t) => t.starred) ?? open[0];
+  };
 
   // Which days become columns.
   let days: Date[];
@@ -212,8 +231,84 @@ export default function WeekView({ mode }: WeekViewProps) {
             />
           </label>
           <span>Uhr</span>
+          <button
+            className={`week-blocker-toggle ${showBlockers ? 'on' : ''}`}
+            onClick={() => setShowBlockers((v) => !v)}
+            title="Projekt-Blocker verwalten"
+          >
+            🧱 Blocker
+          </button>
         </div>
       </div>
+
+      {showBlockers && (
+        <div className="week-blocker-editor">
+          <div className="week-blocker-form">
+            <select value={blkProject} onChange={(e) => setBlkProject(e.target.value)}>
+              <option value="">Projekt wählen…</option>
+              {activeProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.icon} {p.name}
+                </option>
+              ))}
+            </select>
+            <div className="week-blocker-days">
+              {weekDayLabels.map((lbl, i) => (
+                <button
+                  key={lbl}
+                  className={blkDays.includes(i) ? 'on' : ''}
+                  onClick={() =>
+                    setBlkDays((d) =>
+                      d.includes(i) ? d.filter((x) => x !== i) : [...d, i]
+                    )
+                  }
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            <label>
+              von
+              <input type="number" min={0} max={23} value={blkFrom}
+                onChange={(e) => setBlkFrom(Number(e.target.value))} />
+            </label>
+            <label>
+              bis
+              <input type="number" min={1} max={24} value={blkTo}
+                onChange={(e) => setBlkTo(Number(e.target.value))} />
+            </label>
+            <button
+              className="week-blocker-add"
+              disabled={!blkProject || blkDays.length === 0 || blkTo <= blkFrom}
+              onClick={() => {
+                addBlocker({
+                  projectId: blkProject,
+                  weekdays: [...blkDays].sort(),
+                  startMinutes: blkFrom * 60,
+                  durationMin: (blkTo - blkFrom) * 60,
+                });
+              }}
+            >
+              + Blocker
+            </button>
+          </div>
+          <div className="week-blocker-list">
+            {blockers.length === 0 && <span className="week-blocker-empty">Noch keine Blocker.</span>}
+            {blockers.map((b) => {
+              const p = projectById(b.projectId);
+              const fromH = Math.floor(b.startMinutes / 60);
+              const toH = Math.floor((b.startMinutes + b.durationMin) / 60);
+              return (
+                <span key={b.id} className="week-blocker-chip" style={{ borderColor: p?.color }}>
+                  {p?.name ?? 'Projekt'} · {b.weekdays.map((w) => weekDayLabels[w]).join('')}{' '}
+                  {fromH}–{toH} Uhr
+                  <button onClick={() => deleteBlocker(b.id)} title="Löschen">×</button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="week-grid-scroll">
       {/* Column headers */}
@@ -293,6 +388,8 @@ export default function WeekView({ mode }: WeekViewProps) {
             const timed = tasksOnDate(tasks, d).filter(
               (t) => !t.parentId && t.startMinutes != null
             );
+            const wd = weekdayIndex(d);
+            const dayBlockers = blockers.filter((b) => b.weekdays.includes(wd));
             return (
               <div
                 key={dateKey(d)}
@@ -313,6 +410,29 @@ export default function WeekView({ mode }: WeekViewProps) {
                   createAt(d, yToMinutes(y));
                 }}
               >
+                {/* Project blockers (background) with the project's current next action */}
+                {dayBlockers.map((b) => {
+                  const p = projectById(b.projectId);
+                  const top = ((b.startMinutes - startHour * 60) / 60) * hourHeight;
+                  const height = Math.max(18, (b.durationMin / 60) * hourHeight);
+                  const na = nextActionOf(b.projectId);
+                  return (
+                    <div
+                      key={b.id}
+                      className="week-blocker-block"
+                      style={{
+                        top,
+                        height,
+                        background: p ? hexToRgba(p.color, 0.14) : 'rgba(0,0,0,0.05)',
+                        borderColor: p?.color ?? 'var(--border-light)',
+                      }}
+                      title={`${p?.name ?? 'Projekt'} (Aktiv)${na ? ' – Next: ' + na.title : ''}`}
+                    >
+                      <span className="week-blocker-name">{p?.icon} {p?.name}</span>
+                      {na && <span className="week-blocker-na">★ {na.title}</span>}
+                    </div>
+                  );
+                })}
                 {timed.map((t) => {
                   const start = t.startMinutes ?? startHour * 60;
                   const top = ((start - startHour * 60) / 60) * hourHeight;
