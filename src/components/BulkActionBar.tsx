@@ -19,9 +19,15 @@ export default function BulkActionBar({
   const bulkUpdate = useStore((s) => s.bulkUpdate);
   const bulkDelete = useStore((s) => s.bulkDelete);
   const projects = useStore((s) => s.projects);
+  const currentView = useStore((s) => s.ui.currentView);
 
   const count = selectedIds.length;
   const disabled = count === 0;
+
+  // Only show actions that make sense for the current view.
+  const inCompleted = currentView === 'completed';
+  const inNextWeek = currentView === 'nextweek';
+  const inSomeday = currentView === 'someday';
 
   // Brief "✓ done" feedback so a bulk action is visibly acknowledged.
   const [flash, setFlash] = useState('');
@@ -46,20 +52,24 @@ export default function BulkActionBar({
       </label>
 
       <div className="bulk-actions">
-        <button
-          className="bulk-btn"
-          disabled={disabled}
-          onClick={() => apply({ completed: true }, 'erledigt')}
-        >
-          ✓ Erledigen
-        </button>
-        <button
-          className="bulk-btn"
-          disabled={disabled}
-          onClick={() => apply({ completed: false }, 'geöffnet')}
-        >
-          ↺ Öffnen
-        </button>
+        {!inCompleted && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            onClick={() => apply({ completed: true }, 'erledigt')}
+          >
+            ✓ Erledigen
+          </button>
+        )}
+        {inCompleted && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            onClick={() => apply({ completed: false }, 'geöffnet')}
+          >
+            ↺ Öffnen
+          </button>
+        )}
         <button
           className="bulk-btn"
           disabled={disabled}
@@ -133,30 +143,46 @@ export default function BulkActionBar({
           🗓✕ Datum entfernen
         </button>
 
-        <button
-          className="bulk-btn"
-          disabled={disabled}
-          title="Für diese Woche markieren (Next Week)"
-          onClick={() => apply({ thisWeek: true }, 'Next Week')}
-        >
-          🗓️ Next Week
-        </button>
-        <button
-          className="bulk-btn"
-          disabled={disabled}
-          title="Aus Next Week entfernen"
-          onClick={() => apply({ thisWeek: false }, 'aus Next Week')}
-        >
-          ✕ Next Week
-        </button>
-        <button
-          className="bulk-btn"
-          disabled={disabled}
-          title="Nach Someday verschieben"
-          onClick={() => apply({ someday: true }, 'Someday')}
-        >
-          🌥️ Someday
-        </button>
+        {!inNextWeek && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            title="Für diese Woche markieren (Next Week)"
+            onClick={() => apply({ thisWeek: true }, 'Next Week')}
+          >
+            🗓️ Next Week
+          </button>
+        )}
+        {inNextWeek && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            title="Aus Next Week entfernen"
+            onClick={() => apply({ thisWeek: false }, 'aus Next Week')}
+          >
+            ✕ Next Week
+          </button>
+        )}
+        {!inSomeday && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            title="Nach Someday verschieben"
+            onClick={() => apply({ someday: true }, 'Someday')}
+          >
+            🌥️ Someday
+          </button>
+        )}
+        {inSomeday && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            title="Aus Someday holen (wird Single-Task, falls kein Projekt)"
+            onClick={() => apply({ someday: false }, 'aus Someday')}
+          >
+            ✕ Someday
+          </button>
+        )}
 
         {flash && <span className="bulk-flash">{flash}</span>}
 
