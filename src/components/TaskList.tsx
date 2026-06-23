@@ -141,6 +141,15 @@ export default function TaskList({
                 ↻
               </span>
             )}
+            {task.starred && (
+              <span className="task-flag flag-na" title="Nächste Aktion">★</span>
+            )}
+            {task.thisWeek && (
+              <span className="task-flag flag-week" title="Next Week">🗓️</span>
+            )}
+            {task.someday && (
+              <span className="task-flag flag-someday" title="Someday">🌥️</span>
+            )}
             {(task.comments?.length ?? 0) > 0 && (
               <span
                 className="task-comments"

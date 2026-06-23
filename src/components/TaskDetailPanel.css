@@ -31,6 +31,35 @@
   word-break: break-all;
 }
 
+.detail-flags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.detail-flag {
+  border: 1px solid var(--border-light);
+  background: var(--main-bg);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.detail-flag:hover {
+  border-color: var(--accent);
+}
+
+.detail-flag.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
 .recur-custom {
   display: flex;
   align-items: center;

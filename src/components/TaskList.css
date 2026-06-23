@@ -212,6 +212,14 @@
   gap: 2px;
 }
 
+.task-flag {
+  font-size: 11px;
+  line-height: 1;
+}
+.task-flag.flag-na {
+  color: #f5b301;
+}
+
 .task-list-empty {
   flex: 1;
   display: flex;

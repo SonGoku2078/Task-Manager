@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useStore } from '../store';
-import type { Priority } from '../types';
+import type { Priority, Task } from '../types';
 import './BulkActionBar.css';
 
 interface BulkActionBarProps {
@@ -22,6 +23,14 @@ export default function BulkActionBar({
   const count = selectedIds.length;
   const disabled = count === 0;
 
+  // Brief "✓ done" feedback so a bulk action is visibly acknowledged.
+  const [flash, setFlash] = useState('');
+  const apply = (updates: Partial<Task>, label: string) => {
+    bulkUpdate(selectedIds, updates);
+    setFlash(`✓ ${count} → ${label}`);
+    window.setTimeout(() => setFlash(''), 1800);
+  };
+
   return (
     <div className="bulk-bar">
       <label className="bulk-selectall">
@@ -40,21 +49,21 @@ export default function BulkActionBar({
         <button
           className="bulk-btn"
           disabled={disabled}
-          onClick={() => bulkUpdate(selectedIds, { completed: true })}
+          onClick={() => apply({ completed: true }, 'erledigt')}
         >
           ✓ Erledigen
         </button>
         <button
           className="bulk-btn"
           disabled={disabled}
-          onClick={() => bulkUpdate(selectedIds, { completed: false })}
+          onClick={() => apply({ completed: false }, 'geöffnet')}
         >
           ↺ Öffnen
         </button>
         <button
           className="bulk-btn"
           disabled={disabled}
-          onClick={() => bulkUpdate(selectedIds, { starred: true })}
+          onClick={() => apply({ starred: true }, 'Nächste Aktion')}
         >
           ★ Markieren
         </button>
@@ -65,9 +74,11 @@ export default function BulkActionBar({
           value=""
           onChange={(e) => {
             if (e.target.value) {
-              bulkUpdate(selectedIds, {
-                projectId: e.target.value === '__inbox' ? null : e.target.value,
-              });
+              const isInbox = e.target.value === '__inbox';
+              apply(
+                { projectId: isInbox ? null : e.target.value },
+                isInbox ? 'Inbox' : projects.find((p) => p.id === e.target.value)?.name ?? 'Projekt'
+              );
               e.target.value = '';
             }
           }}
@@ -87,7 +98,7 @@ export default function BulkActionBar({
           value=""
           onChange={(e) => {
             if (e.target.value) {
-              bulkUpdate(selectedIds, { priority: e.target.value as Priority });
+              apply({ priority: e.target.value as Priority }, `Priorität ${e.target.value}`);
               e.target.value = '';
             }
           }}
@@ -107,7 +118,7 @@ export default function BulkActionBar({
             value=""
             onChange={(e) => {
               if (e.target.value) {
-                bulkUpdate(selectedIds, { dueDate: new Date(e.target.value) });
+                apply({ dueDate: new Date(e.target.value) }, 'Datum gesetzt');
                 e.target.value = '';
               }
             }}
@@ -117,7 +128,7 @@ export default function BulkActionBar({
           className="bulk-btn"
           disabled={disabled}
           title="Fälligkeit von der Auswahl entfernen"
-          onClick={() => bulkUpdate(selectedIds, { dueDate: null })}
+          onClick={() => apply({ dueDate: null }, 'Datum entfernt')}
         >
           🗓✕ Datum entfernen
         </button>
@@ -126,7 +137,7 @@ export default function BulkActionBar({
           className="bulk-btn"
           disabled={disabled}
           title="Für diese Woche markieren (Next Week)"
-          onClick={() => bulkUpdate(selectedIds, { thisWeek: true })}
+          onClick={() => apply({ thisWeek: true }, 'Next Week')}
         >
           🗓️ Next Week
         </button>
@@ -134,7 +145,7 @@ export default function BulkActionBar({
           className="bulk-btn"
           disabled={disabled}
           title="Aus Next Week entfernen"
-          onClick={() => bulkUpdate(selectedIds, { thisWeek: false })}
+          onClick={() => apply({ thisWeek: false }, 'aus Next Week')}
         >
           ✕ Next Week
         </button>
@@ -142,10 +153,12 @@ export default function BulkActionBar({
           className="bulk-btn"
           disabled={disabled}
           title="Nach Someday verschieben"
-          onClick={() => bulkUpdate(selectedIds, { someday: true })}
+          onClick={() => apply({ someday: true }, 'Someday')}
         >
           🌥️ Someday
         </button>
+
+        {flash && <span className="bulk-flash">{flash}</span>}
 
         <button
           className="bulk-btn bulk-btn-danger"

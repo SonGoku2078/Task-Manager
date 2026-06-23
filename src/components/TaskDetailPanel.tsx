@@ -206,6 +206,32 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             ↑ Hauptaufgabe: #{parent.number} {parent.title}
           </button>
         )}
+
+        {/* GTD quick flags for this single task */}
+        <div className="detail-flags">
+          <button
+            className={`detail-flag ${task.starred ? 'on' : ''}`}
+            onClick={() => toggleStar(task.id)}
+            title="Nächste Aktion (Stern)"
+          >
+            ★ Nächste Aktion
+          </button>
+          <button
+            className={`detail-flag ${task.thisWeek ? 'on' : ''}`}
+            onClick={() => updateTask(task.id, { thisWeek: !task.thisWeek })}
+            title="Für diese Woche (Next Week)"
+          >
+            🗓️ Next Week
+          </button>
+          <button
+            className={`detail-flag ${task.someday ? 'on' : ''}`}
+            onClick={() => updateTask(task.id, { someday: !task.someday })}
+            title="Nach Someday parken"
+          >
+            🌥️ Someday
+          </button>
+        </div>
+
         <div className="detail-field">
           <label className="detail-label">Titel</label>
           <ClearableInput
