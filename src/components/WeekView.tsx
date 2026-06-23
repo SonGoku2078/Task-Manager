@@ -60,11 +60,18 @@ export default function WeekView({ mode }: WeekViewProps) {
   const [blkTo, setBlkTo] = useState(12);
 
   const projectById = (id: string) => projects.find((p) => p.id === id);
-  // The project's current next action = first open starred (else first open) task.
-  const nextActionOf = (projectId: string): Task | undefined => {
-    const open = tasks.filter((t) => t.projectId === projectId && !t.completed && !t.parentId);
-    return open.find((t) => t.starred) ?? open[0];
-  };
+  // A project's Next Week tasks (open, flagged this week or dated this week),
+  // starred first — these are shown inside the project's blocker.
+  const nextWeekTasksOf = (projectId: string): Task[] =>
+    tasks
+      .filter(
+        (t) =>
+          t.projectId === projectId &&
+          !t.completed &&
+          !t.parentId &&
+          (t.thisWeek || isInNextWeekWindow(t))
+      )
+      .sort((a, b) => (a.starred === b.starred ? 0 : a.starred ? -1 : 1));
 
   // Which days become columns.
   let days: Date[];
@@ -88,11 +95,18 @@ export default function WeekView({ mode }: WeekViewProps) {
   // Shared column track so header, all-day row and time grid always line up.
   const cols = `56px repeat(${days.length}, minmax(72px, 1fr))`;
 
-  // Next Week backlog: open thisWeek tasks not already placed on a visible day.
+  // Next Week backlog: open thisWeek tasks not already placed on a visible day
+  // and whose project has no blocker (those are shown inside the blocker instead).
+  const blockedProjectIds = new Set(blockers.map((b) => b.projectId));
   const onVisibleDay = (t: Task) =>
     !!t.dueDate && days.some((d) => isSameDay(d, t.dueDate as Date));
   const backlog = tasks.filter(
-    (t) => !t.parentId && !t.completed && t.thisWeek && !onVisibleDay(t)
+    (t) =>
+      !t.parentId &&
+      !t.completed &&
+      t.thisWeek &&
+      !onVisibleDay(t) &&
+      !(t.projectId && blockedProjectIds.has(t.projectId))
   );
 
   const shiftWeek = (delta: number) =>
@@ -464,7 +478,7 @@ export default function WeekView({ mode }: WeekViewProps) {
                   const p = projectById(b.projectId);
                   const top = ((b.startMinutes - startHour * 60) / 60) * hourHeight;
                   const height = Math.max(18, (b.durationMin / 60) * hourHeight);
-                  const na = nextActionOf(b.projectId);
+                  const nwTasks = nextWeekTasksOf(b.projectId);
                   return (
                     <div
                       key={b.id}
@@ -476,23 +490,26 @@ export default function WeekView({ mode }: WeekViewProps) {
                         borderColor: p?.color ?? 'var(--border-light)',
                         color: p?.color ?? 'var(--text-secondary)',
                       }}
-                      title={`${p?.name ?? 'Projekt'} (Aktiv)${na ? ' – Next: ' + na.title : ''}`}
+                      title={`${p?.name ?? 'Projekt'} (Aktiv) – ${nwTasks.length} Next-Week-Aufgabe(n)`}
                     >
                       <span className="week-blocker-name" style={{ color: p?.color }}>
                         {p?.icon} {p?.name}
                       </span>
-                      {na && (
-                        <button
-                          className={`week-blocker-na ${selectedTaskId === na.id ? 'selected' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleOpen(na.id);
-                          }}
-                          title={`Next Action öffnen: ${na.title}`}
-                        >
-                          ★ {na.title}
-                        </button>
-                      )}
+                      <div className="week-blocker-tasks">
+                        {nwTasks.map((t) => (
+                          <button
+                            key={t.id}
+                            className={`week-blocker-na ${selectedTaskId === t.id ? 'selected' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleOpen(t.id);
+                            }}
+                            title={`Öffnen: ${t.title}`}
+                          >
+                            {t.starred ? '★ ' : ''}{t.title}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   );
                 })}
