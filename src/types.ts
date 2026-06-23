@@ -131,7 +131,9 @@ export interface Task {
 // A user-defined group within a project to bundle tasks (e.g. "Vorbereitung").
 export interface Section {
   id: string;
-  projectId: string;
+  // Scope a section belongs to: either a project id (e.g. "p-work") or a
+  // view key (e.g. "view:priority", "view:today", "view:nextweek", "view:someday").
+  scope: string;
   name: string;
 }
 

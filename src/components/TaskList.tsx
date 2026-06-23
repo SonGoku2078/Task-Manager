@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import { isOverdue } from '../selectors';
+import { readTaskIds, writeTaskIds } from '../dnd';
 import './TaskList.css';
 
 interface TaskListProps {
@@ -10,6 +11,8 @@ interface TaskListProps {
   selectionMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
+  onCtrlSelect?: (id: string) => void;
+  onShiftSelect?: (id: string) => void;
 }
 
 export default function TaskList({
@@ -18,6 +21,8 @@ export default function TaskList({
   selectionMode = false,
   selectedIds,
   onToggleSelect,
+  onCtrlSelect,
+  onShiftSelect,
 }: TaskListProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const toggleStar = useStore((s) => s.toggleStar);
@@ -44,18 +49,31 @@ export default function TaskList({
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
 
-  const dragEnabled = !selectionMode;
-  // Sections only make sense for a single project (not a multi-project combined list).
-  const inProject =
+  // Tasks stay draggable in selection mode too, so a multi-selection can be moved.
+  const dragEnabled = true;
+  // Ids that a drag carries: the whole selection if the dragged task is selected.
+  const dragPayload = (id: string) =>
+    selectionMode && selectedIds?.has(id) ? [...selectedIds] : undefined;
+  const assignAll = (ids: string[], sectionId: string | null) =>
+    ids.forEach((id) => assignTaskSection(id, sectionId));
+  // Grouping works for a single project OR for the list-style GTD views.
+  const singleProject =
     (currentView === 'projects' || currentView === 'someday') &&
     !!selectedProjectId &&
     selectedProjectIds.length <= 1;
-  const hideProject = inProject; // quieter: project name is the page title already
-  const projectSections = inProject
-    ? sections.filter((s) => s.projectId === selectedProjectId)
+  const VIEW_GROUPABLE = ['priority', 'today', 'nextweek', 'someday'];
+  const viewGrouping = VIEW_GROUPABLE.includes(currentView) && !singleProject;
+  const grouped = singleProject || viewGrouping;
+  // Scope key: project id for a project, otherwise a per-view key.
+  const scopeKey = singleProject ? selectedProjectId! : `view:${currentView}`;
+  // Only hide the project name inside a real project (it's the page title there);
+  // in the list views tasks come from many projects, so keep the (coloured) name.
+  const hideProject = singleProject;
+  const scopeSections = grouped
+    ? sections.filter((s) => s.scope === scopeKey)
     : [];
 
-  if (tasks.length === 0 && !inProject) {
+  if (tasks.length === 0 && !grouped) {
     return (
       <div className="task-list-empty">
         <div className="empty-icon">🗒️</div>
@@ -79,7 +97,7 @@ export default function TaskList({
         onDragStart={(e) => {
           if (!dragEnabled) return;
           setDragId(task.id);
-          e.dataTransfer.setData('text/plain', task.id);
+          writeTaskIds(e, task.id, dragPayload(task.id));
         }}
         onDragOver={(e) => {
           if (!dragEnabled || !dragId) return;
@@ -90,9 +108,10 @@ export default function TaskList({
         onDrop={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (dragEnabled && dragId) {
-            if (inProject) dropTaskOnTask(dragId, task.id);
-            else reorderTasks(dragId, task.id);
+          const ids = readTaskIds(e).filter((id) => id !== task.id);
+          if (dragEnabled && ids.length) {
+            if (grouped) ids.forEach((id) => dropTaskOnTask(id, task.id));
+            else ids.forEach((id) => reorderTasks(id, task.id));
           }
           setDragId(null);
           setOverId(null);
@@ -101,11 +120,12 @@ export default function TaskList({
           setDragId(null);
           setOverId(null);
         }}
-        onClick={() =>
-          selectionMode
-            ? onToggleSelect?.(task.id)
-            : selectTask(selectedTaskId === task.id ? null : task.id)
-        }
+        onClick={(e) => {
+          if (e.shiftKey) onShiftSelect?.(task.id);
+          else if (selectionMode) onToggleSelect?.(task.id);
+          else if (e.ctrlKey || e.metaKey) onCtrlSelect?.(task.id);
+          else selectTask(selectedTaskId === task.id ? null : task.id);
+        }}
       >
         <input
           type="checkbox"
@@ -185,18 +205,18 @@ export default function TaskList({
     );
   };
 
-  // --- Flat list (non-project views) ---
-  if (!inProject) {
+  // --- Flat list (ungrouped views) ---
+  if (!grouped) {
     return <div className="task-list">{tasks.map(renderTask)}</div>;
   }
 
-  // --- Grouped list (inside a project) ---
+  // --- Grouped list (project or list view) ---
   // Open tasks stay in their group; completed tasks all sink to a final block.
   const ungrouped = tasks.filter((t) => !t.sectionId && !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
   const submitSection = () => {
     const name = newSectionName.trim();
-    if (name && selectedProjectId) addSection(selectedProjectId, name);
+    if (name) addSection(scopeKey, name);
     setNewSectionName('');
     setAddingSection(false);
   };
@@ -230,7 +250,7 @@ export default function TaskList({
         )}
       </div>
 
-      {projectSections.map((sec) => {
+      {scopeSections.map((sec) => {
         const secTasks = tasks.filter((t) => t.sectionId === sec.id);
         const done = secTasks.filter((t) => t.completed).length;
         return (
@@ -272,7 +292,7 @@ export default function TaskList({
                 onChange={(e) => renameSection(sec.id, e.target.value)}
               />
               <span className="section-count">
-                {done}/{allSecTasks.length}
+                {done}/{secTasks.length}
               </span>
               <button
                 className="section-del"
@@ -295,7 +315,8 @@ export default function TaskList({
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                if (dragId) assignTaskSection(dragId, sec.id);
+                const ids = readTaskIds(e);
+                if (ids.length) assignAll(ids, sec.id);
                 setDragId(null);
                 setOverSectionId(null);
               }}

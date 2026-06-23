@@ -10,6 +10,7 @@ import {
   addDays,
   isoWeek,
 } from '../selectors';
+import { readTaskIds } from '../dnd';
 import { downloadICS } from '../ics';
 import './CalendarPanel.css';
 
@@ -131,8 +132,7 @@ export default function CalendarPanel() {
 
   const onDropDay = (date: Date) => (e: React.DragEvent) => {
     e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain');
-    if (id) updateTask(id, { dueDate: new Date(date) });
+    readTaskIds(e).forEach((id) => updateTask(id, { dueDate: new Date(date) }));
     setDropKey(null);
   };
 

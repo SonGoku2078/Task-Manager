@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Mail als Task</title>
+    <style>
+      :root {
+        --accent: #2b8a3e;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        width: 320px;
+        margin: 0;
+        padding: 12px;
+        color: #1f2329;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 8px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        color: #6b7280;
+        margin: 8px 0 2px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: 13px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 54px;
+      }
+      button {
+        margin-top: 12px;
+        width: 100%;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .hint {
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 8px;
+      }
+      .hint a {
+        color: var(--accent);
+      }
+      .status {
+        font-size: 12px;
+        margin-top: 8px;
+        min-height: 16px;
+      }
+      .status.ok {
+        color: var(--accent);
+      }
+      .status.err {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>E-Mail als Aufgabe</h1>
+
+    <label for="title">Titel</label>
+    <input id="title" type="text" placeholder="Betreff…" />
+
+    <label for="note">Notiz</label>
+    <textarea id="note" placeholder="Absender, Link, Auszug…"></textarea>
+
+    <button id="add" disabled>Zu SelfManaged hinzufügen</button>
+
+    <div class="status" id="status"></div>
+    <p class="hint">
+      Ziel-App nicht gesetzt? <a href="#" id="opts">Optionen öffnen</a>
+    </p>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

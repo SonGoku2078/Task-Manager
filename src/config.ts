@@ -13,6 +13,26 @@ export const parseTaskHash = (hash: string): number | null => {
   return m ? Number(m[1]) : null;
 };
 
+// Deep link used by external integrations (e.g. the Brave/Protonmail extension)
+// to create a task: "#/add?title=…&note=…". Note is optional (URL-encoded).
+export interface AddTaskLink {
+  title: string;
+  note?: string;
+}
+export const addTaskHash = (link: AddTaskLink) => {
+  const q = new URLSearchParams({ title: link.title });
+  if (link.note) q.set('note', link.note);
+  return `#/add?${q.toString()}`;
+};
+export const parseAddTaskHash = (hash: string): AddTaskLink | null => {
+  const prefix = '#/add?';
+  if (!hash.startsWith(prefix)) return null;
+  const q = new URLSearchParams(hash.slice(prefix.length));
+  const title = q.get('title');
+  if (!title) return null;
+  return { title, note: q.get('note') ?? undefined };
+};
+
 // Base for Nozbe Classic API calls. In dev this is the Vite proxy path (`/nozbe-api`,
 // see vite.config.ts) which forwards to https://api.nozbe.com:3000 and dodges CORS.
 // After a backend exists, point this at the server endpoint that proxies/holds credentials.

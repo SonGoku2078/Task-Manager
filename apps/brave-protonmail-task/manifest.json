@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "SelfManaged – Protonmail → Task",
+  "version": "0.1.0",
+  "description": "Hängt die gerade geöffnete Protonmail-E-Mail als Aufgabe an SelfManaged an.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["https://mail.proton.me/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "E-Mail als Task hinzufügen"
+  },
+  "options_page": "options.html"
+}

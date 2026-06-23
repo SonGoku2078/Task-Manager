@@ -10,6 +10,7 @@ import {
   isInNextWeekWindow,
 } from '../selectors';
 import type { Task } from '../types';
+import { readTaskIds } from '../dnd';
 import './WeekView.css';
 
 const weekDayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
@@ -20,6 +21,45 @@ interface WeekViewProps {
 }
 
 const parseKey = (k: string) => new Date(`${k}T00:00:00`);
+
+// Side-by-side layout for overlapping items (blockers + timed tasks): assigns
+// each a column within its overlap cluster → { left, width } as 0..1 fractions.
+type LayoutBox = { left: number; width: number };
+interface Span {
+  id: string;
+  start: number;
+  end: number;
+}
+function overlapLayout(spans: Span[]): Record<string, LayoutBox> {
+  const sorted = [...spans].sort((a, b) => a.start - b.start || a.end - b.end);
+  const out: Record<string, LayoutBox> = {};
+  let cluster: Span[] = [];
+  let clusterEnd = -Infinity;
+  let colEnd: number[] = [];
+  const colOf: Record<string, number> = {};
+  const flush = () => {
+    const cols = colEnd.length || 1;
+    for (const s of cluster) out[s.id] = { left: colOf[s.id] / cols, width: 1 / cols };
+    cluster = [];
+    colEnd = [];
+  };
+  for (const s of sorted) {
+    if (cluster.length && s.start >= clusterEnd) flush();
+    if (!cluster.length) clusterEnd = s.end;
+    let col = colEnd.findIndex((e) => e <= s.start);
+    if (col === -1) {
+      col = colEnd.length;
+      colEnd.push(s.end);
+    } else {
+      colEnd[col] = s.end;
+    }
+    colOf[s.id] = col;
+    cluster.push(s);
+    clusterEnd = Math.max(clusterEnd, s.end);
+  }
+  flush();
+  return out;
+}
 
 export default function WeekView({ mode }: WeekViewProps) {
   const currentDate = useStore((s) => s.ui.currentDate);
@@ -130,20 +170,24 @@ export default function WeekView({ mode }: WeekViewProps) {
 
   const dropOnNoTime = (date: Date) => (e: React.DragEvent) => {
     e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain');
-    if (id) updateTask(id, { dueDate: new Date(date), startMinutes: null });
+    readTaskIds(e).forEach((id) =>
+      updateTask(id, { dueDate: new Date(date), startMinutes: null })
+    );
   };
 
   const dropOnTime = (date: Date, colEl: HTMLElement | null) => (e: React.DragEvent) => {
     e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain');
-    if (!id || !colEl) return;
+    const ids = readTaskIds(e);
+    if (!ids.length || !colEl) return;
     const y = e.clientY - colEl.getBoundingClientRect().top;
-    const t = tasks.find((x) => x.id === id);
-    updateTask(id, {
-      dueDate: new Date(date),
-      startMinutes: yToMinutes(y),
-      durationMin: t?.durationMin ?? 60,
+    const start = yToMinutes(y);
+    ids.forEach((id) => {
+      const t = tasks.find((x) => x.id === id);
+      updateTask(id, {
+        dueDate: new Date(date),
+        startMinutes: start,
+        durationMin: t?.durationMin ?? 60,
+      });
     });
   };
 
@@ -461,6 +505,27 @@ export default function WeekView({ mode }: WeekViewProps) {
             );
             const wd = weekdayIndex(d);
             const dayBlockers = blockers.filter((b) => b.weekdays.includes(wd));
+            // Lay blockers and timed tasks side by side wherever they overlap.
+            const layout = overlapLayout([
+              ...dayBlockers.map((b) => ({
+                id: b.id,
+                start: b.startMinutes,
+                end: b.startMinutes + b.durationMin,
+              })),
+              ...timed.map((t) => {
+                const s = t.startMinutes ?? startHour * 60;
+                return { id: t.id, start: s, end: s + (t.durationMin ?? 60) };
+              }),
+            ]);
+            // Inline horizontal placement (overrides the CSS left/right insets).
+            const boxStyle = (id: string, inset: number) => {
+              const b = layout[id] ?? { left: 0, width: 1 };
+              return {
+                left: `calc(${b.left * 100}% + ${inset}px)`,
+                width: `calc(${b.width * 100}% - ${inset * 2}px)`,
+                right: 'auto' as const,
+              };
+            };
             return (
               <div
                 key={dateKey(d)}
@@ -504,6 +569,7 @@ export default function WeekView({ mode }: WeekViewProps) {
                       style={{
                         top,
                         height,
+                        ...boxStyle(b.id, 1),
                         background: p ? hexToRgba(p.color, 0.16) : 'rgba(0,0,0,0.05)',
                         borderColor: p?.color ?? 'var(--border-light)',
                         color: p?.color ?? 'var(--text-secondary)',
@@ -544,6 +610,7 @@ export default function WeekView({ mode }: WeekViewProps) {
                       style={{
                         top,
                         height,
+                        ...boxStyle(t.id, 2),
                         borderLeftColor: 'var(--accent)',
                         ...taskStyle(t),
                       }}

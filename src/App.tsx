@@ -18,7 +18,7 @@ import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
 import SettingsView from './components/SettingsView';
 import ClearableInput from './components/ClearableInput';
-import { parseTaskHash } from './config';
+import { parseTaskHash, parseAddTaskHash } from './config';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -54,6 +54,20 @@ function App() {
   // Deep-link support: open the task referenced by #/t/<number> in the URL.
   useEffect(() => {
     const openFromHash = () => {
+      // External integrations (Brave/Protonmail extension) create a task via
+      // "#/add?title=…&note=…". Land it in the Inbox, open it, then clear the hash.
+      const add = parseAddTaskHash(window.location.hash);
+      if (add) {
+        const state = useStore.getState();
+        const created = state.addTask({
+          title: add.title,
+          description: add.note,
+          projectId: null,
+        });
+        state.selectTask(created.id);
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+        return;
+      }
       const n = parseTaskHash(window.location.hash);
       if (n == null) return;
       const state = useStore.getState();
@@ -88,17 +102,62 @@ function App() {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const toggleSelect = (id: string) =>
+  const toggleSelect = (id: string) => {
+    selectAnchor.current = id;
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
 
   const exitBulk = () => {
     setBulkMode(false);
     setSelectedIds(new Set());
+  };
+
+  // Anchor for shift-range selection (the last task clicked).
+  const selectAnchor = useRef<string | null>(null);
+  // Keep the anchor in sync with the task opened in the detail panel, so a plain
+  // click followed by a shift+click always has a valid range start.
+  useEffect(() => {
+    if (ui.selectedTaskId) selectAnchor.current = ui.selectedTaskId;
+  }, [ui.selectedTaskId]);
+
+  // When a ctrl/shift selection drops back to empty, leave selection mode so the
+  // (green) bulk bar doesn't linger showing "0 ausgewählt".
+  useEffect(() => {
+    if (bulkMode && selectedIds.size === 0) setBulkMode(false);
+  }, [bulkMode, selectedIds]);
+
+  // Ctrl/Cmd+click on any task starts (or extends) a multi-selection anywhere.
+  const ctrlSelect = (id: string) => {
+    setBulkMode(true);
+    toggleSelect(id);
+    selectAnchor.current = id;
+  };
+
+  // Shift+click selects the range between the anchor and the clicked task
+  // (following the current visible order).
+  const shiftSelect = (id: string) => {
+    setBulkMode(true);
+    const order = visibleTasks.map((t) => t.id);
+    // Anchor = last multi-select click, else the task currently open in the detail panel.
+    const anchor = selectAnchor.current ?? ui.selectedTaskId;
+    const from = anchor ? order.indexOf(anchor) : -1;
+    const to = order.indexOf(id);
+    if (from === -1 || to === -1) {
+      toggleSelect(id);
+      selectAnchor.current = id;
+      return;
+    }
+    const [lo, hi] = from < to ? [from, to] : [to, from];
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (let i = lo; i <= hi; i++) next.add(order[i]);
+      return next;
+    });
   };
 
   // Global keyboard shortcuts: n = new task, / = search, Esc = close, Del = delete.
@@ -264,8 +323,15 @@ function App() {
             </button>
             <button
               className="header-icon-btn"
-              title={bulkMode ? 'Auswahl beenden' : 'Mehrere auswählen'}
-              onClick={() => (bulkMode ? exitBulk() : setBulkMode(true))}
+              title={bulkMode ? 'Auswahl beenden' : 'Mehrere auswählen (alle sichtbaren)'}
+              onClick={() => {
+                if (bulkMode) {
+                  exitBulk();
+                } else {
+                  setBulkMode(true);
+                  setSelectedIds(new Set(visibleTasks.map((t) => t.id)));
+                }
+              }}
             >
               {bulkMode ? '✕' : '☑'}
             </button>
@@ -415,6 +481,8 @@ function App() {
           selectionMode={bulkMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
+          onCtrlSelect={ctrlSelect}
+          onShiftSelect={shiftSelect}
         />
         </>
         )}

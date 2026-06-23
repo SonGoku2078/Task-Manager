@@ -313,7 +313,7 @@ interface AppState {
   reorderProjects: (draggedId: string, targetId: string) => void;
 
   // Project sections (groups)
-  addSection: (projectId: string, name: string) => Section;
+  addSection: (scope: string, name: string) => Section;
   renameSection: (id: string, name: string) => void;
   deleteSection: (id: string) => void;
   reorderSections: (draggedId: string, targetId: string) => void;
@@ -744,8 +744,8 @@ export const useStore = create<AppState>()(
           };
         }),
 
-      addSection: (projectId, name) => {
-        const section: Section = { id: uid('sec'), projectId, name };
+      addSection: (scope, name) => {
+        const section: Section = { id: uid('sec'), scope, name };
         set((state) => ({ sections: [...state.sections, section] }));
         return section;
       },
@@ -1280,7 +1280,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'nozbe-clone-state',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage, { reviver: dateReviver }),
       partialize: (state) => ({
         tasks: state.tasks,
@@ -1317,6 +1317,15 @@ export const useStore = create<AppState>()(
           state.nextTaskNumber = state.tasks.length + 1;
           // The activity-log entry shape changed incompatibly in v2; start fresh.
           state.activityLog = [];
+        }
+        // v2 → v3: sections moved from project-bound (projectId) to scope-bound (scope).
+        if (Array.isArray(state.sections)) {
+          state.sections = (state.sections as Array<Record<string, unknown>>).map(
+            (s) => ({
+              ...s,
+              scope: (s.scope as string) ?? (s.projectId as string),
+            })
+          );
         }
         // Always-on: ensure the Single-Tasks bucket and blockers array exist.
         if (!Array.isArray(state.blockers)) state.blockers = [];

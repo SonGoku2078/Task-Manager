@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore, DEFAULT_NAV_ORDER } from '../store';
 import type { ViewType } from '../types';
+import { readTaskIds } from '../dnd';
 import './Sidebar.css';
 
 // Icon + label for every reorderable main menu (order comes from settings.navOrder).
@@ -97,9 +98,8 @@ export default function Sidebar() {
                 if (dragId) {
                   reorderNav(dragId, id);
                 } else {
-                  const taskId = e.dataTransfer.getData('text/plain');
                   const flag = taskDropFlag(id);
-                  if (taskId && flag) updateTask(taskId, flag);
+                  if (flag) readTaskIds(e).forEach((taskId) => updateTask(taskId, flag));
                 }
                 setDragId(null);
                 setOverId(null);
