@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import type { MouseEvent } from 'react';
 import { useStore } from '../store';
-import { isSameDay, tasksOnDate, dateKey } from '../selectors';
+import {
+  isSameDay,
+  tasksOnDate,
+  dateKey,
+  startOfWeek,
+  addDays,
+  isoWeek,
+} from '../selectors';
 import { downloadICS } from '../ics';
 import './CalendarPanel.css';
 
@@ -23,11 +31,7 @@ const monthNames = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
 ];
-const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
-// Monday-first index (0 = Monday).
-const firstWeekday = (y: number, m: number) => (new Date(y, m, 1).getDay() + 6) % 7;
+const weekDayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 export default function CalendarPanel() {
   const currentDate = useStore((s) => s.ui.currentDate);
@@ -36,44 +40,34 @@ export default function CalendarPanel() {
   const setSelectedDates = useStore((s) => s.setSelectedDates);
   const setView = useStore((s) => s.setView);
   const tasks = useStore((s) => s.tasks);
+  const updateTask = useStore((s) => s.updateTask);
+  const monthCount = useStore((s) => s.settings.calendarMonthCount ?? 1);
+  const setCalendarMonthCount = useStore((s) => s.setCalendarMonthCount);
+
+  const [dropKey, setDropKey] = useState<string | null>(null);
 
   // Effective selection (fallback to the anchor day when nothing explicit is chosen).
   const selectedSet = new Set(
     selectedDates.length ? selectedDates : [dateKey(currentDate)]
   );
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
   const today = new Date();
 
-  const totalDays = daysInMonth(year, month);
-  const lead = firstWeekday(year, month);
-
-  const cells: ({ day: number; date: Date } | null)[] = [];
-  for (let i = 0; i < lead; i++) cells.push(null);
-  for (let d = 1; d <= totalDays; d++) {
-    cells.push({ day: d, date: new Date(year, month, d) });
-  }
-  while (cells.length % 7 !== 0) cells.push(null);
-
   const changeMonth = (delta: number) => {
-    setCurrentDate(new Date(year, month + delta, 1));
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1));
   };
 
   const selectDay = (date: Date, e: MouseEvent) => {
     const key = dateKey(date);
     if (e.shiftKey) {
-      // Range from the anchor day to the clicked day.
       setSelectedDates(rangeKeys(currentDate, date));
     } else if (e.ctrlKey || e.metaKey) {
-      // Toggle this day in/out of the multi-selection.
       const base = selectedDates.length ? selectedDates : [dateKey(currentDate)];
       const next = base.includes(key)
         ? base.filter((k) => k !== key)
         : [...base, key];
       setSelectedDates(next);
     } else {
-      // Plain click selects a single day.
       setSelectedDates([key]);
     }
     setCurrentDate(date);
@@ -81,13 +75,130 @@ export default function CalendarPanel() {
   };
 
   const selectToday = () => {
-    const today = new Date();
-    setSelectedDates([dateKey(today)]);
-    setCurrentDate(today);
+    const t = new Date();
+    setSelectedDates([dateKey(t)]);
+    setCurrentDate(t);
     setView('calendar');
   };
 
   const isSelected = (date: Date) => selectedSet.has(dateKey(date));
+
+  // Drag a task from anywhere (week view / list) onto a day → reschedule it.
+  const onDropDay = (date: Date) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    if (id) updateTask(id, { dueDate: new Date(date) });
+    setDropKey(null);
+  };
+
+  // Drag the bottom handle to reveal / hide the second month.
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startCount = monthCount;
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientY - startY;
+      setCalendarMonthCount(startCount + Math.round(delta / 130));
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const renderMonth = (offset: number) => {
+    const base = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const gridStart = startOfWeek(base); // Monday on/before the 1st
+    // 6 week-rows always fully cover any month.
+    const weeks = Array.from({ length: 6 }, (_, w) =>
+      Array.from({ length: 7 }, (_, d) => addDays(gridStart, w * 7 + d))
+    );
+
+    return (
+      <div key={offset} className="calendar-month">
+        <div className="calendar-nav">
+          {offset === 0 ? (
+            <button className="cal-nav-btn" onClick={() => changeMonth(-1)} title="Vorheriger Monat">
+              ‹
+            </button>
+          ) : (
+            <span className="cal-nav-spacer" />
+          )}
+          <span className="cal-month-label">
+            {monthNames[month]} {year}
+          </span>
+          {offset === monthCount - 1 ? (
+            <button className="cal-nav-btn" onClick={() => changeMonth(1)} title="Nächster Monat">
+              ›
+            </button>
+          ) : (
+            <span className="cal-nav-spacer" />
+          )}
+        </div>
+
+        <div className="weekdays">
+          <div className="weekday weeknum-head" title="Kalenderwoche">
+            KW
+          </div>
+          {weekDayLabels.map((d) => (
+            <div key={d} className="weekday">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        <div className="calendar-grid">
+          {weeks.map((week) => (
+            <div key={dateKey(week[0])} className="cal-week-row">
+              <div className="cal-weeknum" title="Kalenderwoche">
+                {isoWeek(week[0])}
+              </div>
+              {week.map((date) => {
+                const dayTasks = tasksOnDate(tasks, date);
+                const openCount = dayTasks.filter((t) => !t.completed).length;
+                const doneCount = dayTasks.length - openCount;
+                const key = dateKey(date);
+                return (
+                  <button
+                    key={key}
+                    className={`cal-day ${date.getMonth() === month ? '' : 'outside'} ${
+                      isSameDay(date, today) ? 'today' : ''
+                    } ${isSelected(date) ? 'selected' : ''} ${
+                      dropKey === key ? 'drop-target' : ''
+                    }`}
+                    onClick={(e) => selectDay(date, e)}
+                    onDragOver={(e) => {
+                      if (e.dataTransfer.types.includes('text/plain')) {
+                        e.preventDefault();
+                        setDropKey(key);
+                      }
+                    }}
+                    onDragLeave={() => setDropKey((c) => (c === key ? null : c))}
+                    onDrop={onDropDay(date)}
+                  >
+                    <span className="cal-day-num">{date.getDate()}</span>
+                    {dayTasks.length > 0 && (
+                      <span
+                        className="cal-day-dots"
+                        title={`${openCount} offen · ${doneCount} erledigt`}
+                      >
+                        {openCount > 0 && <span className="cal-dot open" />}
+                        {doneCount > 0 && <span className="cal-dot done" />}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="calendar-panel">
@@ -97,43 +208,14 @@ export default function CalendarPanel() {
         Heute
       </button>
 
-      <div className="calendar-nav">
-        <button className="cal-nav-btn" onClick={() => changeMonth(-1)} title="Vorheriger Monat">
-          ‹
-        </button>
-        <span className="cal-month-label">
-          {monthNames[month]} {year}
-        </span>
-        <button className="cal-nav-btn" onClick={() => changeMonth(1)} title="Nächster Monat">
-          ›
-        </button>
-      </div>
+      {Array.from({ length: monthCount }, (_, i) => renderMonth(i))}
 
-      <div className="weekdays">
-        {weekDays.map((d) => (
-          <div key={d} className="weekday">
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="calendar-grid">
-        {cells.map((cell, idx) => {
-          if (!cell) return <div key={idx} className="cal-day empty" />;
-          const count = tasksOnDate(tasks, cell.date).length;
-          return (
-            <button
-              key={idx}
-              className={`cal-day ${isSameDay(cell.date, today) ? 'today' : ''} ${
-                isSelected(cell.date) ? 'selected' : ''
-              }`}
-              onClick={(e) => selectDay(cell.date, e)}
-            >
-              <span className="cal-day-num">{cell.day}</span>
-              {count > 0 && <span className="cal-day-dot">{count > 3 ? '•••' : '•'.repeat(count)}</span>}
-            </button>
-          );
-        })}
+      <div
+        className="calendar-resize"
+        title={monthCount < 2 ? 'Nach unten ziehen für 2. Monat' : 'Nach oben ziehen für 1 Monat'}
+        onMouseDown={startResize}
+      >
+        <span className="calendar-resize-grip" />
       </div>
 
       {selectedDates.length > 1 ? (
@@ -148,7 +230,7 @@ export default function CalendarPanel() {
         </div>
       ) : (
         <p className="cal-multi-hint">
-          Mehrere Tage: Strg/Cmd-Klick · Bereich: Shift-Klick
+          Mehrere Tage: Strg/Cmd-Klick · Bereich: Shift-Klick · Aufgabe auf einen Tag ziehen verschiebt sie
         </p>
       )}
 

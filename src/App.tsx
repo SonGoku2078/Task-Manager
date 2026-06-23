@@ -6,6 +6,7 @@ import type { ViewType } from './types';
 import './App.css';
 import Sidebar from './components/Sidebar';
 import CalendarPanel from './components/CalendarPanel';
+import WeekView from './components/WeekView';
 import ProjectsPanel from './components/ProjectsPanel';
 import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
@@ -75,6 +76,8 @@ function App() {
   const deleteTask = useStore((s) => s.deleteTask);
   const addToTop = useStore((s) => s.settings.addToTop ?? false);
   const setAddToTop = useStore((s) => s.setAddToTop);
+  const calendarMode = useStore((s) => s.settings.calendarMode ?? 'list');
+  const setCalendarMode = useStore((s) => s.setCalendarMode);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const quickAddRef = useRef<HTMLInputElement>(null);
@@ -277,6 +280,27 @@ function App() {
           <SettingsView />
         ) : (
         <>
+        {ui.currentView === 'calendar' && (
+          <div className="calendar-mode-toggle">
+            {(['list', 'week', 'rolling'] as const).map((m) => (
+              <button
+                key={m}
+                className={`cal-mode-btn ${calendarMode === m ? 'active' : ''}`}
+                onClick={() => setCalendarMode(m)}
+              >
+                {m === 'list'
+                  ? '📋 Tag / Liste'
+                  : m === 'week'
+                    ? '🗓 Woche (Mo–So)'
+                    : '↻ Rollierend (7 Tage)'}
+              </button>
+            ))}
+          </div>
+        )}
+        {ui.currentView === 'calendar' && calendarMode !== 'list' ? (
+          <WeekView mode={calendarMode} />
+        ) : (
+        <>
         {ui.currentView !== 'completed' && (
         <div className="quick-add">
           <button
@@ -367,6 +391,8 @@ function App() {
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
         />
+        </>
+        )}
         </>
         )}
       </div>

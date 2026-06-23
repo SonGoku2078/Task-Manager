@@ -157,6 +157,34 @@ body {
   transform: translateX(17px);
 }
 
+.calendar-mode-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px 0;
+}
+
+.cal-mode-btn {
+  border: 1px solid var(--border-light);
+  background: var(--main-bg);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+}
+
+.cal-mode-btn:hover {
+  background: var(--hover-bg);
+}
+
+.cal-mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
 .project-title-input {
   flex: 1;
   min-width: 0;

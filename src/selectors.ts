@@ -157,3 +157,34 @@ export const selectPriorityTasks = (tasks: Task[], limit = 5): Task[] => {
 
 export const tasksOnDate = (tasks: Task[], date: Date): Task[] =>
   tasks.filter((t) => t.dueDate && isSameDay(t.dueDate, date));
+
+// --- Week / calendar grid helpers ---------------------------------------
+
+export const addDays = (d: Date, n: number): Date => {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  r.setHours(0, 0, 0, 0);
+  return r;
+};
+
+// Monday-based start of the week containing `d`.
+export const startOfWeek = (d: Date): Date => {
+  const r = startOfDay(d);
+  const offset = (r.getDay() + 6) % 7; // 0 = Monday
+  return addDays(r, -offset);
+};
+
+// Seven consecutive days starting at `start`.
+export const weekDays7 = (start: Date): Date[] =>
+  Array.from({ length: 7 }, (_, i) => addDays(start, i));
+
+// ISO-8601 week number (weeks start Monday; week 1 contains the first Thursday).
+export const isoWeek = (d: Date): number => {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7; // 0 = Monday
+  date.setUTCDate(date.getUTCDate() - dayNum + 3); // nearest Thursday
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  return 1 + Math.round((date.getTime() - firstThursday.getTime()) / (7 * 864e5));
+};

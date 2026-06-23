@@ -18,6 +18,10 @@ export interface NozbeConnection {
 
 export type ProjectSort = 'manual' | 'name' | 'color';
 
+// Calendar main-area display mode: classic day/list, a Mon–Sun week grid,
+// or a rolling 7-day window (today + the next 6 days).
+export type CalendarMode = 'list' | 'week' | 'rolling';
+
 export interface Settings {
   userName: string;
   theme: Theme;
@@ -26,6 +30,10 @@ export interface Settings {
   projectSort?: ProjectSort; // ordering of the projects panel
   projectsPanelWidth?: number; // user-resized width of the projects panel (px)
   detailPanelWidth?: number; // user-resized width of the task detail panel (px)
+  calendarMode?: CalendarMode; // how the calendar main area is shown
+  calendarStartHour?: number; // first hour shown in the week grid (0–23)
+  calendarEndHour?: number; // last hour shown in the week grid (1–24)
+  calendarMonthCount?: number; // months stacked in the month panel (1 or 2)
 }
 
 export type ViewType =

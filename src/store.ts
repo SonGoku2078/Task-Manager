@@ -18,6 +18,7 @@ import type {
   Theme,
   Attachment,
   ProjectSort,
+  CalendarMode,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
@@ -194,6 +195,10 @@ const defaultUIState: UIState = {
 const defaultSettings: Settings = {
   userName: 'Du',
   theme: 'light',
+  calendarMode: 'list',
+  calendarStartHour: 6,
+  calendarEndHour: 22,
+  calendarMonthCount: 1,
 };
 
 export interface NewTaskInput {
@@ -289,6 +294,9 @@ interface AppState {
   setProjectSort: (sort: ProjectSort) => void;
   setProjectsPanelWidth: (px: number) => void;
   setDetailPanelWidth: (px: number) => void;
+  setCalendarMode: (mode: CalendarMode) => void;
+  setCalendarHours: (startHour: number, endHour: number) => void;
+  setCalendarMonthCount: (count: number) => void;
 
   // Nozbe connection + live sync
   connectNozbe: (token: string, clientId: string) => void;
@@ -911,6 +919,26 @@ export const useStore = create<AppState>()(
 
       setProjectSort: (sort) =>
         set((state) => ({ settings: { ...state.settings, projectSort: sort } })),
+
+      setCalendarMode: (mode) =>
+        set((state) => ({ settings: { ...state.settings, calendarMode: mode } })),
+
+      setCalendarHours: (startHour, endHour) =>
+        set((state) => {
+          const s = Math.max(0, Math.min(23, Math.round(startHour)));
+          const e = Math.max(s + 1, Math.min(24, Math.round(endHour)));
+          return {
+            settings: { ...state.settings, calendarStartHour: s, calendarEndHour: e },
+          };
+        }),
+
+      setCalendarMonthCount: (count) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            calendarMonthCount: Math.max(1, Math.min(2, Math.round(count))),
+          },
+        })),
 
       setProjectsPanelWidth: (px) =>
         set((state) => ({
