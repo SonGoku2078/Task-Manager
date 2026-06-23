@@ -34,6 +34,7 @@ export interface Settings {
   calendarStartHour?: number; // first hour shown in the week grid (0–23)
   calendarEndHour?: number; // last hour shown in the week grid (1–24)
   calendarMonthCount?: number; // months stacked in the month panel (1 or 2)
+  calendarHourHeight?: number; // px per hour in the week grid (zoom: 24–160)
 }
 
 export type ViewType =
@@ -88,6 +89,11 @@ export interface Task {
   projectId: string | null;
   parentId?: string | null; // set for subtasks; root tasks are null/undefined
   dueDate: Date | null;
+  // Time-of-day scheduling within dueDate's day. null/undefined = no time
+  // (task sits in the day's "ohne Zeit" slot); a number = minutes from midnight
+  // (task is positioned on the week-view time axis).
+  startMinutes?: number | null;
+  durationMin?: number | null; // block length in minutes (default 60 when timed)
   priority: Priority;
   categoryIds: string[];
   completed: boolean;

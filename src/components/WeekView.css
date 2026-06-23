@@ -79,12 +79,11 @@
   color: var(--text-primary);
 }
 
-/* --- shared 8-column track (time gutter + 7 days) --- */
+/* --- shared track (time gutter + N day columns); columns set inline --- */
 .week-head,
 .week-allday,
 .week-grid {
   display: grid;
-  grid-template-columns: 56px repeat(7, 1fr);
 }
 
 .week-head {
@@ -129,6 +128,14 @@
   font-size: 14px;
 }
 
+/* Selected (but not today) column: a distinct blue tint to tell the two apart. */
+.week-col-head.is-selected:not(.is-today) {
+  background: rgba(33, 150, 243, 0.16);
+}
+.week-col-head.is-selected:not(.is-today) .week-col-date {
+  color: #1565c0;
+}
+
 /* --- all-day strip --- */
 .week-allday {
   border-bottom: 2px solid var(--border-light);
@@ -155,7 +162,7 @@
 
 .week-task {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   padding: 4px 6px;
   background: var(--hover-bg);
@@ -164,6 +171,10 @@
   cursor: pointer;
   font-size: 12px;
   color: var(--text-primary);
+}
+
+.week-task-check {
+  margin-top: 1px;
 }
 
 .week-task:hover {
@@ -185,9 +196,10 @@
 }
 
 .week-task-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.25;
+  min-width: 0;
 }
 
 /* --- time grid --- */
@@ -199,26 +211,76 @@
 
 .week-gutter {
   border-right: 1px solid var(--border-light);
+  cursor: ns-resize;
+  user-select: none;
 }
 
 .week-hour-label {
-  height: 40px;
   font-size: 10px;
   color: var(--text-secondary);
   text-align: right;
   padding-right: 6px;
-  transform: translateY(-6px);
+  box-sizing: border-box;
+  border-top: 1px solid transparent;
 }
 
 .week-col {
+  position: relative;
   border-left: 1px solid var(--border-light);
+  background-repeat: repeat;
 }
 
 .week-col.is-today {
-  background: var(--accent-soft);
+  background-color: var(--accent-soft);
 }
 
-.week-hour-cell {
-  height: 40px;
-  border-top: 1px solid var(--border-light);
+/* A timed task rendered as a positioned block. */
+.week-block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  overflow: hidden;
+  background: var(--main-bg);
+  border: 1px solid var(--border-light);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.week-block.selected {
+  outline: 2px solid var(--accent);
+}
+
+.week-block.done .week-block-title {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.week-block-time {
+  font-weight: 600;
+  margin-right: 4px;
+  color: var(--text-secondary);
+}
+
+.week-block-title {
+  overflow-wrap: anywhere;
+}
+
+.week-block-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  cursor: ns-resize;
+}
+
+.week-block-resize:hover {
+  background: var(--accent);
+  opacity: 0.4;
 }

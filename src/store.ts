@@ -199,6 +199,7 @@ const defaultSettings: Settings = {
   calendarStartHour: 6,
   calendarEndHour: 22,
   calendarMonthCount: 1,
+  calendarHourHeight: 48,
 };
 
 export interface NewTaskInput {
@@ -207,6 +208,8 @@ export interface NewTaskInput {
   projectId?: string | null;
   parentId?: string | null;
   dueDate?: Date | null;
+  startMinutes?: number | null;
+  durationMin?: number | null;
   priority?: Task['priority'];
   categoryIds?: string[];
   starred?: boolean;
@@ -297,6 +300,7 @@ interface AppState {
   setCalendarMode: (mode: CalendarMode) => void;
   setCalendarHours: (startHour: number, endHour: number) => void;
   setCalendarMonthCount: (count: number) => void;
+  setCalendarHourHeight: (px: number) => void;
 
   // Nozbe connection + live sync
   connectNozbe: (token: string, clientId: string) => void;
@@ -340,6 +344,8 @@ export const useStore = create<AppState>()(
           projectId: input.projectId ?? null,
           parentId: input.parentId ?? null,
           dueDate: input.dueDate ?? null,
+          startMinutes: input.startMinutes ?? null,
+          durationMin: input.durationMin ?? null,
           priority: input.priority ?? 'medium',
           categoryIds: input.categoryIds ?? [],
           completed: false,
@@ -937,6 +943,14 @@ export const useStore = create<AppState>()(
           settings: {
             ...state.settings,
             calendarMonthCount: Math.max(1, Math.min(2, Math.round(count))),
+          },
+        })),
+
+      setCalendarHourHeight: (px) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            calendarHourHeight: Math.max(24, Math.min(160, Math.round(px))),
           },
         })),
 

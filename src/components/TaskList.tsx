@@ -74,7 +74,9 @@ export default function TaskList({
               setOverId(null);
             }}
             onClick={() =>
-              selectionMode ? onToggleSelect?.(task.id) : selectTask(task.id)
+              selectionMode
+                ? onToggleSelect?.(task.id)
+                : selectTask(selectedTaskId === task.id ? null : task.id)
             }
           >
             <input

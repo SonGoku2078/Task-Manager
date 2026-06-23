@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ClipboardEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';

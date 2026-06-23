@@ -64,6 +64,13 @@
   font-size: 13px;
   font-weight: 600;
   color: #fff;
+  text-align: center;
+}
+
+.cal-nav-hint {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
 }
 
 .weekdays {
@@ -106,6 +113,17 @@
   font-size: 10px;
   color: #6b7178;
   font-variant-numeric: tabular-nums;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.cal-weeknum:hover {
+  background: rgba(33, 150, 243, 0.25);
+  color: #fff;
 }
 
 .cal-day {
@@ -134,6 +152,12 @@
 .cal-day.drop-target {
   border-color: var(--accent);
   background: rgba(76, 175, 80, 0.3);
+}
+
+/* Days currently shown in the main area (week/rolling/selected): blue underline.
+   Stacks on top of today/selected so you can tell "today" from "in view". */
+.cal-day.in-view {
+  box-shadow: inset 0 -3px 0 rgba(33, 150, 243, 0.85);
 }
 
 .cal-day:hover {
