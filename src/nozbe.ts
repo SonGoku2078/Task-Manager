@@ -328,17 +328,6 @@ export const pushNozbeCompleted = (
 export function mapNozbe(raw: NozbeExport): MappedImport {
   const now = new Date();
 
-  // Diagnostic: show the colour/order values we now read (_color / _sort). If colours
-  // still look off, share these so the exact _color format can be mapped.
-  if (raw.projects?.length) {
-    console.info(
-      '[Nozbe-Import] Projekte _color/_sort:',
-      (raw.projects as Record<string, unknown>[])
-        .slice(0, 5)
-        .map((p) => `${p.name}: color=${JSON.stringify(p._color)} sort=${JSON.stringify(p._sort)}`)
-    );
-  }
-
   // Nozbe's own "Inbox" is a pseudo-project; its tasks belong in our dedicated Inbox
   // view (projectId === null), not in a real project named "Inbox". Drop it from the
   // project list and treat its tasks as project-less.
