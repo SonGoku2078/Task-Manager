@@ -161,6 +161,16 @@ body {
   transform: translateX(17px);
 }
 
+/* Calendar docked on the right in project view (drag tasks onto a day). */
+.calendar-right-dock {
+  display: flex;
+  flex-shrink: 0;
+}
+.calendar-right-dock .calendar-panel {
+  border-right: none;
+  border-left: 1px solid var(--border-dark);
+}
+
 .calendar-mode-toggle {
   display: flex;
   gap: 6px;

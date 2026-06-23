@@ -139,8 +139,11 @@ function App() {
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
 
+  const multiProject =
+    ui.currentView === 'projects' && ui.selectedProjectIds.length > 1;
+
   const currentProject =
-    ui.currentView === 'projects' && ui.selectedProjectId
+    !multiProject && ui.currentView === 'projects' && ui.selectedProjectId
       ? projects.find((p) => p.id === ui.selectedProjectId)
       : null;
 
@@ -151,6 +154,8 @@ function App() {
 
   const headerTitle = currentProject
     ? `${currentProject.icon} ${currentProject.name}`
+    : multiProject
+      ? `${ui.selectedProjectIds.length} Projekte ausgewählt`
     : activeSavedView
       ? `🔎 ${activeSavedView.name}`
       : ui.currentView === 'calendar'
@@ -396,6 +401,12 @@ function App() {
         </>
         )}
       </div>
+
+      {ui.currentView === 'projects' && (
+        <div className="calendar-right-dock">
+          <CalendarPanel />
+        </div>
+      )}
 
       {selectedTask && <TaskDetailPanel task={selectedTask} />}
     </div>

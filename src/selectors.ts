@@ -109,11 +109,18 @@ export const selectVisibleTasks = (tasks: Task[], ui: UIState): Task[] => {
           return ad - bd;
         });
       break;
-    case 'projects':
-      if (ui.selectedProjectId) {
-        result = result.filter((t) => t.projectId === ui.selectedProjectId);
+    case 'projects': {
+      const ids = ui.selectedProjectIds?.length
+        ? ui.selectedProjectIds
+        : ui.selectedProjectId
+          ? [ui.selectedProjectId]
+          : [];
+      if (ids.length) {
+        const set = new Set(ids);
+        result = result.filter((t) => t.projectId && set.has(t.projectId));
       }
       break;
+    }
     case 'today': {
       const now = new Date();
       // Today = the day's agenda (due today). Overdue lives in Priorität.

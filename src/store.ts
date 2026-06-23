@@ -202,6 +202,7 @@ const nextRecurrence = (date: Date, task: Task): Date => {
 const defaultUIState: UIState = {
   selectedTaskId: null,
   selectedProjectId: null,
+  selectedProjectIds: [],
   currentView: 'inbox',
   currentDate: new Date(),
   selectedDates: [],
@@ -313,6 +314,7 @@ interface AppState {
   // UI
   selectTask: (id: string | null) => void;
   selectProject: (id: string | null) => void;
+  toggleProjectSelected: (id: string) => void;
   setView: (view: ViewType) => void;
   setSidePanel: (panel: SidePanel) => void;
   setCurrentDate: (date: Date) => void;
@@ -908,7 +910,33 @@ export const useStore = create<AppState>()(
         set((state) => ({ ui: { ...state.ui, selectedTaskId: id } })),
 
       selectProject: (id) =>
-        set((state) => ({ ui: { ...state.ui, selectedProjectId: id } })),
+        set((state) => ({
+          ui: {
+            ...state.ui,
+            selectedProjectId: id,
+            selectedProjectIds: id ? [id] : [],
+          },
+        })),
+
+      // Ctrl/Cmd-click: add/remove a project from the combined multi-selection.
+      toggleProjectSelected: (id) =>
+        set((state) => {
+          const cur = state.ui.selectedProjectIds.length
+            ? state.ui.selectedProjectIds
+            : state.ui.selectedProjectId
+              ? [state.ui.selectedProjectId]
+              : [];
+          const next = cur.includes(id)
+            ? cur.filter((p) => p !== id)
+            : [...cur, id];
+          return {
+            ui: {
+              ...state.ui,
+              selectedProjectIds: next,
+              selectedProjectId: next[0] ?? null,
+            },
+          };
+        }),
 
       setView: (view) =>
         set((state) => ({

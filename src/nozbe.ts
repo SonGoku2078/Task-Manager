@@ -327,13 +327,15 @@ export const pushNozbeCompleted = (
 export function mapNozbe(raw: NozbeExport): MappedImport {
   const now = new Date();
 
-  // Diagnostic: dump the raw fields of the first project & context so we can confirm
-  // which fields Nozbe actually uses for colour and ordering (open DevTools console).
+  // Diagnostic: dump the raw fields of the first project so we can confirm which
+  // fields Nozbe uses for colour and ordering (open DevTools console after a sync).
   if (raw.projects?.length) {
-    console.info('[Nozbe-Import] Beispiel-Projekt (rohe Felder):', raw.projects[0]);
+    const p0 = raw.projects[0] as Record<string, unknown>;
+    console.info('[Nozbe-Import] Projekt-Felder:', Object.keys(p0).join(', '));
+    console.info('[Nozbe-Import] Beispiel-Projekt:', p0);
   }
   if (raw.contexts?.length) {
-    console.info('[Nozbe-Import] Beispiel-Kategorie (rohe Felder):', raw.contexts[0]);
+    console.info('[Nozbe-Import] Beispiel-Kategorie:', raw.contexts[0]);
   }
 
   // Nozbe's own "Inbox" is a pseudo-project; its tasks belong in our dedicated Inbox

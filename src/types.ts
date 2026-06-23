@@ -192,6 +192,7 @@ export interface SavedView {
 export interface UIState {
   selectedTaskId: string | null;
   selectedProjectId: string | null;
+  selectedProjectIds: string[]; // multi-project selection (combined task list)
   currentView: ViewType;
   currentDate: Date;
   selectedDates: string[]; // multi-day calendar selection (YYYY-MM-DD keys)

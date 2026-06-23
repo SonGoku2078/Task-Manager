@@ -7,7 +7,9 @@ export default function ProjectsPanel() {
   const projects = useStore((s) => s.projects);
   const tasks = useStore((s) => s.tasks);
   const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
+  const selectedProjectIds = useStore((s) => s.ui.selectedProjectIds);
   const selectProject = useStore((s) => s.selectProject);
+  const toggleProjectSelected = useStore((s) => s.toggleProjectSelected);
   const addProject = useStore((s) => s.addProject);
   const reorderProjects = useStore((s) => s.reorderProjects);
   const storedWidth = useStore((s) => s.settings.projectsPanelWidth);
@@ -113,11 +115,17 @@ export default function ProjectsPanel() {
         {sorted.map((p) => (
           <div
             key={p.id}
-            className={`projects-item ${selectedProjectId === p.id ? 'active' : ''} ${
-              anyPinned && !p.pinned ? 'dimmed' : ''
-            } ${overId === p.id ? 'drag-over' : ''} ${dragId === p.id ? 'dragging' : ''}`}
+            className={`projects-item ${
+              (selectedProjectIds.length ? selectedProjectIds.includes(p.id) : selectedProjectId === p.id)
+                ? 'active'
+                : ''
+            } ${anyPinned && !p.pinned ? 'dimmed' : ''} ${
+              overId === p.id ? 'drag-over' : ''
+            } ${dragId === p.id ? 'dragging' : ''}`}
             draggable={canDrag}
-            onClick={() => selectProject(p.id)}
+            onClick={(e) =>
+              e.ctrlKey || e.metaKey ? toggleProjectSelected(p.id) : selectProject(p.id)
+            }
             onDragStart={() => canDrag && setDragId(p.id)}
             onDragOver={(e) => {
               if (!canDrag || !dragId) return;

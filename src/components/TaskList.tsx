@@ -25,6 +25,7 @@ export default function TaskList({
   const selectedTaskId = useStore((s) => s.ui.selectedTaskId);
   const currentView = useStore((s) => s.ui.currentView);
   const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
+  const selectedProjectIds = useStore((s) => s.ui.selectedProjectIds);
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
   const sections = useStore((s) => s.sections);
@@ -44,7 +45,9 @@ export default function TaskList({
   const [newSectionName, setNewSectionName] = useState('');
 
   const dragEnabled = !selectionMode;
-  const inProject = currentView === 'projects' && !!selectedProjectId;
+  // Sections only make sense for a single project (not a multi-project combined list).
+  const inProject =
+    currentView === 'projects' && !!selectedProjectId && selectedProjectIds.length <= 1;
   const hideProject = inProject; // quieter: project name is the page title already
   const projectSections = inProject
     ? sections.filter((s) => s.projectId === selectedProjectId)

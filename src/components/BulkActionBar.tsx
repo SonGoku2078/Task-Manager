@@ -98,6 +98,30 @@ export default function BulkActionBar({
           <option value="low">Niedrig</option>
         </select>
 
+        <label className="bulk-date" title="Fälligkeit für die Auswahl setzen">
+          📅
+          <input
+            type="date"
+            className="bulk-select bulk-date-input"
+            disabled={disabled}
+            value=""
+            onChange={(e) => {
+              if (e.target.value) {
+                bulkUpdate(selectedIds, { dueDate: new Date(e.target.value) });
+                e.target.value = '';
+              }
+            }}
+          />
+        </label>
+        <button
+          className="bulk-btn"
+          disabled={disabled}
+          title="Fälligkeit von der Auswahl entfernen"
+          onClick={() => bulkUpdate(selectedIds, { dueDate: null })}
+        >
+          🗓✕ Datum entfernen
+        </button>
+
         <button
           className="bulk-btn bulk-btn-danger"
           disabled={disabled}
