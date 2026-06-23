@@ -7,6 +7,7 @@ import {
   isSameDay,
   dateKey,
   tasksOnDate,
+  isInNextWeekWindow,
 } from '../selectors';
 import type { Task } from '../types';
 import './WeekView.css';
@@ -46,7 +47,13 @@ export default function WeekView({ mode }: WeekViewProps) {
 
   // Blocker editor state.
   const [showBlockers, setShowBlockers] = useState(false);
-  const activeProjects = projects.filter((p) => p.active !== false);
+  // Only projects that actually have tasks in Next Week can get a blocker.
+  const nextWeekProjectIds = new Set(
+    tasks
+      .filter((t) => !t.completed && t.projectId && (t.thisWeek || isInNextWeekWindow(t)))
+      .map((t) => t.projectId as string)
+  );
+  const blockerProjects = projects.filter((p) => nextWeekProjectIds.has(p.id));
   const [blkProject, setBlkProject] = useState('');
   const [blkDays, setBlkDays] = useState<number[]>([0, 1, 2]);
   const [blkFrom, setBlkFrom] = useState(8);
@@ -245,8 +252,10 @@ export default function WeekView({ mode }: WeekViewProps) {
         <div className="week-blocker-editor">
           <div className="week-blocker-form">
             <select value={blkProject} onChange={(e) => setBlkProject(e.target.value)}>
-              <option value="">Projekt wählen…</option>
-              {activeProjects.map((p) => (
+              <option value="">
+                {blockerProjects.length ? 'Projekt wählen…' : 'Keine Projekte in Next Week'}
+              </option>
+              {blockerProjects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.icon} {p.name}
                 </option>
