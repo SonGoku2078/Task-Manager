@@ -128,12 +128,24 @@ export const selectVisibleTasks = (
     case 'completed':
       result = result.filter((t) => t.completed);
       break;
-    case 'someday':
-      // Someday = parked tasks, or tasks in inactive projects.
-      result = result.filter(
-        (t) => t.someday || !isActiveProjectTask(t, projects)
-      );
+    case 'someday': {
+      // A selected Someday project shows its tasks; otherwise the Someday
+      // overview (parked tasks + tasks in inactive projects).
+      const ids = ui.selectedProjectIds?.length
+        ? ui.selectedProjectIds
+        : ui.selectedProjectId
+          ? [ui.selectedProjectId]
+          : [];
+      if (ids.length) {
+        const set = new Set(ids);
+        result = result.filter((t) => t.projectId && set.has(t.projectId));
+      } else {
+        result = result.filter(
+          (t) => t.someday || !isActiveProjectTask(t, projects)
+        );
+      }
       break;
+    }
     case 'nextweek':
       // Committed for this week (manual flag) OR dated within the coming week.
       result = result.filter(

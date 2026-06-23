@@ -47,7 +47,9 @@ export default function TaskList({
   const dragEnabled = !selectionMode;
   // Sections only make sense for a single project (not a multi-project combined list).
   const inProject =
-    currentView === 'projects' && !!selectedProjectId && selectedProjectIds.length <= 1;
+    (currentView === 'projects' || currentView === 'someday') &&
+    !!selectedProjectId &&
+    selectedProjectIds.length <= 1;
   const hideProject = inProject; // quieter: project name is the page title already
   const projectSections = inProject
     ? sections.filter((s) => s.projectId === selectedProjectId)

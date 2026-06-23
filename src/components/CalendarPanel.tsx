@@ -43,7 +43,7 @@ export default function CalendarPanel() {
   const tasks = useStore((s) => s.tasks);
   const updateTask = useStore((s) => s.updateTask);
   const addTask = useStore((s) => s.addTask);
-  const selectTask = useStore((s) => s.selectTask);
+  const selectTaskForEdit = useStore((s) => s.selectTaskForEdit);
   const monthCount = useStore((s) => s.settings.calendarMonthCount ?? 1);
   const setCalendarMonthCount = useStore((s) => s.setCalendarMonthCount);
   const calendarMode = useStore((s) => s.settings.calendarMode ?? 'list');
@@ -208,7 +208,7 @@ export default function CalendarPanel() {
                         dueDate: new Date(date),
                         startMinutes: null,
                       });
-                      selectTask(created.id);
+                      selectTaskForEdit(created.id);
                     }}
                     onMouseDown={(e) => {
                       if (e.shiftKey || e.ctrlKey || e.metaKey) return;

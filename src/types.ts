@@ -209,6 +209,7 @@ export interface SavedView {
 
 export interface UIState {
   selectedTaskId: string | null;
+  editTitleTaskId: string | null; // task whose title should auto-focus for editing
   selectedProjectId: string | null;
   selectedProjectIds: string[]; // multi-project selection (combined task list)
   currentView: ViewType;

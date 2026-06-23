@@ -233,6 +233,7 @@ const nextRecurrence = (date: Date, task: Task): Date => {
 
 const defaultUIState: UIState = {
   selectedTaskId: null,
+  editTitleTaskId: null,
   selectedProjectId: null,
   selectedProjectIds: [],
   currentView: 'inbox',
@@ -358,6 +359,8 @@ interface AppState {
   selectTask: (id: string | null) => void;
   selectProject: (id: string | null) => void;
   toggleProjectSelected: (id: string) => void;
+  selectTaskForEdit: (id: string) => void;
+  clearEditTitle: () => void;
   setView: (view: ViewType) => void;
   setSidePanel: (panel: SidePanel) => void;
   setCurrentDate: (date: Date) => void;
@@ -1034,6 +1037,16 @@ export const useStore = create<AppState>()(
 
       selectTask: (id) =>
         set((state) => ({ ui: { ...state.ui, selectedTaskId: id } })),
+
+      // Open a task and flag its title for immediate editing (e.g. after creating
+      // it via double-click in the calendar).
+      selectTaskForEdit: (id) =>
+        set((state) => ({
+          ui: { ...state.ui, selectedTaskId: id, editTitleTaskId: id },
+        })),
+
+      clearEditTitle: () =>
+        set((state) => ({ ui: { ...state.ui, editTitleTaskId: null } })),
 
       selectProject: (id) =>
         set((state) => ({

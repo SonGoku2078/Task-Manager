@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ClipboardEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
@@ -54,6 +54,18 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const tasks = useStore((s) => s.tasks);
   const addSubtask = useStore((s) => s.addSubtask);
   const toggleTask = useStore((s) => s.toggleTask);
+  const editTitleTaskId = useStore((s) => s.ui.editTitleTaskId);
+  const clearEditTitle = useStore((s) => s.clearEditTitle);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  // After creating a task (e.g. calendar double-click) focus + select its title.
+  useEffect(() => {
+    if (editTitleTaskId === task.id && titleRef.current) {
+      titleRef.current.focus();
+      titleRef.current.select();
+      clearEditTitle();
+    }
+  }, [editTitleTaskId, task.id, clearEditTitle]);
 
   const storedWidth = useStore((s) => s.settings.detailPanelWidth);
   const setDetailPanelWidth = useStore((s) => s.setDetailPanelWidth);
@@ -242,6 +254,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         <div className="detail-field">
           <label className="detail-label">Titel</label>
           <ClearableInput
+            ref={titleRef}
             type="text"
             className={`detail-input ${task.completed ? 'title-done' : ''}`}
             value={task.title}

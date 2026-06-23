@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import {
   startOfWeek,
@@ -31,6 +31,7 @@ export default function WeekView({ mode }: WeekViewProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const addTask = useStore((s) => s.addTask);
   const selectTask = useStore((s) => s.selectTask);
+  const selectTaskForEdit = useStore((s) => s.selectTaskForEdit);
   const selectedTaskId = useStore((s) => s.ui.selectedTaskId);
   const startHour = useStore((s) => s.settings.calendarStartHour ?? 6);
   const endHour = useStore((s) => s.settings.calendarEndHour ?? 22);
@@ -42,6 +43,13 @@ export default function WeekView({ mode }: WeekViewProps) {
   const deleteBlocker = useStore((s) => s.deleteBlocker);
 
   const today = new Date();
+  const nowMinutes = today.getHours() * 60 + today.getMinutes();
+  // Re-render every minute so the "now" line stays accurate.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 60000);
+    return () => window.clearInterval(id);
+  }, []);
   // Set true during a resize so the trailing click doesn't open the detail panel.
   const suppressClick = useRef(false);
 
@@ -146,7 +154,7 @@ export default function WeekView({ mode }: WeekViewProps) {
       startMinutes,
       durationMin: startMinutes == null ? null : 60,
     });
-    selectTask(created.id);
+    selectTaskForEdit(created.id);
   };
 
   // Drag the bottom edge of a timed block to change its duration.
@@ -473,6 +481,16 @@ export default function WeekView({ mode }: WeekViewProps) {
                   createAt(d, yToMinutes(y));
                 }}
               >
+                {/* Current-time indicator (red line) on today's column */}
+                {isSameDay(d, today) &&
+                  nowMinutes >= startHour * 60 &&
+                  nowMinutes < endHour * 60 && (
+                    <div
+                      className="week-now-line"
+                      style={{ top: ((nowMinutes - startHour * 60) / 60) * hourHeight }}
+                    />
+                  )}
+
                 {/* Project blockers (background) with the project's current next action */}
                 {dayBlockers.map((b) => {
                   const p = projectById(b.projectId);

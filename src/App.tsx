@@ -146,7 +146,9 @@ function App() {
     ui.currentView === 'projects' && ui.selectedProjectIds.length > 1;
 
   const currentProject =
-    !multiProject && ui.currentView === 'projects' && ui.selectedProjectId
+    !multiProject &&
+    (ui.currentView === 'projects' || ui.currentView === 'someday') &&
+    ui.selectedProjectId
       ? projects.find((p) => p.id === ui.selectedProjectId)
       : null;
 
