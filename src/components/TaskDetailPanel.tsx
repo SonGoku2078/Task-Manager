@@ -437,9 +437,56 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               <option value="daily">Täglich</option>
               <option value="weekly">Wöchentlich</option>
               <option value="monthly">Monatlich</option>
+              <option value="yearly">Jährlich</option>
+              <option value="custom">Benutzerdefiniert…</option>
             </select>
           </div>
         </div>
+
+        {task.recurrence === 'custom' && (
+          <div className="detail-field">
+            <label className="detail-label">Benutzerdefinierte Wiederholung</label>
+            <div className="recur-custom">
+              <span>Alle</span>
+              <input
+                type="number"
+                min={1}
+                className="detail-input recur-interval"
+                value={task.recurInterval ?? 1}
+                onChange={(e) =>
+                  updateTask(task.id, { recurInterval: Math.max(1, Number(e.target.value)) })
+                }
+              />
+              <select
+                className="detail-select"
+                value={task.recurUnit ?? 'day'}
+                onChange={(e) =>
+                  updateTask(task.id, { recurUnit: e.target.value as Task['recurUnit'] })
+                }
+              >
+                <option value="day">Tage</option>
+                <option value="week">Wochen</option>
+                <option value="month">Monate</option>
+                <option value="year">Jahre</option>
+              </select>
+            </div>
+            {(task.recurUnit ?? 'day') === 'month' && (
+              <select
+                className="detail-select recur-monthday"
+                value={task.recurMonthDay ?? 'date'}
+                onChange={(e) =>
+                  updateTask(task.id, {
+                    recurMonthDay: e.target.value as Task['recurMonthDay'],
+                  })
+                }
+              >
+                <option value="date">am gleichen Tag</option>
+                <option value="first">am 1. des Monats</option>
+                <option value="last">am letzten Tag des Monats</option>
+              </select>
+            )}
+          </div>
+        )}
 
         {task.recurrence !== 'none' && (
           <div className="detail-field">
@@ -455,13 +502,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               }
             />
             <p className="detail-hint">
-              🔁 Beim Abhaken wird automatisch die nächste{' '}
-              {task.recurrence === 'daily'
-                ? 'tägliche'
-                : task.recurrence === 'weekly'
-                  ? 'wöchentliche'
-                  : 'monatliche'}{' '}
-              Aufgabe erstellt.
+              ↻ Beim Abhaken wird automatisch die nächste Aufgabe erstellt.
             </p>
           </div>
         )}

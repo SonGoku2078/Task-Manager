@@ -19,6 +19,7 @@ import type {
   Attachment,
   ProjectSort,
   CalendarMode,
+  Section,
 } from './types';
 import { dummyTasks, defaultProjects, defaultCategories } from './dummyData';
 import type { ProjectTemplate } from './templates';
@@ -154,19 +155,46 @@ const sameValue = (a: unknown, b: unknown): boolean => {
   return a === b;
 };
 
-// Advance a date by one recurrence step.
-const nextRecurrence = (date: Date, type: Task['recurrence']): Date => {
+// Advance a date by one recurrence step, honouring custom intervals + month modes.
+const nextRecurrence = (date: Date, task: Task): Date => {
   const d = new Date(date);
-  switch (type) {
+  const interval = Math.max(1, task.recurInterval ?? 1);
+  // Resolve the effective unit + step count.
+  let unit: 'day' | 'week' | 'month' | 'year';
+  let step = interval;
+  switch (task.recurrence) {
     case 'daily':
-      d.setDate(d.getDate() + 1);
+      unit = 'day';
+      step = 1;
       break;
     case 'weekly':
-      d.setDate(d.getDate() + 7);
+      unit = 'week';
+      step = 1;
       break;
     case 'monthly':
-      d.setMonth(d.getMonth() + 1);
+      unit = 'month';
+      step = 1;
       break;
+    case 'yearly':
+      unit = 'year';
+      step = 1;
+      break;
+    case 'custom':
+      unit = task.recurUnit ?? 'day';
+      break;
+    default:
+      return d;
+  }
+
+  if (unit === 'day') d.setDate(d.getDate() + step);
+  else if (unit === 'week') d.setDate(d.getDate() + step * 7);
+  else if (unit === 'year') d.setFullYear(d.getFullYear() + step);
+  else {
+    // month
+    d.setMonth(d.getMonth() + step);
+    const mode = task.recurMonthDay ?? 'date';
+    if (mode === 'first') d.setDate(1);
+    else if (mode === 'last') d.setDate(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate());
   }
   return d;
 };
@@ -214,11 +242,13 @@ export interface NewTaskInput {
   categoryIds?: string[];
   starred?: boolean;
   recurrence?: Task['recurrence'];
+  sectionId?: string | null;
 }
 
 interface AppState {
   tasks: Task[];
   projects: Project[];
+  sections: Section[];
   categories: Category[];
   savedViews: SavedView[];
   activityLog: ActivityEntry[];
@@ -246,6 +276,16 @@ interface AppState {
   // Manual ordering (drag & drop)
   reorderTasks: (draggedId: string, targetId: string) => void;
   reorderProjects: (draggedId: string, targetId: string) => void;
+
+  // Project sections (groups)
+  addSection: (projectId: string, name: string) => Section;
+  renameSection: (id: string, name: string) => void;
+  deleteSection: (id: string) => void;
+  reorderSections: (draggedId: string, targetId: string) => void;
+  // Drop a task onto another task: adopt its section + order before it.
+  dropTaskOnTask: (draggedId: string, targetId: string) => void;
+  // Assign a task to a section (or null to ungroup); moves it to the end of that group.
+  assignTaskSection: (taskId: string, sectionId: string | null) => void;
 
   // Wipe all local tasks + projects + categories (fresh start / clean re-import).
   clearAll: () => void;
@@ -325,6 +365,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       tasks: dummyTasks,
       projects: defaultProjects,
+      sections: [],
       categories: defaultCategories,
       savedViews: [],
       activityLog: [],
@@ -346,6 +387,7 @@ export const useStore = create<AppState>()(
           dueDate: input.dueDate ?? null,
           startMinutes: input.startMinutes ?? null,
           durationMin: input.durationMin ?? null,
+          sectionId: input.sectionId ?? null,
           priority: input.priority ?? 'medium',
           categoryIds: input.categoryIds ?? [],
           completed: false,
@@ -466,7 +508,7 @@ export const useStore = create<AppState>()(
             target.recurrence !== 'none' &&
             target.dueDate
           ) {
-            const nextDue = nextRecurrence(target.dueDate, target.recurrence);
+            const nextDue = nextRecurrence(target.dueDate, target);
             const withinRange =
               !target.recurrenceEnd || nextDue <= target.recurrenceEnd;
             if (withinRange) {
@@ -616,6 +658,72 @@ export const useStore = create<AppState>()(
           };
         }),
 
+      addSection: (projectId, name) => {
+        const section: Section = { id: uid('sec'), projectId, name };
+        set((state) => ({ sections: [...state.sections, section] }));
+        return section;
+      },
+
+      renameSection: (id, name) =>
+        set((state) => ({
+          sections: state.sections.map((s) => (s.id === id ? { ...s, name } : s)),
+        })),
+
+      deleteSection: (id) =>
+        set((state) => ({
+          sections: state.sections.filter((s) => s.id !== id),
+          // Tasks of a removed section fall back to ungrouped.
+          tasks: state.tasks.map((t) =>
+            t.sectionId === id ? { ...t, sectionId: null } : t
+          ),
+        })),
+
+      reorderSections: (draggedId, targetId) =>
+        set((state) => {
+          if (draggedId === targetId) return {};
+          const list = [...state.sections];
+          const from = list.findIndex((s) => s.id === draggedId);
+          const to = list.findIndex((s) => s.id === targetId);
+          if (from === -1 || to === -1) return {};
+          const [moved] = list.splice(from, 1);
+          const insertAt = list.findIndex((s) => s.id === targetId);
+          list.splice(insertAt, 0, moved);
+          return { sections: list };
+        }),
+
+      dropTaskOnTask: (draggedId, targetId) =>
+        set((state) => {
+          if (draggedId === targetId) return {};
+          const list = [...state.tasks];
+          const from = list.findIndex((t) => t.id === draggedId);
+          const target = list.find((t) => t.id === targetId);
+          if (from === -1 || !target) return {};
+          const [moved] = list.splice(from, 1);
+          moved.sectionId = target.sectionId ?? null;
+          const insertAt = list.findIndex((t) => t.id === targetId);
+          list.splice(insertAt, 0, moved);
+          return { tasks: list, ui: { ...state.ui, sortField: 'manual' as SortField } };
+        }),
+
+      assignTaskSection: (taskId, sectionId) =>
+        set((state) => {
+          const list = [...state.tasks];
+          const from = list.findIndex((t) => t.id === taskId);
+          if (from === -1) return {};
+          const [moved] = list.splice(from, 1);
+          moved.sectionId = sectionId;
+          // Insert after the last task already in that section, else at the end.
+          let insertAt = list.length;
+          for (let i = list.length - 1; i >= 0; i--) {
+            if ((list[i].sectionId ?? null) === sectionId) {
+              insertAt = i + 1;
+              break;
+            }
+          }
+          list.splice(insertAt, 0, moved);
+          return { tasks: list, ui: { ...state.ui, sortField: 'manual' as SortField } };
+        }),
+
       reorderProjects: (draggedId, targetId) =>
         set((state) => {
           if (draggedId === targetId) return {};
@@ -636,6 +744,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           tasks: [],
           projects: [],
+          sections: [],
           categories: [],
           nextTaskNumber: 1,
           activityLog: [
@@ -659,6 +768,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           tasks,
           projects: data.projects,
+          sections: [],
           categories: data.categories,
           nextTaskNumber: tasks.length + 1,
           activityLog: [
@@ -1008,6 +1118,7 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         tasks: state.tasks,
         projects: state.projects,
+        sections: state.sections,
         categories: state.categories,
         savedViews: state.savedViews,
         activityLog: state.activityLog,

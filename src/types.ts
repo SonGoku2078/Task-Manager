@@ -1,5 +1,14 @@
 export type Priority = 'low' | 'medium' | 'high';
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RecurrenceType =
+  | 'none'
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'yearly'
+  | 'custom';
+export type RecurUnit = 'day' | 'week' | 'month' | 'year';
+// For month-based recurrence: keep the same date, or snap to the 1st / last day.
+export type RecurMonthDay = 'date' | 'first' | 'last';
 export type Theme = 'light' | 'dark';
 export type MemberRole = 'admin' | 'editor' | 'viewer';
 
@@ -102,10 +111,23 @@ export interface Task {
   starred: boolean;
   recurrence: RecurrenceType;
   recurrenceEnd?: Date | null;
+  // Custom recurrence: repeat every `recurInterval` `recurUnit`s. `recurMonthDay`
+  // applies when recurring by month (keep date / 1st / last day of month).
+  recurInterval?: number;
+  recurUnit?: RecurUnit;
+  recurMonthDay?: RecurMonthDay;
+  sectionId?: string | null; // optional grouping inside a project (null = ungrouped)
   comments?: Comment[];
   assigneeId?: string | null;
   attachments?: Attachment[];
   nozbeId?: string; // source id when imported from Nozbe (traceability / re-import)
+}
+
+// A user-defined group within a project to bundle tasks (e.g. "Vorbereitung").
+export interface Section {
+  id: string;
+  projectId: string;
+  name: string;
 }
 
 export interface Project {
