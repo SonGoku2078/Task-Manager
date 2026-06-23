@@ -65,6 +65,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.section-name-static {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+}
+
+.completed-section .section-header {
+  background: var(--main-bg);
+}
+
 .section-del {
   border: none;
   background: transparent;

@@ -56,9 +56,9 @@ export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps)
 
   // Group the projects depending on the panel mode.
   const all = projects.filter(matchesQuery);
-  const activeProjects = all.filter((p) => p.kind !== 'area' && p.active !== false);
+  const activeProjects = all.filter((p) => p.kind !== 'area' && p.active === true);
   const areas = all.filter((p) => p.kind === 'area');
-  const somedayProjects = all.filter((p) => p.kind !== 'area' && p.active === false);
+  const somedayProjects = all.filter((p) => p.kind !== 'area' && p.active !== true);
 
   const pinnedFirst = (list: Project[]) => [
     ...list.filter((p) => p.pinned),

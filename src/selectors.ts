@@ -96,7 +96,7 @@ export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
 const isActiveProjectTask = (task: Task, projects: Project[]): boolean => {
   if (!task.projectId) return true;
   const p = projects.find((x) => x.id === task.projectId);
-  return !p || p.active !== false;
+  return !p || p.active === true;
 };
 
 // Next-week window: open tasks due within the *current* week (Mon–Sun of today).

@@ -189,7 +189,9 @@ export default function TaskList({
   }
 
   // --- Grouped list (inside a project) ---
-  const ungrouped = tasks.filter((t) => !t.sectionId);
+  // Open tasks stay in their group; completed tasks all sink to a final block.
+  const ungrouped = tasks.filter((t) => !t.sectionId && !t.completed);
+  const completedTasks = tasks.filter((t) => t.completed);
   const submitSection = () => {
     const name = newSectionName.trim();
     if (name && selectedProjectId) addSection(selectedProjectId, name);
@@ -268,7 +270,7 @@ export default function TaskList({
                 onChange={(e) => renameSection(sec.id, e.target.value)}
               />
               <span className="section-count">
-                {done}/{secTasks.length}
+                {done}/{allSecTasks.length}
               </span>
               <button
                 className="section-del"
@@ -325,6 +327,18 @@ export default function TaskList({
         <button className="section-add-btn" onClick={() => setAddingSection(true)}>
           + Gruppe / Sektion
         </button>
+      )}
+
+      {/* All completed tasks, below every group; reopen sends them back up. */}
+      {completedTasks.length > 0 && (
+        <div className="task-section completed-section">
+          <div className="section-header">
+            <span className="section-grip" style={{ visibility: 'hidden' }}>⠿</span>
+            <span className="section-name section-name-static">✓ Erledigt</span>
+            <span className="section-count">{completedTasks.length}</span>
+          </div>
+          <div className="section-body">{completedTasks.map(renderTask)}</div>
+        </div>
       )}
     </div>
   );

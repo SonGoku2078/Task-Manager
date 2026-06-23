@@ -918,7 +918,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id && p.kind !== 'area'
-              ? { ...p, active: p.active === false ? true : false }
+              ? { ...p, active: p.active === true ? false : true }
               : p
           ),
         })),

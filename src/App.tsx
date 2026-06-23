@@ -219,10 +219,10 @@ function App() {
               {currentProject.kind !== 'area' && (
                 <button
                   role="switch"
-                  aria-checked={currentProject.active !== false}
-                  className={`project-active-switch ${currentProject.active !== false ? 'on' : ''}`}
+                  aria-checked={currentProject.active === true}
+                  className={`project-active-switch ${currentProject.active === true ? 'on' : ''}`}
                   title={
-                    currentProject.active !== false
+                    currentProject.active === true
                       ? 'Aktiv — klicken für Someday (inaktiv)'
                       : 'Someday (inaktiv) — klicken zum Aktivieren'
                   }
