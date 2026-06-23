@@ -88,6 +88,13 @@ export default function WeekView({ mode }: WeekViewProps) {
   // Shared column track so header, all-day row and time grid always line up.
   const cols = `56px repeat(${days.length}, minmax(72px, 1fr))`;
 
+  // Next Week backlog: open thisWeek tasks not already placed on a visible day.
+  const onVisibleDay = (t: Task) =>
+    !!t.dueDate && days.some((d) => isSameDay(d, t.dueDate as Date));
+  const backlog = tasks.filter(
+    (t) => !t.parentId && !t.completed && t.thisWeek && !onVisibleDay(t)
+  );
+
   const shiftWeek = (delta: number) =>
     setCurrentDate(addDays(days[0], delta * days.length));
   const goToday = () => setCurrentDate(new Date());
@@ -315,6 +322,39 @@ export default function WeekView({ mode }: WeekViewProps) {
                 </span>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {backlog.length > 0 && (
+        <div className="week-backlog">
+          <span className="week-backlog-label">🗓️ Next Week ({backlog.length}) — auf einen Tag ziehen:</span>
+          <div className="week-backlog-items">
+            {backlog.map((t) => (
+              <div
+                key={t.id}
+                className={`week-task ${t.completed ? 'done' : ''} ${
+                  selectedTaskId === t.id ? 'selected' : ''
+                }`}
+                style={taskStyle(t)}
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', t.id)}
+                onClick={() => toggleOpen(t.id)}
+                title={t.title}
+              >
+                <input
+                  type="checkbox"
+                  className="week-task-check"
+                  checked={t.completed}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    toggleTask(t.id);
+                  }}
+                />
+                <span className="week-task-title">{t.title}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

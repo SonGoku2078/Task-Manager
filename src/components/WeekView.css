@@ -79,6 +79,36 @@
   color: var(--text-primary);
 }
 
+/* Next Week backlog lane (undated/this-week tasks to drag onto a day). */
+.week-backlog {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--calendar-grid-bg);
+}
+
+.week-backlog-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.week-backlog-items {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.week-backlog-items .week-task {
+  flex: 0 0 auto;
+  max-width: 220px;
+}
+
 /* --- shared track (time gutter + N day columns); columns set inline --- */
 .week-head,
 .week-allday,
