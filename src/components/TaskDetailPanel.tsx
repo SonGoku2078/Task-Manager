@@ -430,8 +430,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             >
               <option value="">Inbox (kein Projekt)</option>
               {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.icon} {p.name}
+                <option key={p.id} value={p.id} style={{ color: p.color }}>
+                  ● {p.name}
                 </option>
               ))}
             </select>

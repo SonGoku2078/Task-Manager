@@ -96,8 +96,8 @@ export default function BulkActionBar({
           <option value="">Projekt setzen…</option>
           <option value="__inbox">Inbox (kein Projekt)</option>
           {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.icon} {p.name}
+            <option key={p.id} value={p.id} style={{ color: p.color }}>
+              ● {p.name}
             </option>
           ))}
         </select>

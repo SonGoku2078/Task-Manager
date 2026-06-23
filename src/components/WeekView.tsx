@@ -285,8 +285,8 @@ export default function WeekView({ mode }: WeekViewProps) {
                 {blockerProjects.length ? 'Projekt wählen…' : 'Keine Projekte in Next Week'}
               </option>
               {blockerProjects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.icon} {p.name}
+                <option key={p.id} value={p.id} style={{ color: p.color }}>
+                  ● {p.name}
                 </option>
               ))}
             </select>
