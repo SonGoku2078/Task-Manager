@@ -200,7 +200,9 @@ export const selectVisibleTasks = (
   }
   result = result.filter((t) => matchesSearch(t, ui.searchQuery));
 
-  return sortTasks(result, ui);
+  const sorted = sortTasks(result, ui);
+  // Completed tasks always sink to the bottom (order otherwise preserved).
+  return [...sorted.filter((t) => !t.completed), ...sorted.filter((t) => t.completed)];
 };
 
 // Top non-completed tasks for the Priority list (starred & high priority first).
