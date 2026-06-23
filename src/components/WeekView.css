@@ -142,9 +142,11 @@
 
 /* --- all-day strip --- */
 .week-allday {
+  position: sticky;
+  top: 49px;
+  z-index: 2;
+  background: var(--main-bg);
   border-bottom: 2px solid var(--border-light);
-  max-height: 38%;
-  overflow-y: auto;
 }
 
 .week-gutter-label {
@@ -209,7 +211,7 @@
 /* --- time grid --- */
 .week-grid-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   min-height: 0;
 }
 
