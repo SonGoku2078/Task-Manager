@@ -2,6 +2,18 @@ import type { Task, UIState, Priority, Project } from './types';
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
+// Views that render the FilterBar — only there do ui.filters apply (see App.tsx).
+const FILTERABLE_VIEWS = new Set<UIState['currentView']>([
+  'inbox',
+  'priority',
+  'projects',
+  'today',
+  'search',
+  'categories',
+  'custom',
+  'completed',
+]);
+
 const startOfDay = (d: Date) => {
   const n = new Date(d);
   n.setHours(0, 0, 0, 0);
@@ -180,9 +192,13 @@ export const selectVisibleTasks = (
     }
   }
 
-  result = result.filter(
-    (t) => matchesFilters(t, ui) && matchesSearch(t, ui.searchQuery)
-  );
+  // The FilterBar (project/category/priority/status/date filters) is only shown
+  // in these views, so its filters must only apply there — otherwise a leftover
+  // project filter silently shrinks Next Week / Someday / Calendar etc.
+  if (FILTERABLE_VIEWS.has(ui.currentView)) {
+    result = result.filter((t) => matchesFilters(t, ui));
+  }
+  result = result.filter((t) => matchesSearch(t, ui.searchQuery));
 
   return sortTasks(result, ui);
 };
