@@ -248,7 +248,8 @@
   position: absolute;
   left: 1px;
   right: 1px;
-  border: 1px dashed;
+  border: 1px solid;
+  border-left-width: 4px;
   border-radius: 4px;
   padding: 2px 4px;
   overflow: hidden;

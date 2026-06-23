@@ -35,6 +35,11 @@ export default function Sidebar() {
   const activeSavedViewId = useStore((s) => s.ui.activeSavedViewId);
   const navOrder = useStore((s) => s.settings.navOrder);
   const reorderNav = useStore((s) => s.reorderNav);
+  const updateTask = useStore((s) => s.updateTask);
+
+  // A task dragged from the list onto Next Week / Someday gets the matching flag.
+  const taskDropFlag = (id: ViewType): Partial<{ thisWeek: boolean; someday: boolean }> | null =>
+    id === 'nextweek' ? { thisWeek: true } : id === 'someday' ? { someday: true } : null;
 
   const [dragId, setDragId] = useState<ViewType | null>(null);
   const [overId, setOverId] = useState<ViewType | null>(null);
@@ -80,14 +85,22 @@ export default function Sidebar() {
               draggable
               onDragStart={() => setDragId(id)}
               onDragOver={(e) => {
-                if (!dragId) return;
-                e.preventDefault();
-                setOverId(id);
+                // Reordering a menu, or dropping a task onto Next Week / Someday.
+                if (dragId || (taskDropFlag(id) && e.dataTransfer.types.includes('text/plain'))) {
+                  e.preventDefault();
+                  setOverId(id);
+                }
               }}
               onDragLeave={() => setOverId((c) => (c === id ? null : c))}
               onDrop={(e) => {
                 e.preventDefault();
-                if (dragId) reorderNav(dragId, id);
+                if (dragId) {
+                  reorderNav(dragId, id);
+                } else {
+                  const taskId = e.dataTransfer.getData('text/plain');
+                  const flag = taskDropFlag(id);
+                  if (taskId && flag) updateTask(taskId, flag);
+                }
                 setDragId(null);
                 setOverId(null);
               }}

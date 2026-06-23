@@ -87,13 +87,14 @@ const isActiveProjectTask = (task: Task, projects: Project[]): boolean => {
   return !p || p.active !== false;
 };
 
-// Next-week window: open tasks due within the next 7 days (or already overdue).
+// Next-week window: open tasks due within the *current* week (Mon–Sun of today).
+// Only tasks scheduled for this week appear automatically; everything else is
+// added manually (drag onto the menu or the thisWeek flag).
 export const isInNextWeekWindow = (task: Task): boolean => {
   if (!task.dueDate || task.completed) return false;
-  const today = startOfDay(new Date());
-  const end = new Date(today);
-  end.setDate(end.getDate() + 7);
-  return task.dueDate < end; // includes overdue + the coming 7 days
+  const start = startOfWeek(new Date());
+  const end = addDays(start, 7);
+  return task.dueDate >= start && task.dueDate < end;
 };
 
 // Tasks visible in the current main view, after view scoping + filters + search + sort.

@@ -423,12 +423,15 @@ export default function WeekView({ mode }: WeekViewProps) {
                       style={{
                         top,
                         height,
-                        background: p ? hexToRgba(p.color, 0.14) : 'rgba(0,0,0,0.05)',
+                        background: p ? hexToRgba(p.color, 0.16) : 'rgba(0,0,0,0.05)',
                         borderColor: p?.color ?? 'var(--border-light)',
+                        color: p?.color ?? 'var(--text-secondary)',
                       }}
                       title={`${p?.name ?? 'Projekt'} (Aktiv)${na ? ' – Next: ' + na.title : ''}`}
                     >
-                      <span className="week-blocker-name">{p?.icon} {p?.name}</span>
+                      <span className="week-blocker-name" style={{ color: p?.color }}>
+                        {p?.icon} {p?.name}
+                      </span>
                       {na && <span className="week-blocker-na">★ {na.title}</span>}
                     </div>
                   );

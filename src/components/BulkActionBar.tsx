@@ -123,6 +123,31 @@ export default function BulkActionBar({
         </button>
 
         <button
+          className="bulk-btn"
+          disabled={disabled}
+          title="Für diese Woche markieren (Next Week)"
+          onClick={() => bulkUpdate(selectedIds, { thisWeek: true })}
+        >
+          🗓️ Next Week
+        </button>
+        <button
+          className="bulk-btn"
+          disabled={disabled}
+          title="Aus Next Week entfernen"
+          onClick={() => bulkUpdate(selectedIds, { thisWeek: false })}
+        >
+          ✕ Next Week
+        </button>
+        <button
+          className="bulk-btn"
+          disabled={disabled}
+          title="Nach Someday verschieben"
+          onClick={() => bulkUpdate(selectedIds, { someday: true })}
+        >
+          🌥️ Someday
+        </button>
+
+        <button
           className="bulk-btn bulk-btn-danger"
           disabled={disabled}
           onClick={() => {
