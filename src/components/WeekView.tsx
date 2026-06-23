@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useStore } from '../store';
 import {
   startOfWeek,
@@ -36,6 +37,8 @@ export default function WeekView({ mode }: WeekViewProps) {
   const setCalendarHourHeight = useStore((s) => s.setCalendarHourHeight);
 
   const today = new Date();
+  // Set true during a resize so the trailing click doesn't open the detail panel.
+  const suppressClick = useRef(false);
 
   // Which days become columns.
   let days: Date[];
@@ -56,6 +59,8 @@ export default function WeekView({ mode }: WeekViewProps) {
   const slotPx = hourHeight / slots;
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
   const gridHeight = (endHour - startHour) * hourHeight;
+  // Shared column track so header, all-day row and time grid always line up.
+  const cols = `56px repeat(${days.length}, minmax(72px, 1fr))`;
 
   const shiftWeek = (delta: number) =>
     setCurrentDate(addDays(days[0], delta * days.length));
@@ -101,6 +106,7 @@ export default function WeekView({ mode }: WeekViewProps) {
   const startResizeBlock = (task: Task, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    suppressClick.current = true;
     const startY = e.clientY;
     const startDur = task.durationMin ?? 60;
     const onMove = (ev: MouseEvent) => {
@@ -111,6 +117,10 @@ export default function WeekView({ mode }: WeekViewProps) {
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      // Keep suppressing until just after the click that follows mouseup.
+      window.setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -135,7 +145,10 @@ export default function WeekView({ mode }: WeekViewProps) {
   const catColor = (task: Task) =>
     categories.find((c) => task.categoryIds.includes(c.id))?.color;
 
-  const toggleOpen = (id: string) => selectTask(selectedTaskId === id ? null : id);
+  const toggleOpen = (id: string) => {
+    if (suppressClick.current) return; // ignore the click after a resize
+    selectTask(selectedTaskId === id ? null : id);
+  };
 
   const rangeLabel =
     `${days[0].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })} – ` +
@@ -187,11 +200,9 @@ export default function WeekView({ mode }: WeekViewProps) {
         </div>
       </div>
 
+      <div className="week-grid-scroll">
       {/* Column headers */}
-      <div
-        className="week-head"
-        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
-      >
+      <div className="week-head" style={{ gridTemplateColumns: cols }}>
         <div className="week-gutter-head" />
         {days.map((d) => (
           <div
@@ -207,10 +218,7 @@ export default function WeekView({ mode }: WeekViewProps) {
       </div>
 
       {/* "ohne Zeit" — tasks that only have a date */}
-      <div
-        className="week-allday"
-        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
-      >
+      <div className="week-allday" style={{ gridTemplateColumns: cols }}>
         <div className="week-gutter-label">ohne&nbsp;Zeit</div>
         {days.map((d) => {
           const dayTasks = tasksOnDate(tasks, d).filter(
@@ -257,11 +265,7 @@ export default function WeekView({ mode }: WeekViewProps) {
       </div>
 
       {/* Time grid */}
-      <div className="week-grid-scroll">
-        <div
-          className="week-grid"
-          style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
-        >
+        <div className="week-grid" style={{ gridTemplateColumns: cols }}>
           <div className="week-gutter" style={{ height: gridHeight }} onMouseDown={startZoom} title="Ziehen zum Zoomen (Stunden / 30 / 15 Min)">
             {hours.map((h) => (
               <div key={h} className="week-hour-label" style={{ height: hourHeight }}>

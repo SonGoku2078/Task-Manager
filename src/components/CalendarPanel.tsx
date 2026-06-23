@@ -161,9 +161,11 @@ export default function CalendarPanel() {
 
     return (
       <div key={offset} className="calendar-month">
-        <div className="cal-month-label">
-          {monthNames[month]} {base.getFullYear()}
-        </div>
+        {offset > 0 && (
+          <div className="cal-month-label">
+            {monthNames[month]} {base.getFullYear()}
+          </div>
+        )}
 
         <div className="weekdays">
           <div className="weekday weeknum-head" title="Kalenderwoche">
