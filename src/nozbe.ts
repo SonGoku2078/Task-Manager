@@ -84,7 +84,8 @@ const mapColor = (raw: unknown, fallback: string): string => {
 // field is present so the initial import mirrors Nozbe's structure (can be re-sorted
 // by the user afterwards). Returns null when no order field exists.
 const orderOf = (o: Record<string, unknown>): number | null => {
-  for (const k of ['ord', 'order', 'seq', 'sequence', 'position', 'pos', 'sort']) {
+  // Nozbe Classic uses `_sort`; keep the others as fallbacks.
+  for (const k of ['_sort', 'ord', 'order', 'seq', 'sequence', 'position', 'pos', 'sort']) {
     const n = Number(o[k]);
     if (Number.isFinite(n)) return n;
   }
@@ -327,15 +328,15 @@ export const pushNozbeCompleted = (
 export function mapNozbe(raw: NozbeExport): MappedImport {
   const now = new Date();
 
-  // Diagnostic: dump the raw fields of the first project so we can confirm which
-  // fields Nozbe uses for colour and ordering (open DevTools console after a sync).
+  // Diagnostic: show the colour/order values we now read (_color / _sort). If colours
+  // still look off, share these so the exact _color format can be mapped.
   if (raw.projects?.length) {
-    const p0 = raw.projects[0] as Record<string, unknown>;
-    console.info('[Nozbe-Import] Projekt-Felder:', Object.keys(p0).join(', '));
-    console.info('[Nozbe-Import] Beispiel-Projekt:', p0);
-  }
-  if (raw.contexts?.length) {
-    console.info('[Nozbe-Import] Beispiel-Kategorie:', raw.contexts[0]);
+    console.info(
+      '[Nozbe-Import] Projekte _color/_sort:',
+      (raw.projects as Record<string, unknown>[])
+        .slice(0, 5)
+        .map((p) => `${p.name}: color=${JSON.stringify(p._color)} sort=${JSON.stringify(p._sort)}`)
+    );
   }
 
   // Nozbe's own "Inbox" is a pseudo-project; its tasks belong in our dedicated Inbox
@@ -352,7 +353,7 @@ export function mapNozbe(raw: NozbeExport): MappedImport {
     id: `nzp-${p.id}`,
     nozbeId: String(p.id),
     name: (p.name as string)?.trim() || 'Unbenanntes Projekt',
-    color: mapColor(p.color, PALETTE[i % PALETTE.length]),
+    color: mapColor(p._color ?? p.color, PALETTE[i % PALETTE.length]),
     icon: '📁',
   }));
 
@@ -362,7 +363,7 @@ export function mapNozbe(raw: NozbeExport): MappedImport {
     id: `nzc-${c.id}`,
     nozbeId: String(c.id),
     name: (c.name as string)?.trim() || 'Kontext',
-    color: mapColor(c.color, PALETTE[i % PALETTE.length]),
+    color: mapColor(c._color ?? c.color, PALETTE[i % PALETTE.length]),
   }));
 
   const projectIds = new Set(projects.map((p) => p.id));
