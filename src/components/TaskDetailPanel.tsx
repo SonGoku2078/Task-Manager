@@ -177,6 +177,13 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         </h3>
         <div className="panel-header-actions">
           <button
+            className={`detail-complete ${task.completed ? 'done' : ''}`}
+            onClick={() => toggleTask(task.id)}
+            title={task.completed ? 'Wieder öffnen' : 'Als erledigt markieren'}
+          >
+            {task.completed ? '↺ Öffnen' : '✓ Erledigen'}
+          </button>
+          <button
             className="detail-link"
             onClick={copyLink}
             title="Link zu dieser Aufgabe kopieren"
@@ -236,7 +243,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           <label className="detail-label">Titel</label>
           <ClearableInput
             type="text"
-            className="detail-input"
+            className={`detail-input ${task.completed ? 'title-done' : ''}`}
             value={task.title}
             onChange={(e) => updateTask(task.id, { title: e.target.value })}
             onClear={() => updateTask(task.id, { title: '' })}

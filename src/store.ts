@@ -138,6 +138,7 @@ const fmtVal = (
   if (field === 'priority') {
     return { low: 'Niedrig', medium: 'Mittel', high: 'Hoch' }[value as string] ?? String(value);
   }
+  if (field === 'completed') return value ? 'erledigt' : 'offen';
   if (typeof value === 'boolean') return value ? 'ja' : 'nein';
   return String(value);
 };
@@ -151,9 +152,33 @@ const TRACKED_FIELDS: { key: keyof Task; label: string }[] = [
   { key: 'projectId', label: 'Projekt' },
   { key: 'categoryIds', label: 'Kategorien' },
   { key: 'starred', label: 'Markierung' },
+  { key: 'someday', label: 'Someday' },
+  { key: 'thisWeek', label: 'Next Week' },
+  { key: 'completed', label: 'Status' },
   { key: 'recurrence', label: 'Wiederholung' },
   { key: 'assigneeId', label: 'Zuweisung' },
 ];
+
+// GTD invariants: extend a task patch so the Someday/Next-Week flow stays valid.
+// - thisWeek implies not someday (no direct Someday→Next Week state)
+// - someday implies not thisWeek
+// - unparking a *loose* task (no project) commits it to the Single-Tasks bucket
+const gtdInvariants = (
+  before: Task,
+  patch: Partial<Task>
+): Partial<Task> => {
+  const next = { ...patch };
+  if (next.thisWeek === true) next.someday = false;
+  if (next.someday === true) next.thisWeek = false;
+  const after = { ...before, ...next };
+  const leavingSomeday =
+    (patch.someday === false && before.someday) ||
+    (patch.thisWeek === true && before.someday);
+  if (leavingSomeday && !after.projectId) {
+    next.projectId = 'p-single';
+  }
+  return next;
+};
 
 const sameValue = (a: unknown, b: unknown): boolean => {
   if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
@@ -462,9 +487,11 @@ export const useStore = create<AppState>()(
         return task;
       },
 
-      updateTask: (id, updates) =>
+      updateTask: (id, rawUpdates) =>
         set((state) => {
           const before = state.tasks.find((t) => t.id === id);
+          // Enforce GTD invariants (Someday/Next Week + auto Single-Tasks).
+          const updates = before ? gtdInvariants(before, rawUpdates) : rawUpdates;
           const tasks = state.tasks.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
           );
@@ -567,12 +594,10 @@ export const useStore = create<AppState>()(
         if (before) syncCompletion(get(), before, !before.completed);
       },
 
-      toggleStar: (id) =>
-        set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === id ? { ...t, starred: !t.starred, updatedAt: new Date() } : t
-          ),
-        })),
+      toggleStar: (id) => {
+        const t = get().tasks.find((x) => x.id === id);
+        if (t) get().updateTask(id, { starred: !t.starred });
+      },
 
       addComment: (taskId, text) =>
         set((state) => {
@@ -648,11 +673,35 @@ export const useStore = create<AppState>()(
 
       bulkUpdate: (ids, updates) => {
         const idSet = new Set(ids);
-        set((state) => ({
-          tasks: state.tasks.map((t) =>
-            idSet.has(t.id) ? { ...t, ...updates, updatedAt: new Date() } : t
-          ),
-        }));
+        set((state) => {
+          const ctx = {
+            projects: state.projects,
+            categories: state.categories,
+            members: state.members,
+          };
+          let activityLog = state.activityLog;
+          const tasks = state.tasks.map((t) => {
+            if (!idSet.has(t.id)) return t;
+            // Apply the same GTD invariants as single edits.
+            const patch = gtdInvariants(t, updates);
+            const after = { ...t, ...patch, updatedAt: new Date() };
+            // Log every changed tracked field, per task.
+            for (const f of TRACKED_FIELDS) {
+              if (f.key in patch && !sameValue(t[f.key], after[f.key])) {
+                activityLog = mergeOrPush(
+                  activityLog,
+                  taskEntry('updated', after, state.settings.userName, {
+                    field: f.label,
+                    from: fmtVal(f.key, t[f.key], ctx),
+                    to: fmtVal(f.key, after[f.key], ctx),
+                  })
+                );
+              }
+            }
+            return after;
+          });
+          return { tasks, activityLog };
+        });
         // Sync bulk completion changes to Nozbe.
         if (updates.completed !== undefined) {
           const s = get();

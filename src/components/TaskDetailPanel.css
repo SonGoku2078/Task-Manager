@@ -31,6 +31,30 @@
   word-break: break-all;
 }
 
+.detail-complete {
+  border: 1px solid var(--accent);
+  background: var(--main-bg);
+  color: var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+.detail-complete:hover {
+  background: var(--accent-soft);
+}
+.detail-complete.done {
+  background: var(--accent);
+  color: #fff;
+}
+
+.title-done {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
 .detail-flags {
   display: flex;
   gap: 6px;
