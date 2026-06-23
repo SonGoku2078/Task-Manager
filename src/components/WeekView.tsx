@@ -24,7 +24,7 @@ export default function WeekView({ mode }: WeekViewProps) {
   const selectedDates = useStore((s) => s.ui.selectedDates);
   const setCurrentDate = useStore((s) => s.setCurrentDate);
   const tasks = useStore((s) => s.tasks);
-  const categories = useStore((s) => s.categories);
+  const projects = useStore((s) => s.projects);
   const updateTask = useStore((s) => s.updateTask);
   const toggleTask = useStore((s) => s.toggleTask);
   const addTask = useStore((s) => s.addTask);
@@ -142,8 +142,23 @@ export default function WeekView({ mode }: WeekViewProps) {
     window.addEventListener('mouseup', onUp);
   };
 
-  const catColor = (task: Task) =>
-    categories.find((c) => task.categoryIds.includes(c.id))?.color;
+  // Tasks are coloured by the project they belong to.
+  const projColor = (task: Task) =>
+    projects.find((p) => p.id === task.projectId)?.color;
+
+  const hexToRgba = (hex: string, a: number) => {
+    let h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const n = parseInt(h, 16);
+    if (Number.isNaN(n)) return hex;
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+  };
+
+  // Left accent + faint fill in the project colour, so each task reads as its project.
+  const taskStyle = (task: Task) => {
+    const c = projColor(task);
+    return c ? { borderLeftColor: c, backgroundColor: hexToRgba(c, 0.16) } : undefined;
+  };
 
   const toggleOpen = (id: string) => {
     if (suppressClick.current) return; // ignore the click after a resize
@@ -240,7 +255,7 @@ export default function WeekView({ mode }: WeekViewProps) {
                   className={`week-task ${t.completed ? 'done' : ''} ${
                     selectedTaskId === t.id ? 'selected' : ''
                   }`}
-                  style={catColor(t) ? { borderLeftColor: catColor(t) } : undefined}
+                  style={taskStyle(t)}
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData('text/plain', t.id)}
                   onClick={() => toggleOpen(t.id)}
@@ -311,7 +326,8 @@ export default function WeekView({ mode }: WeekViewProps) {
                       style={{
                         top,
                         height,
-                        borderLeftColor: catColor(t) ?? 'var(--accent)',
+                        borderLeftColor: 'var(--accent)',
+                        ...taskStyle(t),
                       }}
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData('text/plain', t.id)}

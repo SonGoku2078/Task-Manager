@@ -154,10 +154,10 @@
   background: rgba(76, 175, 80, 0.3);
 }
 
-/* Days currently shown in the main area (week/rolling/selected): blue underline.
-   Stacks on top of today/selected so you can tell "today" from "in view". */
+/* Days currently shown in the main area (week/rolling/selected span): a light
+   green wash — clearly lighter than today's solid accent. */
 .cal-day.in-view {
-  box-shadow: inset 0 -3px 0 rgba(33, 150, 243, 0.85);
+  background: rgba(76, 175, 80, 0.22);
 }
 
 .cal-day:hover {

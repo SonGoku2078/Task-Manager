@@ -132,12 +132,12 @@
   font-size: 14px;
 }
 
-/* Selected (but not today) column: a distinct blue tint to tell the two apart. */
+/* Selected (but not today) column: a light green wash, lighter than today. */
 .week-col-head.is-selected:not(.is-today) {
-  background: rgba(33, 150, 243, 0.16);
+  background: rgba(76, 175, 80, 0.20);
 }
 .week-col-head.is-selected:not(.is-today) .week-col-date {
-  color: #1565c0;
+  color: var(--accent);
 }
 
 /* --- all-day strip --- */
@@ -145,7 +145,7 @@
   position: sticky;
   top: 49px;
   z-index: 2;
-  background: var(--main-bg);
+  background: var(--calendar-grid-bg);
   border-bottom: 2px solid var(--border-light);
 }
 
@@ -171,12 +171,14 @@
   align-items: flex-start;
   gap: 6px;
   padding: 4px 6px;
-  background: var(--hover-bg);
+  background: var(--calendar-block-bg);
+  border: 1px solid var(--border-light);
   border-left: 3px solid var(--accent);
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
   color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .week-task-check {
@@ -233,6 +235,7 @@
 .week-col {
   position: relative;
   border-left: 1px solid var(--border-light);
+  background-color: var(--calendar-grid-bg);
   background-repeat: repeat;
 }
 
@@ -246,7 +249,7 @@
   left: 2px;
   right: 2px;
   overflow: hidden;
-  background: var(--main-bg);
+  background: var(--calendar-block-bg);
   border: 1px solid var(--border-light);
   border-left: 3px solid var(--accent);
   border-radius: 4px;

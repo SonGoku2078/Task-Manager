@@ -17,6 +17,8 @@
   --border-dark: #3a444b;
   --alert-red: #e5484d;
   --hover-bg: #f7f8f9;
+  --calendar-grid-bg: #faf6ec; /* eggshell so tasks stand out on the grid */
+  --calendar-block-bg: #ffffff; /* task card/block surface */
 }
 
 [data-theme='dark'] {
@@ -26,6 +28,8 @@
   --border-light: #2c333a;
   --hover-bg: #242a30;
   --accent-soft: rgba(76, 175, 80, 0.16);
+  --calendar-grid-bg: #21272d;
+  --calendar-block-bg: #2a313a;
 }
 
 /* Dark-mode surfaces for components that hard-code light backgrounds. */
