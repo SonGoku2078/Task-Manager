@@ -441,7 +441,18 @@ export default function WeekView({ mode }: WeekViewProps) {
                       <span className="week-blocker-name" style={{ color: p?.color }}>
                         {p?.icon} {p?.name}
                       </span>
-                      {na && <span className="week-blocker-na">★ {na.title}</span>}
+                      {na && (
+                        <button
+                          className={`week-blocker-na ${selectedTaskId === na.id ? 'selected' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleOpen(na.id);
+                          }}
+                          title={`Next Action öffnen: ${na.title}`}
+                        >
+                          ★ {na.title}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
