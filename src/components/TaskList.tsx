@@ -382,6 +382,9 @@ export default function TaskList({
                 className="section-name"
                 value={sec.name}
                 onChange={(e) => renameSection(sec.id, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur();
+                }}
               />
               <span className="section-count">
                 {done}/{secTasks.length}
