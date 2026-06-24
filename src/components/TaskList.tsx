@@ -34,6 +34,8 @@ export default function TaskList({
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
   const sections = useStore((s) => s.sections);
+  // Full task list to look up subtasks (the `tasks` prop excludes them).
+  const allTasks = useStore((s) => s.tasks);
   const reorderTasks = useStore((s) => s.reorderTasks);
   const dropTaskOnTask = useStore((s) => s.dropTaskOnTask);
   const assignTaskSection = useStore((s) => s.assignTaskSection);
@@ -48,6 +50,25 @@ export default function TaskList({
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  // Which parent rows have their subtasks expanded inline (local, not persisted).
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Index subtasks by parent once per render.
+  const childrenByParent = new Map<string, Task[]>();
+  for (const t of allTasks) {
+    if (t.parentId) {
+      const arr = childrenByParent.get(t.parentId);
+      if (arr) arr.push(t);
+      else childrenByParent.set(t.parentId, [t]);
+    }
+  }
 
   // Tasks stay draggable in selection mode too, so a multi-selection can be moved.
   const dragEnabled = true;
@@ -82,10 +103,55 @@ export default function TaskList({
     );
   }
 
+  // Compact row for an inline subtask (no drag / section / bulk handling).
+  const renderChild = (child: Task) => (
+    <div
+      key={child.id}
+      className={`task-item is-child ${selectedTaskId === child.id ? 'selected' : ''} ${
+        child.completed ? 'is-completed' : ''
+      }`}
+      onClick={() => selectTask(selectedTaskId === child.id ? null : child.id)}
+    >
+      <input
+        type="checkbox"
+        className="task-checkbox"
+        checked={child.completed}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          e.stopPropagation();
+          toggleTask(child.id);
+        }}
+      />
+      <span className="task-child-marker" title="Unteraufgabe">↳</span>
+      <span className={`priority-dot priority-${child.priority}`} title={child.priority} />
+      <div className="task-content">
+        <div className={`task-title ${child.completed ? 'completed' : ''}`}>
+          {child.title}
+        </div>
+      </div>
+      <div className="task-actions">
+        <button
+          className={`task-star ${child.starred ? 'starred' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleStar(child.id);
+          }}
+          title={child.starred ? 'Stern entfernen' : 'Markieren'}
+        >
+          {child.starred ? '★' : '☆'}
+        </button>
+      </div>
+    </div>
+  );
+
   const renderTask = (task: Task) => {
     const project = projects.find((p) => p.id === task.projectId);
     const taskCats = categories.filter((c) => task.categoryIds.includes(c.id));
+    const kids = childrenByParent.get(task.id) ?? [];
+    const doneKids = kids.filter((k) => k.completed).length;
+    const expanded = expandedIds.has(task.id);
     return (
+      <div key={task.id} className="task-row">
       <div
         key={task.id}
         className={`task-item ${selectedTaskId === task.id ? 'selected' : ''} ${
@@ -127,6 +193,20 @@ export default function TaskList({
           else selectTask(selectedTaskId === task.id ? null : task.id);
         }}
       >
+        {kids.length > 0 ? (
+          <button
+            className="task-subtoggle"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpanded(task.id);
+            }}
+            title={expanded ? 'Unteraufgaben ausblenden' : 'Unteraufgaben anzeigen'}
+          >
+            {expanded ? '−' : '+'}
+          </button>
+        ) : (
+          <span className="task-subtoggle-spacer" />
+        )}
         <input
           type="checkbox"
           className="task-checkbox"
@@ -182,6 +262,14 @@ export default function TaskList({
                 💬 {task.comments!.length}
               </span>
             )}
+            {kids.length > 0 && (
+              <span
+                className="task-subcount"
+                title={`${kids.length} Unteraufgabe${kids.length === 1 ? '' : 'n'}`}
+              >
+                ⤷ {doneKids}/{kids.length}
+              </span>
+            )}
             {taskCats.map((c) => (
               <span key={c.id} className="task-cat" style={{ background: c.color }}>
                 {c.name}
@@ -201,6 +289,10 @@ export default function TaskList({
             {task.starred ? '★' : '☆'}
           </button>
         </div>
+      </div>
+      {expanded && kids.length > 0 && (
+        <div className="task-subtasks">{kids.map(renderChild)}</div>
+      )}
       </div>
     );
   };

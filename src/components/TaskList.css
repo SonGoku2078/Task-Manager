@@ -332,6 +332,70 @@
   color: var(--accent);
 }
 
+/* Subtask indicator + inline expand/collapse */
+.task-subcount {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.task-subtoggle {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  background: none;
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  padding: 0;
+}
+
+.task-subtoggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Keep titles aligned for tasks without subtasks. */
+.task-subtoggle-spacer {
+  width: 20px;
+  min-width: 20px;
+}
+
+/* Inline subtask rows live in their own indented block under the parent. */
+.task-row {
+  display: contents;
+}
+
+.task-subtasks {
+  border-left: 3px solid var(--accent);
+  margin-left: 40px;
+  background: var(--hover-bg);
+}
+
+.task-item.is-child {
+  padding: 7px 20px 7px 10px;
+  gap: 8px;
+}
+
+.task-item.is-child .task-title {
+  font-size: 13px;
+}
+
+.task-child-marker {
+  color: var(--accent);
+  font-size: 14px;
+  min-width: 14px;
+  opacity: 0.8;
+}
+
 /* Scrollbar */
 .task-list::-webkit-scrollbar {
   width: 8px;

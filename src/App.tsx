@@ -173,6 +173,8 @@ function App() {
 
       if (e.key === 'Escape') {
         if (typing) el?.blur();
+        // Clear a multi-selection first, then the open detail task.
+        else if (bulkMode || selectedIds.size > 0) exitBulk();
         else if (useStore.getState().ui.selectedTaskId) selectTask(null);
         return;
       }
@@ -194,7 +196,7 @@ function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectTask, setView, deleteTask]);
+  }, [selectTask, setView, deleteTask, bulkMode, selectedIds]);
 
   const visibleTasks = selectVisibleTasks(tasks, ui, projects);
   const selectedTask = ui.selectedTaskId
