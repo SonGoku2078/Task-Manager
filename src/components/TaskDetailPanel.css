@@ -278,6 +278,14 @@
   resize: vertical;
 }
 
+/* Read-only description view with clickable links (click to edit). */
+.detail-desc-view {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+  height: auto;
+}
+
 .panel-actions {
   padding: 20px;
   border-top: 1px solid var(--border-light);
@@ -324,6 +332,24 @@
 
 .detail-link:hover {
   color: var(--accent);
+}
+
+.detail-delete {
+  border: 1px solid var(--alert-red);
+  background: var(--main-bg);
+  color: var(--alert-red);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.detail-delete:hover {
+  background: var(--alert-red);
+  color: #fff;
 }
 
 .detail-parent-link {

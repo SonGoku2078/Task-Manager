@@ -26,6 +26,7 @@ const renderWithLinks = (text: string) =>
         target="_blank"
         rel="noopener noreferrer"
         className="comment-url"
+        onClick={(e) => e.stopPropagation()}
       >
         {part}
       </a>
@@ -100,6 +101,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   };
 
   const [commentText, setCommentText] = useState('');
+  // Description: show clickable links when viewing, switch to a textarea on click.
+  const [editingDesc, setEditingDesc] = useState(false);
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [attachError, setAttachError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -224,6 +227,21 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             {task.completed ? '↺ Öffnen' : '✓ Erledigen'}
           </button>
           <button
+            className="detail-delete"
+            title="Aufgabe löschen"
+            onClick={() => {
+              if (
+                window.confirm(
+                  'Aufgabe wirklich löschen? Sie kann über die Aktivität wiederhergestellt werden.'
+                )
+              ) {
+                deleteTask(task.id);
+              }
+            }}
+          >
+            🗑 Löschen
+          </button>
+          <button
             className="detail-link"
             onClick={copyLink}
             title="Link zu dieser Aufgabe kopieren"
@@ -316,12 +334,24 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
 
         <div className="detail-field">
           <label className="detail-label">Beschreibung</label>
-          <textarea
-            className="detail-input detail-textarea"
-            value={task.description}
-            onChange={(e) => updateTask(task.id, { description: e.target.value })}
-            placeholder="Notizen hinzufügen..."
-          />
+          {editingDesc || !task.description ? (
+            <textarea
+              className="detail-input detail-textarea"
+              autoFocus={editingDesc}
+              value={task.description}
+              onChange={(e) => updateTask(task.id, { description: e.target.value })}
+              onBlur={() => setEditingDesc(false)}
+              placeholder="Notizen hinzufügen..."
+            />
+          ) : (
+            <div
+              className="detail-input detail-textarea detail-desc-view"
+              onClick={() => setEditingDesc(true)}
+              title="Zum Bearbeiten klicken"
+            >
+              {renderWithLinks(task.description)}
+            </div>
+          )}
         </div>
 
         <div className="detail-field">
@@ -472,20 +502,19 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         <div className="detail-row">
           <div className="detail-field">
             <label className="detail-label">Projekt</label>
-            <select
-              className="detail-select"
+            <SearchSelect
               value={task.projectId ?? ''}
-              onChange={(e) =>
-                updateTask(task.id, { projectId: e.target.value || null })
-              }
-            >
-              <option value="">Inbox (kein Projekt)</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id} style={{ color: p.color }}>
-                  ● {p.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Inbox (kein Projekt)"
+              options={[
+                { value: '', label: 'Inbox (kein Projekt)' },
+                ...projects.map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                  color: p.color,
+                })),
+              ]}
+              onSelect={(v) => updateTask(task.id, { projectId: v || null })}
+            />
           </div>
 
           <div className="detail-field">
@@ -714,19 +743,6 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         </div>
       </div>
 
-      <div className="panel-actions">
-        <button
-          className="btn btn-danger"
-          onClick={() => {
-            deleteTask(task.id);
-          }}
-        >
-          Löschen
-        </button>
-        <button className="btn btn-primary" onClick={() => selectTask(null)}>
-          Fertig
-        </button>
-      </div>
     </div>
   );
 }

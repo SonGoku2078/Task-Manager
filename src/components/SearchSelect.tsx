@@ -12,11 +12,18 @@ interface SearchSelectProps {
   options: SearchOption[];
   placeholder: string;
   onSelect: (value: string) => void;
+  // When set, the trigger shows the matching option (coloured dot + neutral text).
+  value?: string;
 }
 
 // Compact, searchable dropdown (native <select> has no filter). Click to open a
 // panel with a search field + filtered, grouped option list. Closes on outside click.
-export default function SearchSelect({ options, placeholder, onSelect }: SearchSelectProps) {
+export default function SearchSelect({
+  options,
+  placeholder,
+  onSelect,
+  value,
+}: SearchSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,8 +59,10 @@ export default function SearchSelect({ options, placeholder, onSelect }: SearchS
     g.items.push(o);
   }
 
-  const choose = (value: string) => {
-    onSelect(value);
+  const selected = value != null && value !== '' ? options.find((o) => o.value === value) : undefined;
+
+  const choose = (v: string) => {
+    onSelect(v);
     setOpen(false);
     setQuery('');
   };
@@ -62,10 +71,24 @@ export default function SearchSelect({ options, placeholder, onSelect }: SearchS
     <div className="search-select" ref={rootRef}>
       <button
         type="button"
-        className="search-select-trigger"
+        className={`search-select-trigger ${selected ? 'has-value' : ''}`}
         onClick={() => setOpen((v) => !v)}
       >
-        {placeholder}
+        <span className="search-select-current">
+          {selected ? (
+            <>
+              {selected.color && (
+                <span
+                  className="search-select-dot"
+                  style={{ background: selected.color }}
+                />
+              )}
+              {selected.label}
+            </>
+          ) : (
+            placeholder
+          )}
+        </span>
         <span className="search-select-caret">▾</span>
       </button>
       {open && (

@@ -24,6 +24,19 @@
   border-color: var(--accent);
 }
 
+.search-select-trigger.has-value {
+  color: var(--text-primary);
+}
+
+.search-select-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .search-select-caret {
   color: var(--text-secondary);
   font-size: 11px;

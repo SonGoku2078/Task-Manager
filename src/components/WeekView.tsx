@@ -121,6 +121,10 @@ export default function WeekView({ mode }: WeekViewProps) {
       )
       .sort((a, b) => (a.starred === b.starred ? 0 : a.starred ? -1 : 1));
 
+  // Open subtasks of a task — shown nested under their parent in the calendar.
+  const openSubtasksOf = (taskId: string): Task[] =>
+    tasks.filter((c) => c.parentId === taskId && !c.completed);
+
   // Which days become columns.
   let days: Date[];
   if (mode === 'rolling') {
@@ -447,7 +451,7 @@ export default function WeekView({ mode }: WeekViewProps) {
         <div className="week-gutter-label">ohne&nbsp;Zeit</div>
         {days.map((d) => {
           const dayTasks = tasksOnDate(tasks, d).filter(
-            (t) => !t.parentId && (t.startMinutes == null)
+            (t) => !t.parentId && t.startMinutes == null
           );
           return (
             <div
@@ -581,17 +585,31 @@ export default function WeekView({ mode }: WeekViewProps) {
                       </span>
                       <div className="week-blocker-tasks">
                         {nwTasks.map((t) => (
-                          <button
-                            key={t.id}
-                            className={`week-blocker-na ${selectedTaskId === t.id ? 'selected' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleOpen(t.id);
-                            }}
-                            title={`Öffnen: ${t.title}`}
-                          >
-                            {t.starred ? '★ ' : ''}{t.title}
-                          </button>
+                          <div key={t.id}>
+                            <button
+                              className={`week-blocker-na ${selectedTaskId === t.id ? 'selected' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleOpen(t.id);
+                              }}
+                              title={`Öffnen: ${t.title}`}
+                            >
+                              {t.title}
+                            </button>
+                            {openSubtasksOf(t.id).map((s) => (
+                              <button
+                                key={s.id}
+                                className={`week-blocker-na week-blocker-sub ${selectedTaskId === s.id ? 'selected' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleOpen(s.id);
+                                }}
+                                title={`Öffnen: ${s.title}`}
+                              >
+                                ↳ {s.title}
+                              </button>
+                            ))}
+                          </div>
                         ))}
                       </div>
                     </div>

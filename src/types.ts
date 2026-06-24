@@ -201,6 +201,8 @@ export interface ActivityEntry {
   field?: string; // for 'updated': which field changed
   from?: string; // human-readable previous value
   to?: string; // human-readable new value
+  // For 'deleted': snapshot of the removed task (+ its subtasks) to enable restore.
+  payload?: { task: Task; subtasks: Task[] };
 }
 
 export interface Filters {

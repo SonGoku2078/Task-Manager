@@ -49,6 +49,7 @@ export default function ActivityLog() {
   const activityLog = useStore((s) => s.activityLog);
   const tasks = useStore((s) => s.tasks);
   const selectTask = useStore((s) => s.selectTask);
+  const restoreTask = useStore((s) => s.restoreTask);
 
   if (activityLog.length === 0) {
     return (
@@ -92,15 +93,30 @@ export default function ActivityLog() {
               <span className="activity-title">{head.taskTitle}</span>
             </button>
             <div className="activity-changes">
-              {g.entries.map((e) => (
-                <div className="activity-change" key={e.id}>
-                  <span className="activity-kind-icon">{KIND_ICON[e.kind]}</span>
-                  <span className="activity-desc">{describe(e)}</span>
-                  <span className="activity-meta">
-                    {e.actor} · {time(e.at)}
-                  </span>
-                </div>
-              ))}
+              {g.entries.map((e) => {
+                const canRestore =
+                  e.kind === 'deleted' &&
+                  !!e.payload?.task &&
+                  !tasks.some((t) => t.id === e.payload!.task.id);
+                return (
+                  <div className="activity-change" key={e.id}>
+                    <span className="activity-kind-icon">{KIND_ICON[e.kind]}</span>
+                    <span className="activity-desc">{describe(e)}</span>
+                    {canRestore && (
+                      <button
+                        className="activity-restore"
+                        onClick={() => restoreTask(e.id)}
+                        title="Aufgabe wiederherstellen"
+                      >
+                        ↩ Wiederherstellen
+                      </button>
+                    )}
+                    <span className="activity-meta">
+                      {e.actor} · {time(e.at)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );

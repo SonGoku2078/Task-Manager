@@ -97,3 +97,20 @@
   margin-bottom: 12px;
   opacity: 0.5;
 }
+
+.activity-restore {
+  border: 1px solid var(--accent);
+  background: var(--main-bg);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.activity-restore:hover {
+  background: var(--accent);
+  color: #fff;
+}

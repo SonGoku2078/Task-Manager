@@ -305,12 +305,20 @@
   gap: 2px;
   margin-top: 2px;
   overflow-y: auto;
+  overflow-x: hidden;
   pointer-events: auto;
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+}
+
+.week-blocker-tasks > div {
+  min-width: 0;
 }
 
 .week-blocker-na {
+  display: block;
+  width: 100%;
   pointer-events: auto;
   cursor: pointer;
   text-align: left;
@@ -322,6 +330,12 @@
   font-size: 10px;
   color: var(--text-primary);
   overflow-wrap: anywhere;
+}
+
+.week-blocker-sub {
+  margin-left: 10px;
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--text-secondary);
 }
 
 .week-blocker-na:hover {

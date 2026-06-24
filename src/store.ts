@@ -314,6 +314,7 @@ interface AppState {
   addSubtask: (parentId: string, title: string) => Task | null;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
+  restoreTask: (entryId: string) => void;
   toggleTask: (id: string) => void;
   toggleStar: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
@@ -571,19 +572,44 @@ export const useStore = create<AppState>()(
           };
           collect(id);
           const removed = state.tasks.find((t) => t.id === id);
+          // Snapshot the deleted task + its subtasks so it can be restored later.
+          const subtasks = state.tasks.filter(
+            (t) => toRemove.has(t.id) && t.id !== id
+          );
+          const entry = removed
+            ? {
+                ...taskEntry('deleted', removed, state.settings.userName),
+                payload: { task: removed, subtasks },
+              }
+            : null;
           return {
             tasks: state.tasks.filter((t) => !toRemove.has(t.id)),
-            activityLog: removed
-              ? pushLog(
-                  state.activityLog,
-                  taskEntry('deleted', removed, state.settings.userName)
-                )
-              : state.activityLog,
+            activityLog: entry ? pushLog(state.activityLog, entry) : state.activityLog,
             ui:
               state.ui.selectedTaskId && toRemove.has(state.ui.selectedTaskId)
                 ? { ...state.ui, selectedTaskId: null }
                 : state.ui,
           };
+        }),
+
+      restoreTask: (entryId) =>
+        set((state) => {
+          const entry = state.activityLog.find((e) => e.id === entryId);
+          if (!entry?.payload) return {};
+          const existing = new Set(state.tasks.map((t) => t.id));
+          // Normalise date fields (the persist reviver doesn't reach nested payloads).
+          const fix = (t: Task): Task => ({
+            ...t,
+            dueDate: t.dueDate ? new Date(t.dueDate) : t.dueDate,
+            createdAt: new Date(t.createdAt),
+            updatedAt: new Date(t.updatedAt),
+            recurrenceEnd: t.recurrenceEnd ? new Date(t.recurrenceEnd) : t.recurrenceEnd,
+          });
+          const toAdd = [entry.payload.task, ...entry.payload.subtasks]
+            .filter((t) => !existing.has(t.id))
+            .map(fix);
+          if (!toAdd.length) return {};
+          return { tasks: [...state.tasks, ...toAdd] };
         }),
 
       toggleTask: (id) => {
