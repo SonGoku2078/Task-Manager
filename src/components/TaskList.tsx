@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import { isOverdue } from '../selectors';
@@ -53,6 +53,8 @@ export default function TaskList({
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  // Refs to each rendered section, so the index bar can scroll to one.
+  const sectionElRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // Which parent rows have their subtasks expanded inline (local, not persisted).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const toggleExpanded = (id: string) =>
@@ -229,7 +231,8 @@ export default function TaskList({
           <div className="task-meta">
             {project && !hideProject && (
               <span className="task-project" style={{ color: project.color }}>
-                {project.icon} {project.name}
+                <span className="task-project-dot" style={{ background: project.color }} />
+                {project.name}
               </span>
             )}
             {task.dueDate && (
@@ -316,7 +319,13 @@ export default function TaskList({
 
   // --- Grouped list (project or list view) ---
   // Open tasks stay in their group; completed tasks all sink to a final block.
-  const ungrouped = tasks.filter((t) => !t.sectionId && !t.completed);
+  // A task belongs to a section only if that section exists in the CURRENT scope.
+  // Otherwise (e.g. a project-section task shown in the Next Week view) it's treated
+  // as ungrouped here, so it never silently disappears.
+  const scopeSectionIds = new Set(scopeSections.map((s) => s.id));
+  const ungrouped = tasks.filter(
+    (t) => !t.completed && !(t.sectionId && scopeSectionIds.has(t.sectionId))
+  );
   const completedTasks = tasks.filter((t) => t.completed);
   const submitSection = () => {
     const name = newSectionName.trim();
@@ -327,6 +336,48 @@ export default function TaskList({
 
   return (
     <div className="task-list">
+      {/* Section index: jump to a section or drop a task straight onto it. */}
+      {scopeSections.length > 0 && (
+        <div className="section-index">
+          {scopeSections.map((sec) => {
+            const cnt = tasks.filter((t) => t.sectionId === sec.id);
+            const done = cnt.filter((t) => t.completed).length;
+            return (
+              <button
+                key={sec.id}
+                className={`section-index-chip ${overSectionId === sec.id ? 'drop-over' : ''}`}
+                onClick={() =>
+                  sectionElRefs.current[sec.id]?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  })
+                }
+                onDragOver={(e) => {
+                  if (dragId) {
+                    e.preventDefault();
+                    setOverSectionId(sec.id);
+                  }
+                }}
+                onDragLeave={() => setOverSectionId((c) => (c === sec.id ? null : c))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const ids = readTaskIds(e);
+                  if (ids.length) assignAll(ids, sec.id);
+                  setDragId(null);
+                  setOverSectionId(null);
+                }}
+                title={`Zu „${sec.name}" springen · Aufgabe hierher ziehen`}
+              >
+                {sec.name}
+                <span className="section-index-count">
+                  {done}/{cnt.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Ungrouped tasks (drop here to remove a task from its section) */}
       <div
         className={`section-dropzone ${overSectionId === '__none__' ? 'drop-over' : ''}`}
@@ -358,7 +409,13 @@ export default function TaskList({
         const secTasks = tasks.filter((t) => t.sectionId === sec.id);
         const done = secTasks.filter((t) => t.completed).length;
         return (
-          <div key={sec.id} className="task-section">
+          <div
+            key={sec.id}
+            className="task-section"
+            ref={(el) => {
+              sectionElRefs.current[sec.id] = el;
+            }}
+          >
             <div
               className={`section-header ${overSectionId === sec.id ? 'drop-over' : ''} ${
                 dragSectionId === sec.id ? 'dragging' : ''

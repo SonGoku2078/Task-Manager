@@ -106,6 +106,8 @@ function App() {
 
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Show/hide the calendar docked between the projects panel and the task list.
+  const [projCalShown, setProjCalShown] = useState(true);
 
   const toggleSelect = (id: string) => {
     selectAnchor.current = id;
@@ -283,9 +285,19 @@ function App() {
   return (
     <div className="app-container">
       <Sidebar />
-      {ui.sidePanel === 'projects' && <ProjectsPanel />}
+      {ui.sidePanel === 'projects' && (
+        <ProjectsPanel
+          calendarShown={projCalShown}
+          onToggleCalendar={() => setProjCalShown((v) => !v)}
+        />
+      )}
       {ui.sidePanel === 'someday' && <ProjectsPanel mode="someday" />}
       {ui.sidePanel === 'calendar' && <CalendarPanel />}
+      {ui.currentView === 'projects' && projCalShown && (
+        <div className="calendar-mid-dock">
+          <CalendarPanel />
+        </div>
+      )}
       <div className="main-content">
         <div className="task-header">
           {currentProject ? (
@@ -522,12 +534,6 @@ function App() {
         </>
         )}
       </div>
-
-      {ui.currentView === 'projects' && (
-        <div className="calendar-right-dock">
-          <CalendarPanel />
-        </div>
-      )}
 
       {selectedTask && <TaskDetailPanel task={selectedTask} />}
     </div>

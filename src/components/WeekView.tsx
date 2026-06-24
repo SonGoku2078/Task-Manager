@@ -577,7 +577,7 @@ export default function WeekView({ mode }: WeekViewProps) {
                       title={`${p?.name ?? 'Projekt'} (Aktiv) – ${nwTasks.length} Next-Week-Aufgabe(n)`}
                     >
                       <span className="week-blocker-name" style={{ color: p?.color }}>
-                        {p?.icon} {p?.name}
+                        ● {p?.name}
                       </span>
                       <div className="week-blocker-tasks">
                         {nwTasks.map((t) => (

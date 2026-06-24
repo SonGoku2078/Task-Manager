@@ -161,14 +161,14 @@ body {
   transform: translateX(17px);
 }
 
-/* Calendar docked on the right in project view (drag tasks onto a day). */
-.calendar-right-dock {
+/* Calendar docked between the projects panel and the task list (drag tasks onto a day). */
+.calendar-mid-dock {
   display: flex;
   flex-shrink: 0;
 }
-.calendar-right-dock .calendar-panel {
-  border-right: none;
+.calendar-mid-dock .calendar-panel {
   border-left: 1px solid var(--border-dark);
+  border-right: 1px solid var(--border-dark);
 }
 
 .calendar-mode-toggle {

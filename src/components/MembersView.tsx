@@ -44,7 +44,7 @@ export default function MembersView() {
   };
 
   return (
-    <div className="settings-view">
+    <div className="settings-view members-view">
       <section className="settings-section">
         <h3 className="settings-heading">Benutzer</h3>
         <p className="settings-hint">
@@ -86,7 +86,7 @@ export default function MembersView() {
                   }}
                 />
               </label>
-              {m.avatarUrl && (
+              {m.avatarUrl ? (
                 <button
                   className="member-remove-img"
                   title="Bild entfernen"
@@ -94,8 +94,10 @@ export default function MembersView() {
                 >
                   Bild entfernen
                 </button>
+              ) : (
+                <span className="member-slot" />
               )}
-              {m.id !== SELF_MEMBER_ID && (
+              {m.id !== SELF_MEMBER_ID ? (
                 <button
                   className="member-del"
                   title="Benutzer löschen"
@@ -103,6 +105,8 @@ export default function MembersView() {
                 >
                   ×
                 </button>
+              ) : (
+                <span className="member-slot" />
               )}
             </div>
           ))}

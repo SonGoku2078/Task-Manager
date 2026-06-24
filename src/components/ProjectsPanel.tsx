@@ -7,9 +7,15 @@ import './ProjectsPanel.css';
 
 interface ProjectsPanelProps {
   mode?: 'projects' | 'someday';
+  calendarShown?: boolean;
+  onToggleCalendar?: () => void;
 }
 
-export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps) {
+export default function ProjectsPanel({
+  mode = 'projects',
+  calendarShown,
+  onToggleCalendar,
+}: ProjectsPanelProps) {
   const projects = useStore((s) => s.projects);
   const tasks = useStore((s) => s.tasks);
   const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
@@ -136,18 +142,6 @@ export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps)
           {someday ? '🌥️ Someday' : '📂 Projekte'}
         </span>
         <div className="projects-add-group">
-          {!someday && (
-            <button
-              className="projects-add-btn"
-              title="Area hinzufügen (wiederkehrender Bereich)"
-              onClick={() => {
-                setAdding('area');
-                setNewName('');
-              }}
-            >
-              🔁
-            </button>
-          )}
           <button
             className="projects-add-btn"
             title={someday ? 'Someday-Projekt hinzufügen' : 'Projekt hinzufügen'}
@@ -158,6 +152,15 @@ export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps)
           >
             +
           </button>
+          {!someday && onToggleCalendar && (
+            <button
+              className={`projects-add-btn ${calendarShown ? 'on' : ''}`}
+              title={calendarShown ? 'Kalender ausblenden' : 'Kalender einblenden'}
+              onClick={onToggleCalendar}
+            >
+              📅
+            </button>
+          )}
         </div>
       </div>
 
@@ -202,11 +205,24 @@ export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps)
             {activeProjects.length === 0 && (
               <p className="projects-empty">Keine aktiven Projekte.</p>
             )}
-            {areas.length > 0 && (
-              <>
-                <div className="projects-group-head">🔁 Areas</div>
-                {areas.map(renderItem)}
-              </>
+
+            <div className="projects-divider" />
+            <div className="projects-group-head">
+              <span className="projects-group-title">📦 Areas</span>
+              <button
+                className="projects-add-btn"
+                title="Area hinzufügen (wiederkehrender Bereich)"
+                onClick={() => {
+                  setAdding('area');
+                  setNewName('');
+                }}
+              >
+                +
+              </button>
+            </div>
+            {areas.map(renderItem)}
+            {areas.length === 0 && (
+              <p className="projects-empty">Noch keine Areas.</p>
             )}
           </>
         )}

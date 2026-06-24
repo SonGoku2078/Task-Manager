@@ -11,7 +11,6 @@ import {
   isoWeek,
 } from '../selectors';
 import { readTaskIds } from '../dnd';
-import { downloadICS } from '../ics';
 import './CalendarPanel.css';
 
 // Inclusive list of YYYY-MM-DD keys between two dates (order-independent).
@@ -298,19 +297,6 @@ export default function CalendarPanel() {
         </p>
       )}
 
-      <div className="calendar-export">
-        <button
-          className="ics-export-btn"
-          onClick={() => downloadICS(tasks)}
-          title="Aufgaben mit Fälligkeit als .ics-Datei exportieren"
-        >
-          📥 Als .ics exportieren
-        </button>
-        <p className="ics-hint">
-          In Google/Apple Kalender importierbar. Hinweis: ein automatisch
-          aktualisierendes Abo (webcal://) bräuchte einen Server.
-        </p>
-      </div>
     </div>
   );
 }

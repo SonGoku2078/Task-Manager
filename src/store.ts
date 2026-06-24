@@ -179,6 +179,8 @@ const gtdInvariants = (
 ): Partial<Task> => {
   const next = { ...patch };
   if (next.thisWeek === true) next.someday = false;
+  // Committing to this week also makes it a next action.
+  if (next.thisWeek === true) next.starred = true;
   if (next.someday === true) next.thisWeek = false;
   const after = { ...before, ...next };
   const leavingSomeday =
@@ -485,7 +487,8 @@ export const useStore = create<AppState>()(
           completed: false,
           createdAt: now,
           updatedAt: now,
-          starred: input.starred ?? false,
+          // Next Week implies Next Action (same rule as gtdInvariants).
+          starred: input.starred ?? input.thisWeek === true,
           someday: input.someday ?? false,
           thisWeek: input.thisWeek ?? false,
           // Every task gets responsible person(s); default to the current user.
@@ -1376,7 +1379,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'nozbe-clone-state',
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => localStorage, { reviver: dateReviver }),
       partialize: (state) => ({
         tasks: state.tasks,
@@ -1424,12 +1427,12 @@ export const useStore = create<AppState>()(
           );
         }
         // v3 → v4: single assignee → assignee list.
+        // v4 → v5: every task must have at least one responsible → default to self.
         if (Array.isArray(state.tasks)) {
-          state.tasks = (state.tasks as Task[]).map((t) =>
-            t.assigneeIds
-              ? t
-              : { ...t, assigneeIds: t.assigneeId ? [t.assigneeId] : [] }
-          );
+          state.tasks = (state.tasks as Task[]).map((t) => {
+            const ids = t.assigneeIds ?? (t.assigneeId ? [t.assigneeId] : []);
+            return { ...t, assigneeIds: ids.length ? ids : [SELF_MEMBER_ID] };
+          });
         }
         // Always-on: ensure the self member exists (responsible-person default).
         const members = (state.members as Member[]) ?? [];
