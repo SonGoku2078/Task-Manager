@@ -277,6 +277,8 @@ export interface NewTaskInput {
   starred?: boolean;
   recurrence?: Task['recurrence'];
   sectionId?: string | null;
+  someday?: boolean;
+  thisWeek?: boolean;
 }
 
 interface AppState {
@@ -456,6 +458,8 @@ export const useStore = create<AppState>()(
           createdAt: now,
           updatedAt: now,
           starred: input.starred ?? false,
+          someday: input.someday ?? false,
+          thisWeek: input.thisWeek ?? false,
           recurrence: input.recurrence ?? 'none',
           recurrenceEnd: null,
         };

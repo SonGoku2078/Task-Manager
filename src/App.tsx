@@ -258,10 +258,16 @@ function App() {
       title,
       projectId,
       categoryIds,
-      dueDate: ui.currentView === 'calendar' ? new Date(ui.currentDate) : null,
-      // GTD flags from the active view.
+      dueDate:
+        ui.currentView === 'calendar'
+          ? new Date(ui.currentDate)
+          : ui.currentView === 'today'
+            ? new Date()
+            : null,
+      // Flag the task so it shows up in the view it was created in.
       someday: ui.currentView === 'someday',
       thisWeek: ui.currentView === 'nextweek',
+      starred: ui.currentView === 'priority',
     });
     setNewTaskTitle('');
     selectTask(created.id);
