@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore, DEFAULT_NAV_ORDER } from '../store';
 import type { ViewType } from '../types';
 import { readTaskIds } from '../dnd';
+import UsersIcon from './UsersIcon';
 import './Sidebar.css';
 
 // Icon + label for every reorderable main menu (order comes from settings.navOrder).
@@ -15,6 +16,7 @@ const navMeta: Record<string, { icon: string; label: string }> = {
   categories: { icon: '🏷️', label: 'Kategorien' },
   calendar: { icon: '📅', label: 'Kalender' },
   templates: { icon: '📋', label: 'Vorlagen' },
+  members: { icon: '👤', label: 'Benutzer' },
 };
 
 const bottomItems: { id: ViewType; icon: string; label: string }[] = [
@@ -109,7 +111,9 @@ export default function Sidebar() {
                 setOverId(null);
               }}
             >
-              <span className="sidebar-icon">{item.icon}</span>
+              <span className="sidebar-icon">
+                {id === 'members' ? <UsersIcon size={22} /> : item.icon}
+              </span>
               <span className="sidebar-label">{item.label}</span>
             </button>
           );

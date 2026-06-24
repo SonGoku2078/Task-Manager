@@ -3,6 +3,8 @@ import type { Task } from '../types';
 import { useStore } from '../store';
 import { isOverdue } from '../selectors';
 import { readTaskIds, writeTaskIds } from '../dnd';
+import AvatarStack from './AvatarStack';
+import { assigneesOf } from '../members';
 import './TaskList.css';
 
 interface TaskListProps {
@@ -34,6 +36,7 @@ export default function TaskList({
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
   const sections = useStore((s) => s.sections);
+  const members = useStore((s) => s.members);
   // Full task list to look up subtasks (the `tasks` prop excludes them).
   const allTasks = useStore((s) => s.tasks);
   const reorderTasks = useStore((s) => s.reorderTasks);
@@ -252,6 +255,14 @@ export default function TaskList({
             {task.someday && (
               <span className="task-flag flag-someday" title="Someday">🌥️</span>
             )}
+            {task.waiting && (
+              <span
+                className="task-flag flag-waiting"
+                title={task.waitingFor ? `Warten auf ${task.waitingFor}` : 'Warten auf jemand anderes'}
+              >
+                ⏳{task.waitingFor ? ` ${task.waitingFor}` : ''}
+              </span>
+            )}
             {(task.comments?.length ?? 0) > 0 && (
               <span
                 className="task-comments"
@@ -278,6 +289,7 @@ export default function TaskList({
           </div>
         </div>
         <div className="task-actions">
+          <AvatarStack members={assigneesOf(task, members)} size={20} />
           <button
             className={`task-star ${task.starred ? 'starred' : ''}`}
             onClick={(e) => {

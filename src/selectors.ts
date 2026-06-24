@@ -1,4 +1,5 @@
-import type { Task, UIState, Priority, Project } from './types';
+import type { Task, UIState, Priority, Project, Member } from './types';
+import { taskAssigneeIds } from './members';
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
@@ -34,16 +35,37 @@ export const dateKey = (d: Date) =>
 export const isOverdue = (task: Task) =>
   !!task.dueDate && !task.completed && task.dueDate < startOfDay(new Date());
 
-const matchesSearch = (task: Task, query: string) => {
+// Searchable status keywords (German + English) per active GTD flag.
+const statusKeywords = (task: Task): string[] => {
+  const k: string[] = [];
+  if (task.starred) k.push('nächste aktion', 'next action', 'naechste aktion');
+  if (task.thisWeek) k.push('next week', 'nextweek', 'diese woche');
+  if (task.someday) k.push('someday', 'irgendwann');
+  if (task.waiting) k.push('warten', 'warten auf', 'waiting', 'waiting on someone else');
+  if (task.completed) k.push('erledigt', 'completed', 'done');
+  return k;
+};
+
+const matchesSearch = (task: Task, query: string, members: Member[] = []) => {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   // Search by task number, with or without a leading "#".
   const numQ = q.replace(/^#/, '');
   if (/^\d+$/.test(numQ) && String(task.number) === numQ) return true;
-  return (
-    task.title.toLowerCase().includes(q) ||
-    task.description.toLowerCase().includes(q)
-  );
+  // Free-text haystack: title, description, assignee, waiting person, statuses.
+  const assignee = taskAssigneeIds(task)
+    .map((id) => members.find((m) => m.id === id)?.name ?? '')
+    .join(' ');
+  const haystack = [
+    task.title,
+    task.description,
+    assignee,
+    task.waitingFor ?? '',
+    ...statusKeywords(task),
+  ]
+    .join(' ')
+    .toLowerCase();
+  return haystack.includes(q);
 };
 
 const matchesFilters = (task: Task, ui: UIState) => {
@@ -52,6 +74,7 @@ const matchesFilters = (task: Task, ui: UIState) => {
   if (f.categoryId && !task.categoryIds.includes(f.categoryId)) return false;
   if (f.priority && task.priority !== f.priority) return false;
   if (f.completed !== null && task.completed !== f.completed) return false;
+  if (f.assigneeId && !taskAssigneeIds(task).includes(f.assigneeId)) return false;
   if (f.dueFrom || f.dueTo) {
     if (!task.dueDate) return false;
     const k = dateKey(task.dueDate);
@@ -113,7 +136,8 @@ export const isInNextWeekWindow = (task: Task): boolean => {
 export const selectVisibleTasks = (
   tasks: Task[],
   ui: UIState,
-  projects: Project[] = []
+  projects: Project[] = [],
+  members: Member[] = []
 ): Task[] => {
   // Subtasks are managed under their parent and hidden from flat lists —
   // except in search, where they must be findable.
@@ -210,7 +234,7 @@ export const selectVisibleTasks = (
   if (FILTERABLE_VIEWS.has(ui.currentView)) {
     result = result.filter((t) => matchesFilters(t, ui));
   }
-  result = result.filter((t) => matchesSearch(t, ui.searchQuery));
+  result = result.filter((t) => matchesSearch(t, ui.searchQuery, members));
 
   const sorted = sortTasks(result, ui);
   // Completed tasks always sink to the bottom (order otherwise preserved).

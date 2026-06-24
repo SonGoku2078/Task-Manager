@@ -1,0 +1,45 @@
+.member-name-input {
+  flex: 1;
+}
+
+.member-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent);
+  background: var(--main-bg);
+}
+
+.member-upload:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.member-remove-img {
+  border: 1px solid var(--border-light);
+  background: var(--main-bg);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.member-remove-img:hover {
+  border-color: var(--alert-red);
+  color: var(--alert-red);
+}
+
+.member-error {
+  font-size: 13px;
+  color: var(--alert-red);
+  margin: 6px 0;
+}

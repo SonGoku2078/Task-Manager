@@ -17,6 +17,7 @@ export interface Member {
   name: string;
   role: MemberRole;
   color: string;
+  avatarUrl?: string; // uploaded profile image as a data URL (falls back to initials)
 }
 
 export interface NozbeConnection {
@@ -63,6 +64,7 @@ export type ViewType =
   | 'activity'
   | 'completed'
   | 'reports'
+  | 'members'
   | 'settings';
 
 export type SortField =
@@ -91,6 +93,12 @@ export interface Attachment {
   size: number;
   dataUrl: string;
   url?: string; // server-hosted URL (used after backend migration; local uses dataUrl)
+}
+
+// A reference from one task to another task or to a project.
+export interface TaskLink {
+  type: 'task' | 'project';
+  id: string;
 }
 
 export interface Task {
@@ -122,8 +130,12 @@ export interface Task {
   sectionId?: string | null; // optional grouping inside a project (null = ungrouped)
   someday?: boolean; // GTD: parked as "someday/maybe" (shown in the Someday view)
   thisWeek?: boolean; // GTD: committed for the current week (shown in Next Week)
+  waiting?: boolean; // GTD: waiting on someone else
+  waitingFor?: string | null; // free-text name of the person being waited on
   comments?: Comment[];
-  assigneeId?: string | null;
+  links?: TaskLink[]; // references to other tasks or projects (e.g. "see project X")
+  assigneeId?: string | null; // deprecated single assignee (migrated to assigneeIds)
+  assigneeIds?: string[]; // responsible members; defaults to [self member 'u-me']
   attachments?: Attachment[];
   nozbeId?: string; // source id when imported from Nozbe (traceability / re-import)
 }
@@ -198,6 +210,7 @@ export interface Filters {
   completed: boolean | null; // null = both, false = open, true = done
   dueFrom: string | null; // YYYY-MM-DD inclusive lower bound on dueDate
   dueTo: string | null; // YYYY-MM-DD inclusive upper bound on dueDate
+  assigneeId?: string | null; // filter by responsible member
 }
 
 export interface SavedView {

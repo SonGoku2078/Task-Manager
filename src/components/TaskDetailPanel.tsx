@@ -4,6 +4,11 @@ import type { Task } from '../types';
 import { useStore } from '../store';
 import { taskShareUrl } from '../config';
 import ClearableInput from './ClearableInput';
+import Avatar from './Avatar';
+import AvatarStack from './AvatarStack';
+import { assigneesOf } from '../members';
+import SearchSelect from './SearchSelect';
+import type { SearchOption } from './SearchSelect';
 import './TaskDetailPanel.css';
 
 interface TaskDetailPanelProps {
@@ -54,6 +59,10 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const tasks = useStore((s) => s.tasks);
   const addSubtask = useStore((s) => s.addSubtask);
   const toggleTask = useStore((s) => s.toggleTask);
+  const toggleTaskAssignee = useStore((s) => s.toggleTaskAssignee);
+  const addTaskLink = useStore((s) => s.addTaskLink);
+  const removeTaskLink = useStore((s) => s.removeTaskLink);
+  const openTaskLink = useStore((s) => s.openTaskLink);
   const editTitleTaskId = useStore((s) => s.ui.editTitleTaskId);
   const clearEditTitle = useStore((s) => s.clearEditTitle);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -99,6 +108,25 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const subtasks = tasks.filter((t) => t.parentId === task.id);
   const doneSubtasks = subtasks.filter((s) => s.completed).length;
   const parent = task.parentId ? tasks.find((t) => t.id === task.parentId) : null;
+  const assignees = assigneesOf(task, members);
+  const unassigned = members.filter((m) => !assignees.some((a) => a.id === m.id));
+
+  // Options for the searchable "Verknüpfung hinzufügen" picker.
+  const linkOptions: SearchOption[] = [
+    ...projects.map((p) => ({
+      value: `project:${p.id}`,
+      label: p.name,
+      group: 'Projekte',
+      color: p.color,
+    })),
+    ...tasks
+      .filter((t) => t.id !== task.id && !t.parentId)
+      .map((t) => ({
+        value: `task:${t.id}`,
+        label: `#${t.number} ${t.title}`,
+        group: 'Aufgaben',
+      })),
+  ];
 
   const MAX_ATTACH_BYTES = 1.5 * 1024 * 1024; // 1.5 MB (localStorage gesamt ~5 MB)
 
@@ -228,28 +256,51 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
 
         {/* GTD quick flags for this single task */}
         <div className="detail-flags">
-          <button
-            className={`detail-flag ${task.starred ? 'on' : ''}`}
-            onClick={() => toggleStar(task.id)}
-            title="Nächste Aktion (Stern)"
-          >
-            ★ Nächste Aktion
-          </button>
-          <button
-            className={`detail-flag ${task.thisWeek ? 'on' : ''}`}
-            onClick={() => updateTask(task.id, { thisWeek: !task.thisWeek })}
-            title="Für diese Woche (Next Week)"
-          >
-            🗓️ Next Week
-          </button>
-          <button
-            className={`detail-flag ${task.someday ? 'on' : ''}`}
-            onClick={() => updateTask(task.id, { someday: !task.someday })}
-            title="Nach Someday parken"
-          >
-            🌥️ Someday
-          </button>
+          {assignees.length > 0 && <AvatarStack members={assignees} size={64} />}
+          <div className="detail-flag-buttons">
+            <button
+              className={`detail-flag ${task.starred ? 'on' : ''}`}
+              onClick={() => toggleStar(task.id)}
+              title="Nächste Aktion (Stern)"
+            >
+              ★ Nächste Aktion
+            </button>
+            <button
+              className={`detail-flag ${task.thisWeek ? 'on' : ''}`}
+              onClick={() => updateTask(task.id, { thisWeek: !task.thisWeek })}
+              title="Für diese Woche (Next Week)"
+            >
+              🗓️ Next Week
+            </button>
+            <button
+              className={`detail-flag ${task.someday ? 'on' : ''}`}
+              onClick={() => updateTask(task.id, { someday: !task.someday })}
+              title="Nach Someday parken"
+            >
+              🌥️ Someday
+            </button>
+            <button
+              className={`detail-flag ${task.waiting ? 'on' : ''}`}
+              onClick={() => updateTask(task.id, { waiting: !task.waiting })}
+              title="Warten auf jemand anderes"
+            >
+              ⏳ Warten auf
+            </button>
+          </div>
         </div>
+
+        {task.waiting && (
+          <div className="detail-field">
+            <label className="detail-label">Warten auf (Person)</label>
+            <ClearableInput
+              className="detail-input"
+              placeholder="Name der Person…"
+              value={task.waitingFor ?? ''}
+              onChange={(e) => updateTask(task.id, { waitingFor: e.target.value })}
+              onClear={() => updateTask(task.id, { waitingFor: '' })}
+            />
+          </div>
+        )}
 
         <div className="detail-field">
           <label className="detail-label">Titel</label>
@@ -575,25 +626,92 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           </div>
         </div>
 
-        {members.length > 0 && (
+        <div className="detail-row">
           <div className="detail-field">
-            <label className="detail-label">Zugewiesen an</label>
-            <select
-              className="detail-select"
-              value={task.assigneeId ?? ''}
-              onChange={(e) =>
-                updateTask(task.id, { assigneeId: e.target.value || null })
-              }
-            >
-              <option value="">Niemand</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
+            <label className="detail-label">Verantwortlich</label>
+            <div className="detail-assignees">
+              {assignees.map((m) => (
+                <span key={m.id} className="detail-assignee-chip">
+                  <Avatar member={m} size={20} />
                   {m.name}
-                </option>
+                  <button
+                    className="detail-assignee-del"
+                    title="Entfernen"
+                    onClick={() => toggleTaskAssignee(task.id, m.id)}
+                  >
+                    ×
+                  </button>
+                </span>
               ))}
-            </select>
+            </div>
+            {unassigned.length > 0 && (
+              <select
+                className="detail-select"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) toggleTaskAssignee(task.id, e.target.value);
+                  e.target.value = '';
+                }}
+              >
+                <option value="">+ Verantwortliche/n hinzufügen…</option>
+                {unassigned.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-        )}
+
+          <div className="detail-field">
+            <label className="detail-label">Verknüpfungen</label>
+            <div className="detail-links">
+              {(task.links ?? []).map((link) => {
+                const isProject = link.type === 'project';
+                const proj = isProject ? projects.find((p) => p.id === link.id) : null;
+                const linked = !isProject ? tasks.find((t) => t.id === link.id) : null;
+                if (isProject && !proj) return null;
+                if (!isProject && !linked) return null;
+                return (
+                  <span key={`${link.type}:${link.id}`} className="detail-link-chip">
+                    <button
+                      className="detail-link-open"
+                      onClick={() => openTaskLink(link)}
+                      title={isProject ? 'Projekt öffnen' : 'Aufgabe öffnen'}
+                    >
+                      {isProject ? (
+                        <>
+                          <span
+                            className="detail-link-dot"
+                            style={{ background: proj!.color }}
+                          />
+                          {proj!.name}
+                        </>
+                      ) : (
+                        <>🔗 #{linked!.number} {linked!.title}</>
+                      )}
+                    </button>
+                    <button
+                      className="detail-link-del"
+                      title="Verknüpfung entfernen"
+                      onClick={() => removeTaskLink(task.id, link)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+            <SearchSelect
+              options={linkOptions}
+              placeholder="+ Verknüpfung hinzufügen…"
+              onSelect={(v) => {
+                const [type, id] = v.split(':');
+                addTaskLink(task.id, { type: type as 'task' | 'project', id });
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="panel-actions">

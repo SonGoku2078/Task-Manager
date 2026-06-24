@@ -57,9 +57,15 @@
 
 .detail-flags {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.detail-flag-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .detail-flag {
@@ -170,6 +176,103 @@
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
+.detail-assignee {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-assignees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.detail-assignee-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--hover-bg);
+  padding: 2px 8px 2px 2px;
+  font-size: 13px;
+}
+
+.detail-assignee-del {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.detail-assignee-del:hover {
+  color: var(--alert-red);
+}
+
+.detail-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.detail-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--hover-bg);
+  padding: 2px 4px 2px 8px;
+}
+
+.detail-link-open {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-link-open:hover {
+  color: var(--accent);
+}
+
+.detail-link-dot {
+  width: 9px;
+  height: 9px;
+  min-width: 9px;
+  border-radius: 50%;
+}
+
+.detail-link-del {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.detail-link-del:hover {
+  color: var(--alert-red);
+}
+
 .detail-textarea {
   min-height: 80px;
   resize: vertical;
@@ -190,6 +293,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.panel-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .detail-number {

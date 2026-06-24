@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   Task,
+  TaskLink,
   Project,
   Category,
   UIState,
@@ -128,6 +129,13 @@ const fmtVal = (
   if (field === 'assigneeId') {
     return ctx.members.find((m) => m.id === value)?.name ?? '—';
   }
+  if (field === 'assigneeIds') {
+    const ids = (value as string[]) ?? [];
+    if (!ids.length) return '—';
+    return ids
+      .map((id) => ctx.members.find((m) => m.id === id)?.name ?? id)
+      .join(', ');
+  }
   if (field === 'categoryIds') {
     const ids = value as string[];
     if (!ids.length) return '—';
@@ -154,9 +162,11 @@ const TRACKED_FIELDS: { key: keyof Task; label: string }[] = [
   { key: 'starred', label: 'Markierung' },
   { key: 'someday', label: 'Someday' },
   { key: 'thisWeek', label: 'Next Week' },
+  { key: 'waiting', label: 'Warten auf' },
+  { key: 'waitingFor', label: 'Warten auf (Person)' },
   { key: 'completed', label: 'Status' },
   { key: 'recurrence', label: 'Wiederholung' },
-  { key: 'assigneeId', label: 'Zuweisung' },
+  { key: 'assigneeIds', label: 'Zuweisung' },
 ];
 
 // GTD invariants: extend a task patch so the Someday/Next-Week flow stays valid.
@@ -247,6 +257,7 @@ const defaultUIState: UIState = {
     completed: null,
     dueFrom: null,
     dueTo: null,
+    assigneeId: null,
   },
   sortField: 'manual',
   sortDir: 'asc',
@@ -279,6 +290,8 @@ export interface NewTaskInput {
   sectionId?: string | null;
   someday?: boolean;
   thisWeek?: boolean;
+  assigneeId?: string | null;
+  assigneeIds?: string[];
 }
 
 interface AppState {
@@ -303,6 +316,9 @@ interface AppState {
   toggleStar: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
   deleteComment: (taskId: string, commentId: string) => void;
+  addTaskLink: (taskId: string, link: TaskLink) => void;
+  removeTaskLink: (taskId: string, link: TaskLink) => void;
+  openTaskLink: (link: TaskLink) => void;
   addAttachment: (taskId: string, attachment: Attachment) => void;
   deleteAttachment: (taskId: string, attachmentId: string) => void;
 
@@ -381,6 +397,7 @@ interface AppState {
   addMember: (name: string, role?: MemberRole) => Member;
   updateMember: (id: string, updates: Partial<Member>) => void;
   deleteMember: (id: string) => void;
+  toggleTaskAssignee: (taskId: string, memberId: string) => void;
   setUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
   setAddToTop: (v: boolean) => void;
@@ -410,6 +427,16 @@ const syncCompletion = (state: AppState, task: Task, completed: boolean) => {
 
 const PROJECT_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4'];
 
+// The current user as a member, so every task has a responsible person with an
+// avatar by default. Always present (seeded + ensured on migrate).
+export const SELF_MEMBER_ID = 'u-me';
+const SELF_MEMBER: Member = {
+  id: SELF_MEMBER_ID,
+  name: 'Ich',
+  role: 'admin',
+  color: '#2b8a3e',
+};
+
 // Default order of the main sidebar menus (user can reorder via drag & drop).
 export const DEFAULT_NAV_ORDER: ViewType[] = [
   'priority',
@@ -421,6 +448,7 @@ export const DEFAULT_NAV_ORDER: ViewType[] = [
   'categories',
   'calendar',
   'templates',
+  'members',
 ];
 
 export const useStore = create<AppState>()(
@@ -433,7 +461,7 @@ export const useStore = create<AppState>()(
       categories: defaultCategories,
       savedViews: [],
       activityLog: [],
-      members: [],
+      members: [SELF_MEMBER],
       settings: defaultSettings,
       nextTaskNumber: dummyTasks.length + 1,
       ui: defaultUIState,
@@ -460,6 +488,10 @@ export const useStore = create<AppState>()(
           starred: input.starred ?? false,
           someday: input.someday ?? false,
           thisWeek: input.thisWeek ?? false,
+          // Every task gets responsible person(s); default to the current user.
+          assigneeIds:
+            input.assigneeIds ??
+            (input.assigneeId ? [input.assigneeId] : [SELF_MEMBER_ID]),
           recurrence: input.recurrence ?? 'none',
           recurrenceEnd: null,
         };
@@ -643,6 +675,48 @@ export const useStore = create<AppState>()(
               : t
           ),
         })),
+
+      addTaskLink: (taskId, link) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            const links = t.links ?? [];
+            if (links.some((l) => l.type === link.type && l.id === link.id)) return t;
+            return { ...t, links: [...links, link] };
+          }),
+        })),
+
+      removeTaskLink: (taskId, link) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  links: (t.links ?? []).filter(
+                    (l) => !(l.type === link.type && l.id === link.id)
+                  ),
+                }
+              : t
+          ),
+        })),
+
+      // Navigate to whatever a link points at (a task's detail, or a project view).
+      openTaskLink: (link) =>
+        set((state) => {
+          if (link.type === 'task') {
+            return { ui: { ...state.ui, selectedTaskId: link.id } };
+          }
+          return {
+            ui: {
+              ...state.ui,
+              currentView: 'projects',
+              sidePanel: 'projects',
+              selectedProjectId: link.id,
+              selectedProjectIds: [link.id],
+              selectedTaskId: null,
+            },
+          };
+        }),
 
       addAttachment: (taskId, attachment) =>
         set((state) => {
@@ -1190,9 +1264,27 @@ export const useStore = create<AppState>()(
         set((state) => ({
           members: state.members.filter((m) => m.id !== id),
           // Unassign tasks that pointed at this member.
-          tasks: state.tasks.map((t) =>
-            t.assigneeId === id ? { ...t, assigneeId: null } : t
-          ),
+          tasks: state.tasks.map((t) => {
+            const ids = t.assigneeIds ?? (t.assigneeId ? [t.assigneeId] : []);
+            return ids.includes(id)
+              ? { ...t, assigneeIds: ids.filter((x) => x !== id) }
+              : t;
+          }),
+        })),
+
+      // Add/remove a responsible member on a task (multi-assignee).
+      toggleTaskAssignee: (taskId, memberId) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            const ids = t.assigneeIds ?? (t.assigneeId ? [t.assigneeId] : []);
+            return {
+              ...t,
+              assigneeIds: ids.includes(memberId)
+                ? ids.filter((x) => x !== memberId)
+                : [...ids, memberId],
+            };
+          }),
         })),
 
       setUserName: (name) =>
@@ -1284,7 +1376,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'nozbe-clone-state',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localStorage, { reviver: dateReviver }),
       partialize: (state) => ({
         tasks: state.tasks,
@@ -1330,6 +1422,19 @@ export const useStore = create<AppState>()(
               scope: (s.scope as string) ?? (s.projectId as string),
             })
           );
+        }
+        // v3 → v4: single assignee → assignee list.
+        if (Array.isArray(state.tasks)) {
+          state.tasks = (state.tasks as Task[]).map((t) =>
+            t.assigneeIds
+              ? t
+              : { ...t, assigneeIds: t.assigneeId ? [t.assigneeId] : [] }
+          );
+        }
+        // Always-on: ensure the self member exists (responsible-person default).
+        const members = (state.members as Member[]) ?? [];
+        if (!members.some((m) => m.id === SELF_MEMBER_ID)) {
+          state.members = [SELF_MEMBER, ...members];
         }
         // Always-on: ensure the Single-Tasks bucket and blockers array exist.
         if (!Array.isArray(state.blockers)) state.blockers = [];

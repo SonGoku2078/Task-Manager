@@ -17,6 +17,7 @@ export default function FilterBar() {
   const sortDir = useStore((s) => s.ui.sortDir);
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
+  const members = useStore((s) => s.members);
   const setFilter = useStore((s) => s.setFilter);
   const resetFilters = useStore((s) => s.resetFilters);
   const setSort = useStore((s) => s.setSort);
@@ -29,7 +30,8 @@ export default function FilterBar() {
     filters.priority !== null ||
     filters.completed !== null ||
     filters.dueFrom !== null ||
-    filters.dueTo !== null;
+    filters.dueTo !== null ||
+    (filters.assigneeId ?? null) !== null;
 
   return (
     <div className="filter-bar">
@@ -83,6 +85,20 @@ export default function FilterBar() {
         <option value="">Alle Status</option>
         <option value="open">Offen</option>
         <option value="done">Erledigt</option>
+      </select>
+
+      <select
+        className="filter-select"
+        value={filters.assigneeId ?? ''}
+        onChange={(e) => setFilter('assigneeId', e.target.value || null)}
+        title="Verantwortlich"
+      >
+        <option value="">Alle Personen</option>
+        {members.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+          </option>
+        ))}
       </select>
 
       <span className="filter-date-label" title="Fälligkeit von – bis">📅</span>

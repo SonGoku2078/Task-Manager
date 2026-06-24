@@ -474,3 +474,20 @@ body {
   background: #eee;
   color: var(--text-primary);
 }
+
+.search-save {
+  border: 1px solid var(--accent);
+  background: var(--main-bg);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.search-save:hover {
+  background: var(--accent);
+  color: #fff;
+}

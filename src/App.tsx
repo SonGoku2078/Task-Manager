@@ -16,6 +16,7 @@ import BulkActionBar from './components/BulkActionBar';
 import TemplatesGallery from './components/TemplatesGallery';
 import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
+import MembersView from './components/MembersView';
 import SettingsView from './components/SettingsView';
 import ClearableInput from './components/ClearableInput';
 import { parseTaskHash, parseAddTaskHash } from './config';
@@ -36,6 +37,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   activity: 'Aktivität',
   completed: 'Erledigt',
   reports: 'Berichte',
+  members: 'Benutzer',
   settings: 'Einstellungen',
 };
 
@@ -90,6 +92,9 @@ function App() {
   const setView = useStore((s) => s.setView);
   const setSidePanel = useStore((s) => s.setSidePanel);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
+  const members = useStore((s) => s.members);
+  const addSavedView = useStore((s) => s.addSavedView);
+  const applySavedView = useStore((s) => s.applySavedView);
   const deleteTask = useStore((s) => s.deleteTask);
   const addToTop = useStore((s) => s.settings.addToTop ?? false);
   const setAddToTop = useStore((s) => s.setAddToTop);
@@ -198,7 +203,7 @@ function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [selectTask, setView, deleteTask, bulkMode, selectedIds]);
 
-  const visibleTasks = selectVisibleTasks(tasks, ui, projects);
+  const visibleTasks = selectVisibleTasks(tasks, ui, projects, members);
   const selectedTask = ui.selectedTaskId
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
@@ -375,6 +380,8 @@ function App() {
           <ActivityLog />
         ) : ui.currentView === 'reports' ? (
           <ReportsView />
+        ) : ui.currentView === 'members' ? (
+          <MembersView />
         ) : ui.currentView === 'settings' ? (
           <SettingsView />
         ) : (
@@ -440,18 +447,36 @@ function App() {
               autoFocus
               type="text"
               className="search-input"
-              placeholder="Aufgaben durchsuchen (Titel & Beschreibung)…"
+              placeholder="Suchen: Titel, Beschreibung, Person, Status (z.B. warten, next week)..."
               value={ui.searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {ui.searchQuery && (
-              <button
-                className="search-clear"
-                onClick={() => setSearchQuery('')}
-                title="Löschen"
-              >
-                ✕
-              </button>
+              <>
+                <button
+                  className="search-save"
+                  title="Diese Suche speichern"
+                  onClick={() => {
+                    const name = window.prompt(
+                      'Name der gespeicherten Suche:',
+                      ui.searchQuery
+                    );
+                    if (name && name.trim()) {
+                      const view = addSavedView(name.trim());
+                      applySavedView(view.id);
+                    }
+                  }}
+                >
+                  💾 Suche speichern
+                </button>
+                <button
+                  className="search-clear"
+                  onClick={() => setSearchQuery('')}
+                  title="Löschen"
+                >
+                  ✕
+                </button>
+              </>
             )}
           </div>
         )}
