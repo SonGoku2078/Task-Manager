@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import type { Project } from '../types';
+import { readTaskIds } from '../dnd';
 import ClearableInput from './ClearableInput';
 import './ProjectsPanel.css';
 
@@ -17,6 +18,7 @@ export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps)
   const toggleProjectSelected = useStore((s) => s.toggleProjectSelected);
   const addProject = useStore((s) => s.addProject);
   const reorderProjects = useStore((s) => s.reorderProjects);
+  const updateTask = useStore((s) => s.updateTask);
   const storedWidth = useStore((s) => s.settings.projectsPanelWidth);
   const setProjectsPanelWidth = useStore((s) => s.setProjectsPanelWidth);
 
@@ -95,14 +97,20 @@ export default function ProjectsPanel({ mode = 'projects' }: ProjectsPanelProps)
       }
       onDragStart={() => setDragId(p.id)}
       onDragOver={(e) => {
-        if (!dragId) return;
+        // Accept either a project (reorder) or a task (move into this project).
+        if (!dragId && !e.dataTransfer.types.includes('text/plain')) return;
         e.preventDefault();
         setOverId(p.id);
       }}
       onDragLeave={() => setOverId((cur) => (cur === p.id ? null : cur))}
       onDrop={(e) => {
         e.preventDefault();
-        if (dragId) reorderProjects(dragId, p.id);
+        if (dragId) {
+          reorderProjects(dragId, p.id);
+        } else {
+          // A task (or multi-selection) dropped here moves to this project.
+          readTaskIds(e).forEach((id) => updateTask(id, { projectId: p.id }));
+        }
         setDragId(null);
         setOverId(null);
       }}
