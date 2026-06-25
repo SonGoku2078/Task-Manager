@@ -354,6 +354,12 @@
   font-weight: 500;
 }
 
+.task-duration {
+  color: var(--text-secondary);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
 .task-actions {
   display: flex;
   gap: 12px;

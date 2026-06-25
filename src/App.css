@@ -256,6 +256,16 @@ body {
   background: #fff;
 }
 
+.project-title-label {
+  cursor: pointer;
+  display: inline-block;
+  user-select: none;
+}
+
+.project-title-label:hover {
+  border-color: var(--border-light);
+}
+
 .header-icon-btn {
   background: none;
   border: none;

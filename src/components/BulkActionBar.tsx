@@ -190,10 +190,8 @@ export default function BulkActionBar({
           className="bulk-btn bulk-btn-danger"
           disabled={disabled}
           onClick={() => {
-            if (window.confirm(`${count} Aufgabe(n) löschen?`)) {
-              bulkDelete(selectedIds);
-              onClear();
-            }
+            bulkDelete(selectedIds);
+            onClear();
           }}
         >
           🗑 Löschen

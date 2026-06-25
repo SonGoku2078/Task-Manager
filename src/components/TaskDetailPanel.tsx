@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ClipboardEvent } from 'react';
+import { marked } from 'marked';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import { taskShareUrl } from '../config';
@@ -9,7 +10,30 @@ import AvatarStack from './AvatarStack';
 import { assigneesOf } from '../members';
 import SearchSelect from './SearchSelect';
 import type { SearchOption } from './SearchSelect';
+import { DescToolbar } from './DescToolbar';
 import './TaskDetailPanel.css';
+import './ProjectDetailPanel.css';
+
+// Shared Markdown renderer (links open in new tab).
+const renderer = new marked.Renderer();
+renderer.link = ({ href, title, text }) =>
+  `<a href="${href ?? ''}" target="_blank" rel="noopener noreferrer"${title ? ` title="${title}"` : ''}>${text}</a>`;
+marked.setOptions({ renderer, breaks: true });
+
+function renderMarkdown(text: string): string {
+  return (marked.parse(text) as string)
+    .replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/g, '')
+    .replace(/<li>\n?<p>([\s\S]*?)<\/p>\n?<\/li>/g, '<li>$1</li>');
+}
+
+// Render description: detect "Referenz :" lines and style them separately.
+function renderTaskDesc(text: string): string {
+  const html = renderMarkdown(text);
+  return html.replace(
+    /Referenz\s*:\s*([^<]*)/g,
+    '<span class="desc-ref-badge">📎 Ref</span><span class="desc-ref-path">$1</span>',
+  );
+}
 
 interface TaskDetailPanelProps {
   task: Task;
@@ -36,15 +60,15 @@ const renderWithLinks = (text: string) =>
   );
 
 function parseDuration(s: string): number | null {
-  const t = s.trim();
+  const t = s.trim().replace(',', '.');
   if (!t) return null;
-  // e.g. 1h30m
-  const hm = t.match(/^(\d+)h\s*(\d+)m$/i);
+  // e.g. 1h30m or 1h 30m
+  const hm = t.match(/^(\d+)h\s*(\d+)m?$/i);
   if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2]);
-  // e.g. 1h
-  const h = t.match(/^(\d+)h$/i);
-  if (h) return parseInt(h[1]) * 60;
-  // e.g. 30m
+  // e.g. 1.5h or 1,5h
+  const fh = t.match(/^(\d+(?:\.\d+)?)h$/i);
+  if (fh) return Math.round(parseFloat(fh[1]) * 60);
+  // e.g. 30m or 90m
   const m = t.match(/^(\d+)m$/i);
   if (m) return parseInt(m[1]);
   // plain number = minutes
@@ -54,12 +78,15 @@ function parseDuration(s: string): number | null {
 }
 
 function formatDuration(min: number): string {
-  if (min < 60) return `${min}m`;
-  if (min === 60) return '1h';
-  const h = Math.floor(min / 60);
+  if (min < 60) return `${min} Min`;
+  const h = min / 60;
+  if (Number.isInteger(h)) return `${h} Std`;
+  const hWhole = Math.floor(min / 60);
   const m = min % 60;
-  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  return `${hWhole}h ${m}m`;
 }
+
+export { parseDuration, formatDuration };
 
 const toDateInput = (d: Date | null) =>
   d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
@@ -127,8 +154,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   };
 
   const [commentText, setCommentText] = useState('');
-  // Description: show clickable links when viewing, switch to a textarea on click.
   const [editingDesc, setEditingDesc] = useState(false);
+  const descRef = useRef<HTMLTextAreaElement>(null);
   const [editingDuration, setEditingDuration] = useState(false);
   const [durationInput, setDurationInput] = useState('');
   const [subtaskTitle, setSubtaskTitle] = useState('');
@@ -335,43 +362,6 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           </div>
         </div>
 
-        <div className="detail-field detail-duration-row">
-          <label className="detail-label">⏱ Dauer</label>
-          {editingDuration ? (
-            <input
-              autoFocus
-              className="detail-input detail-duration-input"
-              value={durationInput}
-              placeholder="z.B. 30m, 1h, 1h30m"
-              onChange={(e) => setDurationInput(e.target.value)}
-              onBlur={() => {
-                const val = parseDuration(durationInput);
-                updateTask(task.id, { durationMin: val });
-                setEditingDuration(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const val = parseDuration(durationInput);
-                  updateTask(task.id, { durationMin: val });
-                  setEditingDuration(false);
-                } else if (e.key === 'Escape') {
-                  setEditingDuration(false);
-                }
-              }}
-            />
-          ) : (
-            <span
-              className="detail-duration-display"
-              title="Klicken zum Bearbeiten"
-              onClick={() => {
-                setDurationInput(task.durationMin ? formatDuration(task.durationMin) : '');
-                setEditingDuration(true);
-              }}
-            >
-              {task.durationMin ? formatDuration(task.durationMin) : '—'}
-            </span>
-          )}
-        </div>
 
         {task.waiting && (
           <div className="detail-field">
@@ -400,22 +390,39 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
 
         <div className="detail-field">
           <label className="detail-label">Beschreibung</label>
-          {editingDesc || !task.description ? (
-            <textarea
-              className="detail-input detail-textarea"
-              autoFocus={editingDesc}
-              value={task.description}
-              onChange={(e) => updateTask(task.id, { description: e.target.value })}
-              onBlur={() => setEditingDesc(false)}
-              placeholder="Notizen hinzufügen..."
+          {editingDesc ? (
+            <div className="desc-editor-wrap">
+              <DescToolbar
+                taRef={descRef}
+                onSave={() => setEditingDesc(false)}
+                saveLabel="✓ Fertig"
+              />
+              <textarea
+                ref={descRef}
+                className="detail-input detail-textarea"
+                autoFocus
+                value={task.description}
+                onChange={(e) => updateTask(task.id, { description: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); setEditingDesc(false); }
+                  if (e.key === 'Escape') setEditingDesc(false);
+                }}
+                placeholder="Notizen hinzufügen… (Markdown)"
+              />
+            </div>
+          ) : task.description ? (
+            <div
+              className="detail-input detail-textarea detail-desc-view markdown-body"
+              onClick={() => setEditingDesc(true)}
+              title="Zum Bearbeiten klicken"
+              dangerouslySetInnerHTML={{ __html: renderTaskDesc(task.description) }}
             />
           ) : (
             <div
-              className="detail-input detail-textarea detail-desc-view"
+              className="detail-input detail-textarea detail-desc-view detail-desc-empty"
               onClick={() => setEditingDesc(true)}
-              title="Zum Bearbeiten klicken"
             >
-              {renderWithLinks(task.description)}
+              Notizen hinzufügen…
             </div>
           )}
         </div>
@@ -614,6 +621,46 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             />
           </div>
 
+          <div className="detail-field">
+            <label className="detail-label">⏱ Dauer</label>
+            {editingDuration ? (
+              <input
+                autoFocus
+                className="detail-input detail-duration-input"
+                value={durationInput}
+                placeholder="30m · 1h · 1.5h · 90m"
+                onChange={(e) => setDurationInput(e.target.value)}
+                onBlur={() => {
+                  const val = parseDuration(durationInput);
+                  updateTask(task.id, { durationMin: val });
+                  setEditingDuration(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = parseDuration(durationInput);
+                    updateTask(task.id, { durationMin: val });
+                    setEditingDuration(false);
+                  } else if (e.key === 'Escape') {
+                    setEditingDuration(false);
+                  }
+                }}
+              />
+            ) : (
+              <span
+                className="detail-input detail-duration-display"
+                title="Klicken zum Bearbeiten"
+                onClick={() => {
+                  setDurationInput(task.durationMin ? formatDuration(task.durationMin) : '');
+                  setEditingDuration(true);
+                }}
+              >
+                {task.durationMin ? formatDuration(task.durationMin) : '—'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="detail-row">
           <div className="detail-field">
             <label className="detail-label">Wiederholung</label>
             <select

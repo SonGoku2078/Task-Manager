@@ -46,6 +46,8 @@ export interface Settings {
   calendarMonthCount?: number; // months stacked in the month panel (1 or 2)
   calendarHourHeight?: number; // px per hour in the week grid (zoom: 24–160)
   navOrder?: ViewType[]; // user-defined order of the main sidebar menus
+  colorPalette?: string[]; // project color swatches
+  colorLabels?: Record<string, string>; // hex → label name (e.g. '#9c27b0' → 'Lifestyle')
 }
 
 export type ViewType =

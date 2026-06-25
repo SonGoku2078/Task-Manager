@@ -212,3 +212,66 @@
   display: flex;
   gap: 8px;
 }
+
+/* Color palette management */
+.color-palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.color-palette-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-palette-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.color-label-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.color-palette-hex {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: ui-monospace, monospace;
+  flex-shrink: 0;
+}
+
+.color-palette-del {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.color-palette-del:hover { color: var(--alert-red, #e53935); }
+
+.color-palette-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-palette-picker {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  padding: 2px;
+  cursor: pointer;
+  background: none;
+  flex-shrink: 0;
+}

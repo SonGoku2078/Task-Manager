@@ -56,6 +56,35 @@ const uid = (prefix: string) =>
 
 const ACTIVITY_CAP = 500;
 
+// Parse recurrence strings (DE + EN) → RecurrenceType.
+function parseRecurrence(raw: string | undefined): import('./types').RecurrenceType {
+  if (!raw) return 'none';
+  const s = raw.trim().toLowerCase();
+  if (['täglich', 'daily', 'jeden tag', 'every day'].includes(s)) return 'daily';
+  if (['wöchentlich', 'weekly', 'jede woche', 'every week'].includes(s)) return 'weekly';
+  if (['monatlich', 'monthly', 'jeden monat', 'every month'].includes(s)) return 'monthly';
+  if (['jährlich', 'yearly', 'annually', 'jedes jahr', 'every year'].includes(s)) return 'yearly';
+  return 'none';
+}
+
+// Parse duration strings like "30m", "1h", "1h30m", "90" → minutes.
+function parseDuration(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const s = raw.trim().toLowerCase();
+  const hm = s.match(/^(\d+)h(\d+)m?$/);
+  if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2]);
+  const h = s.match(/^(\d+)h$/);
+  if (h) return parseInt(h[1]) * 60;
+  const m = s.match(/^(\d+)m?$/);
+  if (m) return parseInt(m[1]);
+  return null;
+}
+
+export const DEFAULT_PALETTE = [
+  '#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4',
+  '#f44336', '#8bc34a', '#009688', '#3f51b5', '#795548', '#607d8b',
+];
+
 // Build a task-related activity entry (created/updated/completed/comment/…).
 const taskEntry = (
   kind: ActivityKind,
@@ -312,6 +341,10 @@ interface AppState {
   // Task CRUD
   addTask: (input: NewTaskInput) => Task;
   addSubtask: (parentId: string, title: string) => Task | null;
+  bulkCreateTasks: (
+    projectId: string | null,
+    rows: { section?: string; title: string; description?: string; duration?: string; recurrence?: string }[]
+  ) => number;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   restoreTask: (entryId: string) => void;
@@ -411,6 +444,9 @@ interface AppState {
   setCalendarHours: (startHour: number, endHour: number) => void;
   setCalendarMonthCount: (count: number) => void;
   setCalendarHourHeight: (px: number) => void;
+  addPaletteColor: (color: string) => void;
+  removePaletteColor: (color: string) => void;
+  setColorLabel: (color: string, label: string) => void;
 
   // Nozbe connection + live sync
   connectNozbe: (token: string, clientId: string) => void;
@@ -511,6 +547,43 @@ export const useStore = create<AppState>()(
           ),
         }));
         return task;
+      },
+
+      // Create many tasks at once (pasted table). All land in `projectId`; a
+      // per-row section name creates/reuses a section in that project's scope.
+      bulkCreateTasks: (projectId, rows) => {
+        const scope = projectId;
+        // Pass 1: create sections in forward order so they appear top-to-bottom.
+        const sectionIdMap = new Map<string, string>();
+        if (scope) {
+          for (const r of rows) {
+            const secName = r.section?.trim();
+            if (!secName || sectionIdMap.has(secName.toLowerCase())) continue;
+            const existing = get().sections.find(
+              (s) => s.scope === scope && s.name.trim().toLowerCase() === secName.toLowerCase()
+            );
+            sectionIdMap.set(secName.toLowerCase(), existing ? existing.id : get().addSection(scope, secName).id);
+          }
+        }
+        // Pass 2: insert tasks. Reverse when addToTop so row 1 ends up on top.
+        const ordered = get().settings.addToTop ? [...rows].reverse() : rows;
+        let count = 0;
+        for (const r of ordered) {
+          const title = r.title.trim();
+          if (!title) continue;
+          const secName = r.section?.trim();
+          const sectionId = secName ? (sectionIdMap.get(secName.toLowerCase()) ?? null) : null;
+          get().addTask({
+            title,
+            description: r.description?.trim() || undefined,
+            projectId,
+            sectionId,
+            durationMin: parseDuration(r.duration),
+            recurrence: parseRecurrence(r.recurrence),
+          });
+          count++;
+        }
+        return count;
       },
 
       addSubtask: (parentId, title) => {
@@ -824,8 +897,23 @@ export const useStore = create<AppState>()(
       bulkDelete: (ids) =>
         set((state) => {
           const idSet = new Set(ids);
+          // Log each deleted task individually so it can be restored later.
+          const newEntries: ActivityEntry[] = state.tasks
+            .filter((t) => idSet.has(t.id))
+            .map((t) => ({
+              ...taskEntry('deleted', t, state.settings.userName),
+              payload: {
+                task: t,
+                subtasks: state.tasks.filter(
+                  (s) => s.parentId === t.id && !idSet.has(s.id)
+                ),
+              },
+            }));
+          let log = state.activityLog;
+          for (const e of newEntries) log = pushLog(log, e);
           return {
             tasks: state.tasks.filter((t) => !idSet.has(t.id)),
+            activityLog: log,
             ui:
               state.ui.selectedTaskId && idSet.has(state.ui.selectedTaskId)
                 ? { ...state.ui, selectedTaskId: null }
@@ -1066,10 +1154,9 @@ export const useStore = create<AppState>()(
       deleteProject: (id) =>
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id),
-          // Orphan tasks fall back to inbox (no project).
-          tasks: state.tasks.map((t) =>
-            t.projectId === id ? { ...t, projectId: null } : t
-          ),
+          // Delete all tasks belonging to this project (including subtasks).
+          tasks: state.tasks.filter((t) => t.projectId !== id),
+          sections: state.sections.filter((s) => s.scope !== id),
           ui:
             state.ui.selectedProjectId === id
               ? { ...state.ui, selectedProjectId: null }
@@ -1361,6 +1448,38 @@ export const useStore = create<AppState>()(
           settings: {
             ...state.settings,
             projectsPanelWidth: Math.max(200, Math.min(560, Math.round(px))),
+          },
+        })),
+
+      addPaletteColor: (color) =>
+        set((state) => {
+          const palette = state.settings.colorPalette ?? DEFAULT_PALETTE;
+          if (palette.includes(color.toLowerCase())) return {};
+          return { settings: { ...state.settings, colorPalette: [...palette, color.toLowerCase()] } };
+        }),
+
+      removePaletteColor: (color) =>
+        set((state) => {
+          const palette = state.settings.colorPalette ?? DEFAULT_PALETTE;
+          const labels = { ...(state.settings.colorLabels ?? {}) };
+          delete labels[color.toLowerCase()];
+          return {
+            settings: {
+              ...state.settings,
+              colorPalette: palette.filter((c) => c !== color.toLowerCase()),
+              colorLabels: labels,
+            },
+          };
+        }),
+
+      setColorLabel: (color, label) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            colorLabels: {
+              ...(state.settings.colorLabels ?? {}),
+              [color.toLowerCase()]: label,
+            },
           },
         })),
 

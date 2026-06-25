@@ -5,6 +5,7 @@ import { isOverdue } from '../selectors';
 import { readTaskIds, writeTaskIds } from '../dnd';
 import AvatarStack from './AvatarStack';
 import { assigneesOf } from '../members';
+import { formatDuration } from './TaskDetailPanel';
 import './TaskList.css';
 
 interface TaskListProps {
@@ -249,6 +250,11 @@ export default function TaskList({
                 ↻
               </span>
             )}
+            {task.durationMin != null && task.durationMin > 0 && (
+              <span className="task-duration" title="Dauer">
+                ⏱ {formatDuration(task.durationMin)}
+              </span>
+            )}
             {task.starred && (
               <span className="task-flag flag-na" title="Nächste Aktion">★</span>
             )}
@@ -461,10 +467,7 @@ export default function TaskList({
               <button
                 className="section-del"
                 title="Gruppe löschen (Aufgaben bleiben erhalten)"
-                onClick={() => {
-                  if (window.confirm(`Gruppe „${sec.name}" löschen? Aufgaben wandern aus der Gruppe heraus.`))
-                    deleteSection(sec.id);
-                }}
+                onClick={() => deleteSection(sec.id)}
               >
                 ×
               </button>

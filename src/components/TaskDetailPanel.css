@@ -31,6 +31,38 @@
   word-break: break-all;
 }
 
+/* Referenz-Zeilen aus Nozbe-Import */
+.desc-ref-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--border-light);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+.desc-ref-path {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+
+.detail-desc-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+  cursor: text;
+}
+
+.desc-editor-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .detail-complete {
   border: 1px solid var(--accent);
   background: var(--main-bg);
@@ -596,6 +628,27 @@
   cursor: pointer;
   font-size: 15px;
   line-height: 1;
+}
+
+.detail-duration-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-duration-display {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary, #666);
+}
+
+.detail-duration-display:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.06));
+}
+
+.detail-duration-input {
+  width: 120px;
 }
 
 .attach-del:hover {

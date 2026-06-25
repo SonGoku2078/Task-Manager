@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useStore } from '../store';
+import { useStore, DEFAULT_PALETTE } from '../store';
 import type { MemberRole } from '../types';
 import { importFromNozbeApi, mapNozbe, loginNozbe, type NozbeExport } from '../nozbe';
 import './SettingsView.css';
@@ -432,6 +432,82 @@ export default function SettingsView() {
         </div>
         {importInfo && <p className="settings-hint">✅ {importInfo}</p>}
       </section>
+
+      <ColorPaletteSection />
     </div>
+  );
+}
+
+function ColorPaletteSection() {
+  const colorPalette = useStore((s) => s.settings.colorPalette ?? DEFAULT_PALETTE);
+  const colorLabels = useStore((s) => s.settings.colorLabels ?? {});
+  const addPaletteColor = useStore((s) => s.addPaletteColor);
+  const removePaletteColor = useStore((s) => s.removePaletteColor);
+  const setColorLabel = useStore((s) => s.setColorLabel);
+  const [newColor, setNewColor] = useState('#888888');
+  const [newLabel, setNewLabel] = useState('');
+
+  return (
+    <section className="settings-section">
+      <h2 className="settings-section-title">Projektfarben</h2>
+      <p className="settings-hint">
+        Jeder Farbe kann eine Bedeutung zugewiesen werden. Die Bezeichnung erscheint im Farb-Picker der Projekte.
+      </p>
+
+      <div className="color-palette-list">
+        {colorPalette.map((c) => (
+          <div key={c} className="color-palette-row">
+            <span className="color-palette-dot" style={{ background: c }} />
+            <input
+              className="settings-input color-label-input"
+              value={colorLabels[c] ?? ''}
+              placeholder="Bezeichnung (z.B. Lifestyle)"
+              onChange={(e) => setColorLabel(c, e.target.value)}
+            />
+            <span className="color-palette-hex">{c}</span>
+            <button
+              className="color-palette-del"
+              title="Farbe entfernen"
+              onClick={() => removePaletteColor(c)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="color-palette-add">
+        <input
+          type="color"
+          value={newColor}
+          onChange={(e) => setNewColor(e.target.value)}
+          className="color-palette-picker"
+          title="Farbe wählen"
+        />
+        <input
+          className="settings-input color-label-input"
+          value={newLabel}
+          placeholder="Bezeichnung (optional)"
+          onChange={(e) => setNewLabel(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              addPaletteColor(newColor);
+              if (newLabel.trim()) setColorLabel(newColor, newLabel.trim());
+              setNewLabel('');
+            }
+          }}
+        />
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            addPaletteColor(newColor);
+            if (newLabel.trim()) setColorLabel(newColor, newLabel.trim());
+            setNewLabel('');
+          }}
+        >
+          + Hinzufügen
+        </button>
+      </div>
+    </section>
   );
 }
