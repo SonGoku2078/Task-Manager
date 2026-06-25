@@ -1,0 +1,155 @@
+import { Router } from 'express';
+import { db } from '../db';
+
+const router = Router();
+
+// ── Serialisation helpers ──────────────────────────────────────────────────
+
+function rowToTask(r: Record<string, unknown>) {
+  return {
+    id:           r.id,
+    number:       r.number,
+    title:        r.title ?? '',
+    description:  r.description ?? '',
+    projectId:    r.project_id ?? null,
+    parentId:     r.parent_id ?? null,
+    sectionId:    r.section_id ?? null,
+    dueDate:      r.due_date ? new Date(r.due_date as string) : null,
+    startMinutes: r.start_minutes ?? null,
+    durationMin:  r.duration_min ?? null,
+    priority:     r.priority,
+    completed:    !!(r.completed as number),
+    starred:      !!(r.starred as number),
+    someday:      !!(r.someday as number),
+    thisWeek:     !!(r.this_week as number),
+    waiting:      !!(r.waiting as number),
+    waitingFor:   r.waiting_for ?? null,
+    recurrence:   r.recurrence,
+    recurrenceEnd: r.recurrence_end ? new Date(r.recurrence_end as string) : null,
+    recurInterval: r.recur_interval ?? null,
+    recurUnit:    r.recur_unit ?? null,
+    recurMonthDay: r.recur_month_day ?? null,
+    createdAt:    new Date(r.created_at as string),
+    updatedAt:    new Date(r.updated_at as string),
+    nozbeId:      r.nozbe_id ?? null,
+    sortOrder:    r.sort_order ?? 0,
+    categoryIds:  JSON.parse(r.category_ids as string ?? '[]'),
+    assigneeIds:  JSON.parse(r.assignee_ids as string ?? '[]'),
+    comments:     parseJsonDates(r.comments as string ?? '[]', ['createdAt']),
+    attachments:  JSON.parse(r.attachments as string ?? '[]'),
+    links:        JSON.parse(r.links as string ?? '[]'),
+  };
+}
+
+function parseJsonDates(json: string, dateKeys: string[]) {
+  const arr = JSON.parse(json ?? '[]') as Record<string, unknown>[];
+  return arr.map(item => {
+    const out = { ...item };
+    for (const k of dateKeys) {
+      if (typeof out[k] === 'string') out[k] = new Date(out[k] as string);
+    }
+    return out;
+  });
+}
+
+function taskToRow(t: Record<string, unknown>) {
+  const now = new Date().toISOString();
+  return {
+    id:             t.id,
+    number:         t.number,
+    title:          t.title ?? '',
+    description:    t.description ?? '',
+    project_id:     t.projectId ?? null,
+    parent_id:      t.parentId ?? null,
+    section_id:     t.sectionId ?? null,
+    due_date:       t.dueDate ? new Date(t.dueDate as string).toISOString() : null,
+    start_minutes:  t.startMinutes ?? null,
+    duration_min:   t.durationMin ?? null,
+    priority:       t.priority ?? 'medium',
+    completed:      t.completed ? 1 : 0,
+    starred:        t.starred ? 1 : 0,
+    someday:        t.someday ? 1 : 0,
+    this_week:      t.thisWeek ? 1 : 0,
+    waiting:        t.waiting ? 1 : 0,
+    waiting_for:    t.waitingFor ?? null,
+    recurrence:     t.recurrence ?? 'none',
+    recurrence_end: t.recurrenceEnd ? new Date(t.recurrenceEnd as string).toISOString() : null,
+    recur_interval: t.recurInterval ?? null,
+    recur_unit:     t.recurUnit ?? null,
+    recur_month_day: t.recurMonthDay ?? null,
+    created_at:     t.createdAt ? new Date(t.createdAt as string).toISOString() : now,
+    updated_at:     now,
+    nozbe_id:       t.nozbeId ?? null,
+    sort_order:     t.sortOrder ?? 0,
+    category_ids:   JSON.stringify(t.categoryIds ?? []),
+    assignee_ids:   JSON.stringify(t.assigneeIds ?? []),
+    comments:       JSON.stringify(t.comments ?? []),
+    attachments:    JSON.stringify(t.attachments ?? []),
+    links:          JSON.stringify(t.links ?? []),
+  };
+}
+
+// ── Routes ─────────────────────────────────────────────────────────────────
+
+// GET /api/tasks
+router.get('/', (_req, res) => {
+  const rows = db.prepare('SELECT * FROM tasks ORDER BY sort_order ASC, created_at ASC').all();
+  res.json(rows.map(r => rowToTask(r as Record<string, unknown>)));
+});
+
+// POST /api/tasks
+router.post('/', (req, res) => {
+  const row = taskToRow(req.body);
+  db.prepare(`INSERT INTO tasks VALUES (
+    @id,@number,@title,@description,@project_id,@parent_id,@section_id,
+    @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
+    @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
+    @recur_interval,@recur_unit,@recur_month_day,@created_at,@updated_at,
+    @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links
+  )`).run(row);
+  const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(row.id);
+  res.status(201).json(rowToTask(created as Record<string, unknown>));
+});
+
+// PATCH /api/tasks/reorder  (must be before /:id)
+router.patch('/reorder', (req, res) => {
+  const { ids } = req.body as { ids: string[] };
+  const upd = db.prepare('UPDATE tasks SET sort_order = ? WHERE id = ?');
+  db.transaction(() => ids.forEach((id, i) => upd.run(i, id)))();
+  res.status(204).end();
+});
+
+// PATCH /api/tasks/:id
+router.patch('/:id', (req, res) => {
+  const { id } = req.params;
+  const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  const merged = taskToRow({ ...rowToTask(existing), ...req.body, id, updatedAt: new Date() });
+  db.prepare(`UPDATE tasks SET
+    number=@number, title=@title, description=@description, project_id=@project_id,
+    parent_id=@parent_id, section_id=@section_id, due_date=@due_date,
+    start_minutes=@start_minutes, duration_min=@duration_min, priority=@priority,
+    completed=@completed, starred=@starred, someday=@someday, this_week=@this_week,
+    waiting=@waiting, waiting_for=@waiting_for, recurrence=@recurrence,
+    recurrence_end=@recurrence_end, recur_interval=@recur_interval,
+    recur_unit=@recur_unit, recur_month_day=@recur_month_day, updated_at=@updated_at,
+    nozbe_id=@nozbe_id, sort_order=@sort_order, category_ids=@category_ids,
+    assignee_ids=@assignee_ids, comments=@comments, attachments=@attachments, links=@links
+    WHERE id=@id`).run(merged);
+
+  const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  return res.json(rowToTask(updated as Record<string, unknown>));
+});
+
+// DELETE /api/tasks/:id
+router.delete('/:id', (req, res) => {
+  const { id } = req.params;
+  db.transaction(() => {
+    db.prepare('DELETE FROM tasks WHERE parent_id = ?').run(id);
+    db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  })();
+  res.status(204).end();
+});
+
+export default router;

@@ -30,6 +30,7 @@ export default function TaskList({
   const toggleTask = useStore((s) => s.toggleTask);
   const toggleStar = useStore((s) => s.toggleStar);
   const selectTask = useStore((s) => s.selectTask);
+  const selectProject = useStore((s) => s.selectProject);
   const selectedTaskId = useStore((s) => s.ui.selectedTaskId);
   const currentView = useStore((s) => s.ui.currentView);
   const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
@@ -231,7 +232,15 @@ export default function TaskList({
           </div>
           <div className="task-meta">
             {project && !hideProject && (
-              <span className="task-project" style={{ color: project.color }}>
+              <span
+                className="task-project task-project-link"
+                style={{ color: project.color }}
+                title={`Zu Projekt „${project.name}" springen`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectProject(project.id);
+                }}
+              >
                 <span className="task-project-dot" style={{ background: project.color }} />
                 {project.name}
               </span>

@@ -1243,13 +1243,22 @@ export const useStore = create<AppState>()(
         set((state) => ({ ui: { ...state.ui, editTitleTaskId: null } })),
 
       selectProject: (id) =>
-        set((state) => ({
-          ui: {
-            ...state.ui,
-            selectedProjectId: id,
-            selectedProjectIds: id ? [id] : [],
-          },
-        })),
+        set((state) => {
+          // When selecting a project, also navigate to the correct view/panel.
+          // A someday (inactive) project lives in the someday panel; active ones in projects.
+          const proj = id ? state.projects.find((p) => p.id === id) : null;
+          const isSomeday = proj && proj.active !== true && proj.kind !== 'area';
+          const targetView = isSomeday ? 'someday' : 'projects';
+          return {
+            ui: {
+              ...state.ui,
+              selectedProjectId: id,
+              selectedProjectIds: id ? [id] : [],
+              currentView: id ? targetView : state.ui.currentView,
+              sidePanel: id ? targetView : state.ui.sidePanel,
+            },
+          };
+        }),
 
       // Ctrl/Cmd-click: add/remove a project from the combined multi-selection.
       toggleProjectSelected: (id) =>

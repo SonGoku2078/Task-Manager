@@ -337,6 +337,18 @@
   gap: 4px;
 }
 
+.task-project-link {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 4px 1px 2px;
+  margin: -1px -4px -1px -2px;
+  transition: background 0.12s;
+}
+.task-project-link:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  text-decoration: underline;
+}
+
 .task-project-dot {
   width: 8px;
   height: 8px;
