@@ -10,7 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-electron
+server/public
 *.local
+.claude/worktrees/
 
 # Nozbe exports may contain real personal data — never commit
 nozbe-export.json
