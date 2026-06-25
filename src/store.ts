@@ -525,7 +525,31 @@ export const useStore = create<AppState>()((set, get) => ({
       const { nextTaskNumber, ...settings } = settingsData;
       set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members, settings, nextTaskNumber: nextTaskNumber ?? 1 });
     } catch (e) {
-      console.warn('loadAll failed (server not running?), staying with empty state', e);
+      console.warn('Server not reachable, falling back to localStorage', e);
+      // Fallback: load from the old zustand-persist localStorage key so the
+      // app is fully usable even without the backend running.
+      try {
+        const raw = localStorage.getItem('nozbe-clone-state');
+        if (!raw) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsed = JSON.parse(raw, dateReviver) as any;
+        const s = parsed.state ?? parsed;
+        if (!s?.tasks) return;
+        set({
+          tasks:          s.tasks          ?? [],
+          projects:       s.projects       ?? [],
+          sections:       s.sections       ?? [],
+          blockers:       s.blockers       ?? [],
+          categories:     s.categories     ?? [],
+          savedViews:     s.savedViews     ?? [],
+          activityLog:    s.activityLog    ?? [],
+          members:        s.members?.length ? s.members : [SELF_MEMBER],
+          settings:       { ...defaultSettings, ...(s.settings ?? {}) },
+          nextTaskNumber: s.nextTaskNumber ?? 1,
+        });
+      } catch (le) {
+        console.warn('localStorage fallback also failed', le);
+      }
     }
   },
 

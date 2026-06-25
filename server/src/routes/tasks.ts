@@ -109,7 +109,7 @@ router.post('/', (req, res) => {
     @recur_interval,@recur_unit,@recur_month_day,@created_at,@updated_at,
     @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
   )`).run(row);
-  const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(row.id);
+  const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(row.id as string);
   res.status(201).json(rowToTask(created as Record<string, unknown>));
 });
 

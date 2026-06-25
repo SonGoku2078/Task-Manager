@@ -45,7 +45,7 @@ router.post('/', (req, res) => {
   db.prepare(`INSERT INTO projects VALUES (
     @id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id
   )`).run(row);
-  res.status(201).json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(row.id) as Record<string, unknown>));
+  res.status(201).json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(row.id as string) as Record<string, unknown>));
 });
 
 router.patch('/reorder', (req, res) => {

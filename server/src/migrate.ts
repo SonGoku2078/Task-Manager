@@ -1,11 +1,11 @@
-import type Database from 'better-sqlite3';
+import type { DB } from './db';
 
 // Accept either the raw Zustand persist envelope or the unwrapped state object.
 function unwrap(data: Record<string, unknown>): Record<string, unknown> {
   return (data.state as Record<string, unknown>) ?? data;
 }
 
-export function runMigration(db: Database.Database, raw: Record<string, unknown>): number {
+export function runMigration(db: DB, raw: Record<string, unknown>): number {
   const state = unwrap(raw);
   const tasks    = (state.tasks    as unknown[]) ?? [];
   const projects = (state.projects as unknown[]) ?? [];
