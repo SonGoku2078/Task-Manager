@@ -32,11 +32,16 @@ app.use('/api/settings',     settingsRouter);
 
 // One-time localStorage → SQLite migration.
 app.post('/api/migrate', async (req, res) => {
-  const already = (db.prepare("SELECT value FROM settings WHERE key='migrated'").get() as { value: string } | undefined)?.value;
-  if (already === '1') return res.status(409).json({ error: 'Already migrated' });
-  const { runMigration } = await import('./migrate');
-  const count = runMigration(db, req.body);
-  return res.json({ ok: true, tasks: count });
+  try {
+    const already = (db.prepare("SELECT value FROM settings WHERE key='migrated'").get() as { value: string } | undefined)?.value;
+    if (already === '1') return res.status(409).json({ error: 'Already migrated. Delete ~/.task-manager/data.db to re-run.' });
+    const { runMigration } = await import('./migrate');
+    const count = runMigration(db, req.body);
+    return res.json({ ok: true, tasks: count });
+  } catch (e) {
+    console.error('Migration error:', e);
+    return res.status(500).json({ error: String(e) });
+  }
 });
 
 // Serve compiled frontend in production (vite build --outDir ../public).

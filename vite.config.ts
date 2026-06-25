@@ -10,14 +10,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    // In dev, proxy API calls to the local Express server.
     proxy: {
       '/api': { target: 'http://localhost:3001', changeOrigin: true },
       '/health': { target: 'http://localhost:3001', changeOrigin: true },
-    },
-    proxy: {
-      // Dev-only proxy to dodge CORS when importing from the Nozbe Classic API.
-      // The browser calls /nozbe-api/... and Vite forwards it server-side.
       '/nozbe-api': {
         target: 'https://api.nozbe.com:3000',
         changeOrigin: true,

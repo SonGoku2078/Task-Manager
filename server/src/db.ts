@@ -82,7 +82,18 @@ function wrapDB(raw: RawDB): DB {
   return {
     exec(sql) { raw.exec(sql); },
     prepare(sql) { return wrapStatement(sql, raw.prepare(transformSql(sql))); },
-    transaction(fn) { return raw.transaction(fn); },
+    transaction(fn) {
+      return () => {
+        raw.exec('BEGIN');
+        try {
+          fn();
+          raw.exec('COMMIT');
+        } catch (e) {
+          try { raw.exec('ROLLBACK'); } catch (_) { /* ignore */ }
+          throw e;
+        }
+      };
+    },
     close() { raw.close(); },
   };
 }
