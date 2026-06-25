@@ -24,9 +24,6 @@ import type {
   ProjectKind,
 } from './types';
 import {
-  dummyTasks,
-  defaultProjects,
-  defaultCategories,
   SINGLE_TASKS_PROJECT,
 } from './dummyData';
 import type { ProjectTemplate } from './templates';
