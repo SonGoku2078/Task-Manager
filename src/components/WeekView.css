@@ -207,6 +207,28 @@
   min-height: 44px;
 }
 
+.week-allday-cell-collapsed {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 14px;
+  padding: 3px 4px;
+  gap: 3px;
+}
+
+.week-allday-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.week-allday-dot.done {
+  opacity: 0.35;
+}
+
 .week-task {
   display: flex;
   align-items: flex-start;

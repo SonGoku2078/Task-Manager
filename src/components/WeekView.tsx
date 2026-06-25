@@ -457,10 +457,33 @@ export default function WeekView({ mode }: WeekViewProps) {
           <span className="week-allday-arrow">{allDayOpen ? '▾' : '▸'}</span>
           ohne&nbsp;Zeit
         </div>
-        {allDayOpen && days.map((d) => {
+        {days.map((d) => {
           const dayTasks = tasksOnDate(tasks, d).filter(
             (t) => !t.parentId && t.startMinutes == null
           );
+          if (!allDayOpen) {
+            return (
+              <div
+                key={dateKey(d)}
+                className="week-allday-cell week-allday-cell-collapsed"
+                onDragOver={(e) => {
+                  if (e.dataTransfer.types.includes('text/plain')) e.preventDefault();
+                }}
+                onDrop={dropOnNoTime(d)}
+                onDoubleClick={() => { setAllDayOpen(true); createAt(d, null); }}
+                title={dayTasks.length ? dayTasks.map((t) => t.title).join('\n') : undefined}
+              >
+                {dayTasks.map((t) => (
+                  <span
+                    key={t.id}
+                    className={`week-allday-dot ${t.completed ? 'done' : ''}`}
+                    style={{ background: (projects.find((p) => p.id === t.projectId)?.color) ?? 'var(--accent)' }}
+                    onClick={(e) => { e.stopPropagation(); toggleOpen(t.id); }}
+                  />
+                ))}
+              </div>
+            );
+          }
           return (
             <div
               key={dateKey(d)}
