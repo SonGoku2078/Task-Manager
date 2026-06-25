@@ -475,9 +475,11 @@ export default function SettingsView() {
   );
 }
 
+const EMPTY_COLOR_LABELS: Record<string, string> = {};
+
 function ColorPaletteSection() {
   const colorPalette = useStore((s) => s.settings.colorPalette ?? DEFAULT_PALETTE);
-  const colorLabels = useStore((s) => s.settings.colorLabels ?? {});
+  const colorLabels = useStore((s) => s.settings.colorLabels && typeof s.settings.colorLabels === 'object' ? s.settings.colorLabels : EMPTY_COLOR_LABELS);
   const addPaletteColor = useStore((s) => s.addPaletteColor);
   const removePaletteColor = useStore((s) => s.removePaletteColor);
   const setColorLabel = useStore((s) => s.setColorLabel);

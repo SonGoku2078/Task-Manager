@@ -450,7 +450,7 @@ function App() {
         ) : ui.currentView === 'members' ? (
           <MembersView />
         ) : ui.currentView === 'settings' ? (
-          <SettingsView />
+          <ErrorBoundary><SettingsView /></ErrorBoundary>
         ) : (
         <>
         {ui.currentView === 'calendar' && (

@@ -522,8 +522,39 @@ export const useStore = create<AppState>()((set, get) => ({
         membersApi.getAll(),
         settingsApi.getAll(),
       ]);
-      const { nextTaskNumber, ...settings } = settingsData;
-      set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members, settings, nextTaskNumber: nextTaskNumber ?? 1 });
+      const { nextTaskNumber, ...rawSettings } = settingsData;
+      const settings = { ...defaultSettings, ...rawSettings };
+      const safeMembers = members.length ? members : [SELF_MEMBER];
+
+      // If server returned no tasks but localStorage has data, fall back to
+      // localStorage so the user can still work and then trigger migration.
+      if (tasks.length === 0) {
+        try {
+          const raw = localStorage.getItem('nozbe-clone-state');
+          if (raw) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const parsed = JSON.parse(raw, dateReviver) as any;
+            const s = parsed.state ?? parsed;
+            if (s?.tasks?.length) {
+              set({
+                tasks:          s.tasks          ?? [],
+                projects:       s.projects       ?? [],
+                sections:       s.sections       ?? [],
+                blockers:       s.blockers       ?? [],
+                categories:     s.categories     ?? [],
+                savedViews:     s.savedViews     ?? [],
+                activityLog:    s.activityLog    ?? [],
+                members:        s.members?.length ? s.members : [SELF_MEMBER],
+                settings:       { ...defaultSettings, ...(s.settings ?? {}) },
+                nextTaskNumber: s.nextTaskNumber ?? 1,
+              });
+              return;
+            }
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members: safeMembers, settings, nextTaskNumber: nextTaskNumber ?? 1 });
     } catch (e) {
       console.warn('Server not reachable, falling back to localStorage', e);
       // Fallback: load from the old zustand-persist localStorage key so the
