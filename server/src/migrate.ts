@@ -27,7 +27,7 @@ export function runMigration(db: Database.Database, raw: Record<string, unknown>
       @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
       @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
       @recur_interval,@recur_unit,@recur_month_day,@created_at,@updated_at,
-      @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links
+      @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
     )`);
     tasks.forEach((t: unknown, i: number) => {
       const task = t as Record<string, unknown>;
@@ -54,6 +54,7 @@ export function runMigration(db: Database.Database, raw: Record<string, unknown>
         comments: JSON.stringify(task.comments ?? []),
         attachments: JSON.stringify(task.attachments ?? []),
         links: JSON.stringify(task.links ?? []),
+        linked_project_id: task.linkedProjectId ?? null,
       });
     });
 

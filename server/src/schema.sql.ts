@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   assignee_ids    TEXT NOT NULL DEFAULT '[]',
   comments        TEXT NOT NULL DEFAULT '[]',
   attachments     TEXT NOT NULL DEFAULT '[]',
-  links           TEXT NOT NULL DEFAULT '[]'
+  links               TEXT NOT NULL DEFAULT '[]',
+  linked_project_id   TEXT
 );
 
 CREATE TABLE IF NOT EXISTS projects (

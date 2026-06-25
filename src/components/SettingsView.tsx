@@ -26,6 +26,8 @@ export default function SettingsView() {
   const setNozbeSync = useStore((s) => s.setNozbeSync);
   const clearAll = useStore((s) => s.clearAll);
 
+  const [migrateStatus, setMigrateStatus] = useState('');
+  const [migrateBusy, setMigrateBusy] = useState(false);
   const [memberName, setMemberName] = useState('');
   const [emailText, setEmailText] = useState('');
   const [importInfo, setImportInfo] = useState('');
@@ -383,6 +385,41 @@ export default function SettingsView() {
           um vor einem frischen Nozbe-Import sauber zu starten. Die Nozbe-Verbindung
           bleibt bestehen. <strong>Kann nicht rückgängig gemacht werden.</strong>
         </p>
+        <div className="email-import-actions" style={{ marginBottom: 16 }}>
+          <button
+            className="btn btn-primary"
+            disabled={migrateBusy}
+            onClick={async () => {
+              const raw = localStorage.getItem('nozbe-clone-state');
+              if (!raw) {
+                setMigrateStatus('Keine localStorage-Daten gefunden. Möglicherweise bereits migriert.');
+                return;
+              }
+              if (!window.confirm('LocalStorage-Daten einmalig in die SQLite-Datenbank übertragen?\n\nBestehende Serverdaten werden dabei ÜBERSCHRIEBEN.')) return;
+              setMigrateBusy(true);
+              setMigrateStatus('Übertrage…');
+              try {
+                const res = await fetch('/api/migrate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: raw,
+                });
+                const json = await res.json() as { tasks?: number; error?: string };
+                if (!res.ok) throw new Error(json.error ?? String(res.status));
+                setMigrateStatus(`Migration erfolgreich: ${json.tasks ?? '?'} Aufgaben übertragen. Seite wird neu geladen…`);
+                setTimeout(() => window.location.reload(), 2000);
+              } catch (e) {
+                setMigrateStatus(`Fehler: ${(e as Error).message}`);
+              } finally {
+                setMigrateBusy(false);
+              }
+            }}
+          >
+            {migrateBusy ? 'Wird übertragen…' : 'LocalStorage → SQLite migrieren'}
+          </button>
+        </div>
+        {migrateStatus && <p className="settings-hint">{migrateStatus}</p>}
+
         <div className="email-import-actions">
           <button
             className="btn btn-danger"

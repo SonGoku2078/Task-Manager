@@ -37,7 +37,8 @@ function rowToTask(r: Record<string, unknown>) {
     assigneeIds:  JSON.parse(r.assignee_ids as string ?? '[]'),
     comments:     parseJsonDates(r.comments as string ?? '[]', ['createdAt']),
     attachments:  JSON.parse(r.attachments as string ?? '[]'),
-    links:        JSON.parse(r.links as string ?? '[]'),
+    links:             JSON.parse(r.links as string ?? '[]'),
+    linkedProjectId:   r.linked_project_id ?? null,
   };
 }
 
@@ -85,7 +86,8 @@ function taskToRow(t: Record<string, unknown>) {
     assignee_ids:   JSON.stringify(t.assigneeIds ?? []),
     comments:       JSON.stringify(t.comments ?? []),
     attachments:    JSON.stringify(t.attachments ?? []),
-    links:          JSON.stringify(t.links ?? []),
+    links:              JSON.stringify(t.links ?? []),
+    linked_project_id:  t.linkedProjectId ?? null,
   };
 }
 
@@ -105,7 +107,7 @@ router.post('/', (req, res) => {
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
     @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
     @recur_interval,@recur_unit,@recur_month_day,@created_at,@updated_at,
-    @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links
+    @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
   )`).run(row);
   const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(row.id);
   res.status(201).json(rowToTask(created as Record<string, unknown>));
@@ -135,7 +137,8 @@ router.patch('/:id', (req, res) => {
     recurrence_end=@recurrence_end, recur_interval=@recur_interval,
     recur_unit=@recur_unit, recur_month_day=@recur_month_day, updated_at=@updated_at,
     nozbe_id=@nozbe_id, sort_order=@sort_order, category_ids=@category_ids,
-    assignee_ids=@assignee_ids, comments=@comments, attachments=@attachments, links=@links
+    assignee_ids=@assignee_ids, comments=@comments, attachments=@attachments, links=@links,
+    linked_project_id=@linked_project_id
     WHERE id=@id`).run(merged);
 
   const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
