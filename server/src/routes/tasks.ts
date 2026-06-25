@@ -29,6 +29,7 @@ function rowToTask(r: Record<string, unknown>) {
     recurInterval: r.recur_interval ?? null,
     recurUnit:    r.recur_unit ?? null,
     recurMonthDay: r.recur_month_day ?? null,
+    completedAt:  r.completed_at ? new Date(r.completed_at as string) : null,
     createdAt:    new Date(r.created_at as string),
     updatedAt:    new Date(r.updated_at as string),
     nozbeId:      r.nozbe_id ?? null,
@@ -78,6 +79,7 @@ function taskToRow(t: Record<string, unknown>) {
     recur_interval: t.recurInterval ?? null,
     recur_unit:     t.recurUnit ?? null,
     recur_month_day: t.recurMonthDay ?? null,
+    completed_at:   t.completedAt ? new Date(t.completedAt as string).toISOString() : null,
     created_at:     t.createdAt ? new Date(t.createdAt as string).toISOString() : now,
     updated_at:     now,
     nozbe_id:       t.nozbeId ?? null,
@@ -106,7 +108,7 @@ router.post('/', (req, res) => {
     @id,@number,@title,@description,@project_id,@parent_id,@section_id,
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
     @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
-    @recur_interval,@recur_unit,@recur_month_day,@created_at,@updated_at,
+    @recur_interval,@recur_unit,@recur_month_day,@completed_at,@created_at,@updated_at,
     @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
   )`).run(row);
   const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(row.id as string);
@@ -138,7 +140,7 @@ router.patch('/:id', (req, res) => {
     recur_unit=@recur_unit, recur_month_day=@recur_month_day, updated_at=@updated_at,
     nozbe_id=@nozbe_id, sort_order=@sort_order, category_ids=@category_ids,
     assignee_ids=@assignee_ids, comments=@comments, attachments=@attachments, links=@links,
-    linked_project_id=@linked_project_id
+    linked_project_id=@linked_project_id, completed_at=@completed_at
     WHERE id=@id`).run(merged);
 
   const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);

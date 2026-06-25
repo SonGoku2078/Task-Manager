@@ -23,6 +23,7 @@ import ClearableInput from './components/ClearableInput';
 import BulkAddTasks from './components/BulkAddTasks';
 import ConfirmDialog from './components/ConfirmDialog';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import CompletionCalendar from './components/CompletionCalendar';
 import { parseTaskHash, parseAddTaskHash } from './config';
 
 const VIEW_TITLES: Record<ViewType, string> = {
@@ -615,6 +616,10 @@ function App() {
           <div className="view-hint">
             Überfällige und mit ★ markierte Aufgaben — alles, was deine Aufmerksamkeit braucht.
           </div>
+        )}
+
+        {ui.currentView === 'completed' && (
+          <CompletionCalendar tasks={tasks} />
         )}
 
         <TaskList

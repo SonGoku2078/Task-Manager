@@ -28,7 +28,7 @@ export function runMigration(db: DB, raw: Record<string, unknown>): number {
     @id,@number,@title,@description,@project_id,@parent_id,@section_id,
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
     @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
-    @recur_interval,@recur_unit,@recur_month_day,@created_at,@updated_at,
+    @recur_interval,@recur_unit,@recur_month_day,@completed_at,@created_at,@updated_at,
     @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
   )`);
   tasks.forEach((t: unknown, i: number) => {
@@ -48,6 +48,9 @@ export function runMigration(db: DB, raw: Record<string, unknown>): number {
       recurrence_end: task.recurrenceEnd ? new Date(task.recurrenceEnd as string).toISOString() : null,
       recur_interval: task.recurInterval ?? null, recur_unit: task.recurUnit ?? null,
       recur_month_day: task.recurMonthDay ?? null,
+      completed_at: task.completedAt
+        ? new Date(task.completedAt as string).toISOString()
+        : (task.completed && task.updatedAt ? new Date(task.updatedAt as string).toISOString() : null),
       created_at: task.createdAt ? new Date(task.createdAt as string).toISOString() : now,
       updated_at: task.updatedAt ? new Date(task.updatedAt as string).toISOString() : now,
       nozbe_id: task.nozbeId ?? null, sort_order: i,

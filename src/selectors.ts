@@ -170,12 +170,17 @@ export const selectVisibleTasks = (
       }
       break;
     }
-    case 'nextweek':
-      // Committed for this week (manual flag) OR dated within the coming week.
-      result = result.filter(
-        (t) => !t.completed && (t.thisWeek || isInNextWeekWindow(t))
-      );
+    case 'nextweek': {
+      // Open tasks committed/due this week + completed tasks from this week.
+      const weekStart = startOfWeek(new Date());
+      const weekEnd = addDays(weekStart, 7);
+      result = result.filter((t) => {
+        if (!t.completed) return t.thisWeek || isInNextWeekWindow(t);
+        // Completed this week: show so the week stays visible as a summary.
+        return t.completedAt && t.completedAt >= weekStart && t.completedAt < weekEnd;
+      });
       break;
+    }
     case 'priority':
       // Next actions: open starred/overdue tasks from active projects/areas
       // (and Single-Tasks/Inbox); exclude Someday + inactive-project tasks.

@@ -119,6 +119,7 @@ export interface Task {
   priority: Priority;
   categoryIds: string[];
   completed: boolean;
+  completedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   starred: boolean;

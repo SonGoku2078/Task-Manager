@@ -773,8 +773,9 @@ export const useStore = create<AppState>()((set, get) => ({
           const target = state.tasks.find((t) => t.id === id);
           if (!target) return {};
           const completing = !target.completed;
+          const now = new Date();
           const tasks = state.tasks.map((t) =>
-            t.id === id ? { ...t, completed: completing, updatedAt: new Date() } : t
+            t.id === id ? { ...t, completed: completing, completedAt: completing ? now : null, updatedAt: now } : t
           );
           const activityLog = pushLog(
             state.activityLog,

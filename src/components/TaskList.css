@@ -356,6 +356,12 @@
   border-radius: 50%;
 }
 
+.task-completed-at {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
 .task-time {
   color: var(--text-secondary);
   font-weight: 400;

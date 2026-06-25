@@ -309,7 +309,12 @@ export default function TaskList({
                 {project.name}
               </span>
             )}
-            {task.dueDate && (
+            {task.completed && task.completedAt && (
+              <span className="task-completed-at" title="Erledigt am">
+                ✓ {task.completedAt.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            )}
+            {!task.completed && task.dueDate && (
               <span className={`task-time ${isOverdue(task) ? 'overdue' : ''}`}>
                 📅{' '}
                 {task.dueDate.toLocaleDateString('de-DE', {

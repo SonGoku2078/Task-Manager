@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   recur_interval  INTEGER,
   recur_unit      TEXT,
   recur_month_day TEXT,
+  completed_at    TEXT,
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL,
   nozbe_id        TEXT,
