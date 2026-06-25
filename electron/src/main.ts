@@ -55,7 +55,11 @@ function createWindow(): void {
     },
   });
 
-  mainWindow.loadURL(`http://localhost:${PORT}`);
+  const url = app.isPackaged
+    ? `http://localhost:${PORT}`
+    : 'http://localhost:5173';
+  mainWindow.loadURL(url);
+  if (!app.isPackaged) mainWindow.webContents.openDevTools();
 
   // Open external links in the OS browser, not Electron.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -67,7 +71,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
-  startServer();
+  if (app.isPackaged) {
+    startServer();
+  }
   try {
     await waitForServer();
   } catch (e) {
