@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   Task,
   TaskLink,
@@ -32,6 +31,10 @@ import {
 } from './dummyData';
 import type { ProjectTemplate } from './templates';
 import { pushNozbeCompleted, type MappedImport } from './nozbe';
+import {
+  tasksApi, projectsApi, categoriesApi, membersApi,
+  sectionsApi, blockersApi, savedViewsApi, activityLogApi, settingsApi,
+} from './api';
 
 const DATE_KEYS = new Set([
   'dueDate',
@@ -339,6 +342,8 @@ interface AppState {
   nextTaskNumber: number;
   ui: UIState;
 
+  loadAll: () => Promise<void>;
+
   // Task CRUD
   addTask: (input: NewTaskInput) => Task;
   addSubtask: (parentId: string, title: string) => Task | null;
@@ -491,22 +496,40 @@ export const DEFAULT_NAV_ORDER: ViewType[] = [
   'members',
 ];
 
-export const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      tasks: dummyTasks,
-      projects: defaultProjects,
-      sections: [],
-      blockers: [],
-      categories: defaultCategories,
-      savedViews: [],
-      activityLog: [],
-      members: [SELF_MEMBER],
-      settings: defaultSettings,
-      nextTaskNumber: dummyTasks.length + 1,
-      ui: defaultUIState,
+export const useStore = create<AppState>()((set, get) => ({
+  tasks: [],
+  projects: [],
+  sections: [],
+  blockers: [],
+  categories: [],
+  savedViews: [],
+  activityLog: [],
+  members: [SELF_MEMBER],
+  settings: defaultSettings,
+  nextTaskNumber: 1,
+  ui: defaultUIState,
 
-      addTask: (input) => {
+  loadAll: async () => {
+    try {
+      const [tasks, projects, sections, blockers, categories, savedViews, activityLog, members, settingsData] = await Promise.all([
+        tasksApi.getAll(),
+        projectsApi.getAll(),
+        sectionsApi.getAll(),
+        blockersApi.getAll(),
+        categoriesApi.getAll(),
+        savedViewsApi.getAll(),
+        activityLogApi.getAll(),
+        membersApi.getAll(),
+        settingsApi.getAll(),
+      ]);
+      const { nextTaskNumber, ...settings } = settingsData;
+      set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members, settings, nextTaskNumber: nextTaskNumber ?? 1 });
+    } catch (e) {
+      console.warn('loadAll failed (server not running?), staying with empty state', e);
+    }
+  },
+
+  addTask: (input) => {
         const now = new Date();
         const number = get().nextTaskNumber;
         const task: Task = {
@@ -548,6 +571,7 @@ export const useStore = create<AppState>()(
             taskEntry('created', task, state.settings.userName)
           ),
         }));
+        tasksApi.create(task).catch(console.error);
         return task;
       },
 
@@ -605,7 +629,7 @@ export const useStore = create<AppState>()(
         return task;
       },
 
-      updateTask: (id, rawUpdates) =>
+      updateTask: (id, rawUpdates) => {
         set((state) => {
           const before = state.tasks.find((t) => t.id === id);
           // Enforce GTD invariants (Someday/Next Week + auto Single-Tasks).
@@ -633,9 +657,11 @@ export const useStore = create<AppState>()(
             for (const e of entries) activityLog = mergeOrPush(activityLog, e);
           }
           return { tasks, activityLog };
-        }),
+        });
+        tasksApi.update(id, rawUpdates).catch(console.error);
+      },
 
-      deleteTask: (id) =>
+      deleteTask: (id) => {
         set((state) => {
           // Cascade: remove the task and all of its descendant subtasks.
           const toRemove = new Set<string>();
@@ -665,7 +691,9 @@ export const useStore = create<AppState>()(
                 ? { ...state.ui, selectedTaskId: null }
                 : state.ui,
           };
-        }),
+        });
+        tasksApi.remove(id).catch(console.error);
+      },
 
       restoreTask: (entryId) =>
         set((state) => {
@@ -733,6 +761,8 @@ export const useStore = create<AppState>()(
           }
           return { tasks, activityLog, nextTaskNumber };
         });
+        const t = get().tasks.find(x => x.id === id);
+        if (t) tasksApi.update(id, { completed: t.completed }).catch(console.error);
         // Write the completion change back to Nozbe (if connected + enabled).
         if (before) syncCompletion(get(), before, !before.completed);
       },
@@ -742,7 +772,7 @@ export const useStore = create<AppState>()(
         if (t) get().updateTask(id, { starred: !t.starred });
       },
 
-      addComment: (taskId, text) =>
+      addComment: (taskId, text) => {
         set((state) => {
           const target = state.tasks.find((t) => t.id === taskId);
           return {
@@ -769,7 +799,10 @@ export const useStore = create<AppState>()(
                 )
               : state.activityLog,
           };
-        }),
+        });
+        const t = get().tasks.find(x => x.id === taskId);
+        if (t) tasksApi.update(taskId, { comments: t.comments }).catch(console.error);
+      },
 
       deleteComment: (taskId, commentId) =>
         set((state) => ({
@@ -925,7 +958,7 @@ export const useStore = create<AppState>()(
 
       // Move dragged task to the position of target (drop-before). Forces manual sort
       // so the new order is actually shown.
-      reorderTasks: (draggedId, targetId) =>
+      reorderTasks: (draggedId, targetId) => {
         set((state) => {
           if (draggedId === targetId) return {};
           const list = [...state.tasks];
@@ -939,27 +972,35 @@ export const useStore = create<AppState>()(
             tasks: list,
             ui: { ...state.ui, sortField: 'manual' as SortField },
           };
-        }),
+        });
+        const ids = get().tasks.map(t => t.id);
+        tasksApi.reorder(ids).catch(console.error);
+      },
 
       addSection: (scope, name) => {
         const section: Section = { id: uid('sec'), scope, name };
         set((state) => ({ sections: [...state.sections, section] }));
+        sectionsApi.create(section).catch(console.error);
         return section;
       },
 
-      renameSection: (id, name) =>
+      renameSection: (id, name) => {
         set((state) => ({
           sections: state.sections.map((s) => (s.id === id ? { ...s, name } : s)),
-        })),
+        }));
+        sectionsApi.update(id, { name }).catch(console.error);
+      },
 
-      deleteSection: (id) =>
+      deleteSection: (id) => {
         set((state) => ({
           sections: state.sections.filter((s) => s.id !== id),
           // Tasks of a removed section fall back to ungrouped.
           tasks: state.tasks.map((t) =>
             t.sectionId === id ? { ...t, sectionId: null } : t
           ),
-        })),
+        }));
+        sectionsApi.remove(id).catch(console.error);
+      },
 
       reorderSections: (draggedId, targetId) =>
         set((state) => {
@@ -1007,7 +1048,7 @@ export const useStore = create<AppState>()(
           return { tasks: list, ui: { ...state.ui, sortField: 'manual' as SortField } };
         }),
 
-      reorderProjects: (draggedId, targetId) =>
+      reorderProjects: (draggedId, targetId) => {
         set((state) => {
           if (draggedId === targetId) return {};
           const list = [...state.projects];
@@ -1021,7 +1062,10 @@ export const useStore = create<AppState>()(
             projects: list,
             settings: { ...state.settings, projectSort: 'manual' as ProjectSort },
           };
-        }),
+        });
+        const ids = get().projects.map(p => p.id);
+        projectsApi.reorder(ids).catch(console.error);
+      },
 
       clearAll: () =>
         set((state) => ({
@@ -1096,49 +1140,63 @@ export const useStore = create<AppState>()(
             plainEntry('project-created', project.name, state.settings.userName)
           ),
         }));
+        projectsApi.create(project).catch(console.error);
         return project;
       },
 
-      updateProject: (id, updates) =>
+      updateProject: (id, updates) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id ? { ...p, ...updates } : p
           ),
-        })),
+        }));
+        projectsApi.update(id, updates).catch(console.error);
+      },
 
-      toggleProjectPinned: (id) =>
+      toggleProjectPinned: (id) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id ? { ...p, pinned: !p.pinned } : p
           ),
-        })),
+        }));
+        const p = get().projects.find(x => x.id === id);
+        if (p) projectsApi.update(id, { pinned: p.pinned }).catch(console.error);
+      },
 
       // Active (under Projekte) ↔ inactive/someday. Areas stay always active.
-      toggleProjectActive: (id) =>
+      toggleProjectActive: (id) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id && p.kind !== 'area'
               ? { ...p, active: p.active === true ? false : true }
               : p
           ),
-        })),
+        }));
+        const p = get().projects.find(x => x.id === id);
+        if (p) projectsApi.update(id, { active: p.active }).catch(console.error);
+      },
 
-      addBlocker: (blocker) =>
-        set((state) => ({
-          blockers: [...state.blockers, { ...blocker, id: uid('blk') }],
-        })),
+      addBlocker: (blocker) => {
+        const b = { ...blocker, id: uid('blk') };
+        set((state) => ({ blockers: [...state.blockers, b] }));
+        blockersApi.create(b).catch(console.error);
+      },
 
-      updateBlocker: (id, updates) =>
+      updateBlocker: (id, updates) => {
         set((state) => ({
           blockers: state.blockers.map((b) =>
             b.id === id ? { ...b, ...updates } : b
           ),
-        })),
+        }));
+        blockersApi.update(id, updates).catch(console.error);
+      },
 
-      deleteBlocker: (id) =>
+      deleteBlocker: (id) => {
         set((state) => ({
           blockers: state.blockers.filter((b) => b.id !== id),
-        })),
+        }));
+        blockersApi.remove(id).catch(console.error);
+      },
 
       reorderNav: (draggedId, targetId) =>
         set((state) => {
@@ -1153,7 +1211,7 @@ export const useStore = create<AppState>()(
           return { settings: { ...state.settings, navOrder: order } };
         }),
 
-      deleteProject: (id) =>
+      deleteProject: (id) => {
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id),
           // Delete all tasks belonging to this project (including subtasks).
@@ -1163,7 +1221,9 @@ export const useStore = create<AppState>()(
             state.ui.selectedProjectId === id
               ? { ...state.ui, selectedProjectId: null }
               : state.ui,
-        })),
+        }));
+        projectsApi.remove(id).catch(console.error);
+      },
 
       createProjectFromTemplate: (template) => {
         const project: Project = {
@@ -1211,17 +1271,20 @@ export const useStore = create<AppState>()(
           color: color ?? PROJECT_COLORS[get().categories.length % PROJECT_COLORS.length],
         };
         set((state) => ({ categories: [...state.categories, category] }));
+        categoriesApi.create(category).catch(console.error);
         return category;
       },
 
-      updateCategory: (id, updates) =>
+      updateCategory: (id, updates) => {
         set((state) => ({
           categories: state.categories.map((c) =>
             c.id === id ? { ...c, ...updates } : c
           ),
-        })),
+        }));
+        categoriesApi.update(id, updates).catch(console.error);
+      },
 
-      deleteCategory: (id) =>
+      deleteCategory: (id) => {
         set((state) => ({
           categories: state.categories.filter((c) => c.id !== id),
           tasks: state.tasks.map((t) =>
@@ -1229,7 +1292,9 @@ export const useStore = create<AppState>()(
               ? { ...t, categoryIds: t.categoryIds.filter((c) => c !== id) }
               : t
           ),
-        })),
+        }));
+        categoriesApi.remove(id).catch(console.error);
+      },
 
       selectTask: (id) =>
         set((state) => ({ ui: { ...state.ui, selectedTaskId: id } })),
@@ -1339,17 +1404,20 @@ export const useStore = create<AppState>()(
           searchQuery: ui.searchQuery,
         };
         set((state) => ({ savedViews: [...state.savedViews, view] }));
+        savedViewsApi.create(view).catch(console.error);
         return view;
       },
 
-      deleteSavedView: (id) =>
+      deleteSavedView: (id) => {
         set((state) => ({
           savedViews: state.savedViews.filter((v) => v.id !== id),
           ui:
             state.ui.activeSavedViewId === id
               ? { ...state.ui, activeSavedViewId: null, currentView: 'inbox' }
               : state.ui,
-        })),
+        }));
+        savedViewsApi.remove(id).catch(console.error);
+      },
 
       applySavedView: (id) =>
         set((state) => {
@@ -1377,17 +1445,20 @@ export const useStore = create<AppState>()(
           color: PROJECT_COLORS[get().members.length % PROJECT_COLORS.length],
         };
         set((state) => ({ members: [...state.members, member] }));
+        membersApi.create(member).catch(console.error);
         return member;
       },
 
-      updateMember: (id, updates) =>
+      updateMember: (id, updates) => {
         set((state) => ({
           members: state.members.map((m) =>
             m.id === id ? { ...m, ...updates } : m
           ),
-        })),
+        }));
+        membersApi.update(id, updates).catch(console.error);
+      },
 
-      deleteMember: (id) =>
+      deleteMember: (id) => {
         set((state) => ({
           members: state.members.filter((m) => m.id !== id),
           // Unassign tasks that pointed at this member.
@@ -1397,7 +1468,9 @@ export const useStore = create<AppState>()(
               ? { ...t, assigneeIds: ids.filter((x) => x !== id) }
               : t;
           }),
-        })),
+        }));
+        membersApi.remove(id).catch(console.error);
+      },
 
       // Add/remove a responsible member on a task (multi-assignee).
       toggleTaskAssignee: (taskId, memberId) =>
@@ -1414,62 +1487,87 @@ export const useStore = create<AppState>()(
           }),
         })),
 
-      setUserName: (name) =>
-        set((state) => ({ settings: { ...state.settings, userName: name } })),
+      setUserName: (name) => {
+        set((state) => ({ settings: { ...state.settings, userName: name } }));
+        settingsApi.patch({ userName: name }).catch(console.error);
+      },
 
-      setTheme: (theme) =>
-        set((state) => ({ settings: { ...state.settings, theme } })),
+      setTheme: (theme) => {
+        set((state) => ({ settings: { ...state.settings, theme } }));
+        settingsApi.patch({ theme }).catch(console.error);
+      },
 
-      setAddToTop: (v) =>
-        set((state) => ({ settings: { ...state.settings, addToTop: v } })),
+      setAddToTop: (v) => {
+        set((state) => ({ settings: { ...state.settings, addToTop: v } }));
+        settingsApi.patch({ addToTop: v }).catch(console.error);
+      },
 
-      setProjectSort: (sort) =>
-        set((state) => ({ settings: { ...state.settings, projectSort: sort } })),
+      setProjectSort: (sort) => {
+        set((state) => ({ settings: { ...state.settings, projectSort: sort } }));
+        settingsApi.patch({ projectSort: sort }).catch(console.error);
+      },
 
-      setCalendarMode: (mode) =>
-        set((state) => ({ settings: { ...state.settings, calendarMode: mode } })),
+      setCalendarMode: (mode) => {
+        set((state) => ({ settings: { ...state.settings, calendarMode: mode } }));
+        settingsApi.patch({ calendarMode: mode }).catch(console.error);
+      },
 
-      setCalendarHours: (startHour, endHour) =>
+      setCalendarHours: (startHour, endHour) => {
         set((state) => {
           const s = Math.max(0, Math.min(23, Math.round(startHour)));
           const e = Math.max(s + 1, Math.min(24, Math.round(endHour)));
           return {
             settings: { ...state.settings, calendarStartHour: s, calendarEndHour: e },
           };
-        }),
+        });
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      setCalendarMonthCount: (count) =>
+      setCalendarMonthCount: (count) => {
         set((state) => ({
           settings: {
             ...state.settings,
             calendarMonthCount: Math.max(1, Math.min(2, Math.round(count))),
           },
-        })),
+        }));
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      setCalendarHourHeight: (px) =>
+      setCalendarHourHeight: (px) => {
         set((state) => ({
           settings: {
             ...state.settings,
             calendarHourHeight: Math.max(24, Math.min(160, Math.round(px))),
           },
-        })),
+        }));
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      setProjectsPanelWidth: (px) =>
+      setProjectsPanelWidth: (px) => {
         set((state) => ({
           settings: {
             ...state.settings,
             projectsPanelWidth: Math.max(200, Math.min(560, Math.round(px))),
           },
-        })),
+        }));
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      addPaletteColor: (color) =>
+      addPaletteColor: (color) => {
         set((state) => {
           const palette = state.settings.colorPalette ?? DEFAULT_PALETTE;
           if (palette.includes(color.toLowerCase())) return {};
           return { settings: { ...state.settings, colorPalette: [...palette, color.toLowerCase()] } };
-        }),
+        });
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      removePaletteColor: (color) =>
+      removePaletteColor: (color) => {
         set((state) => {
           const palette = state.settings.colorPalette ?? DEFAULT_PALETTE;
           const labels = { ...(state.settings.colorLabels ?? {}) };
@@ -1481,9 +1579,12 @@ export const useStore = create<AppState>()(
               colorLabels: labels,
             },
           };
-        }),
+        });
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      setColorLabel: (color, label) =>
+      setColorLabel: (color, label) => {
         set((state) => ({
           settings: {
             ...state.settings,
@@ -1492,17 +1593,23 @@ export const useStore = create<AppState>()(
               [color.toLowerCase()]: label,
             },
           },
-        })),
+        }));
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      setDetailPanelWidth: (px) =>
+      setDetailPanelWidth: (px) => {
         set((state) => ({
           settings: {
             ...state.settings,
             detailPanelWidth: Math.max(320, Math.min(720, Math.round(px))),
           },
-        })),
+        }));
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      connectNozbe: (token, clientId) =>
+      connectNozbe: (token, clientId) => {
         set((state) => ({
           settings: {
             ...state.settings,
@@ -1512,16 +1619,22 @@ export const useStore = create<AppState>()(
               syncCompleted: state.settings.nozbe?.syncCompleted ?? true,
             },
           },
-        })),
+        }));
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      disconnectNozbe: () =>
+      disconnectNozbe: () => {
         set((state) => {
           const { nozbe: _omit, ...rest } = state.settings;
           void _omit;
           return { settings: rest };
-        }),
+        });
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
+      },
 
-      setNozbeSync: (enabled) =>
+      setNozbeSync: (enabled) => {
         set((state) =>
           state.settings.nozbe
             ? {
@@ -1531,78 +1644,8 @@ export const useStore = create<AppState>()(
                 },
               }
             : {}
-        ),
-    }),
-    {
-      name: 'nozbe-clone-state',
-      version: 5,
-      storage: createJSONStorage(() => localStorage, { reviver: dateReviver }),
-      partialize: (state) => ({
-        tasks: state.tasks,
-        projects: state.projects,
-        sections: state.sections,
-        blockers: state.blockers,
-        categories: state.categories,
-        savedViews: state.savedViews,
-        activityLog: state.activityLog,
-        members: state.members,
-        settings: state.settings,
-        nextTaskNumber: state.nextTaskNumber,
-      }),
-      // v1 → v2: backfill task numbers + parentId + nextTaskNumber.
-      migrate: (persisted: unknown, version: number) => {
-        const state = persisted as {
-          tasks?: Task[];
-          nextTaskNumber?: number;
-          activityLog?: unknown[];
-          [k: string]: unknown;
-        };
-        if (version < 2 && Array.isArray(state.tasks)) {
-          const ordered = [...state.tasks].sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-          const numberById = new Map<string, number>();
-          ordered.forEach((t, i) => numberById.set(t.id, i + 1));
-          state.tasks = state.tasks.map((t) => ({
-            ...t,
-            number: t.number ?? numberById.get(t.id) ?? 0,
-            parentId: t.parentId ?? null,
-          }));
-          state.nextTaskNumber = state.tasks.length + 1;
-          // The activity-log entry shape changed incompatibly in v2; start fresh.
-          state.activityLog = [];
-        }
-        // v2 → v3: sections moved from project-bound (projectId) to scope-bound (scope).
-        if (Array.isArray(state.sections)) {
-          state.sections = (state.sections as Array<Record<string, unknown>>).map(
-            (s) => ({
-              ...s,
-              scope: (s.scope as string) ?? (s.projectId as string),
-            })
-          );
-        }
-        // v3 → v4: single assignee → assignee list.
-        // v4 → v5: every task must have at least one responsible → default to self.
-        if (Array.isArray(state.tasks)) {
-          state.tasks = (state.tasks as Task[]).map((t) => {
-            const ids = t.assigneeIds ?? (t.assigneeId ? [t.assigneeId] : []);
-            return { ...t, assigneeIds: ids.length ? ids : [SELF_MEMBER_ID] };
-          });
-        }
-        // Always-on: ensure the self member exists (responsible-person default).
-        const members = (state.members as Member[]) ?? [];
-        if (!members.some((m) => m.id === SELF_MEMBER_ID)) {
-          state.members = [SELF_MEMBER, ...members];
-        }
-        // Always-on: ensure the Single-Tasks bucket and blockers array exist.
-        if (!Array.isArray(state.blockers)) state.blockers = [];
-        const projects = (state.projects as Project[]) ?? [];
-        if (Array.isArray(state.projects) && !projects.some((p) => p.id === 'p-single')) {
-          state.projects = [SINGLE_TASKS_PROJECT, ...projects];
-        }
-        return state;
+        );
+        const s = get().settings;
+        settingsApi.patch(s).catch(console.error);
       },
-    }
-  )
-);
+}));
