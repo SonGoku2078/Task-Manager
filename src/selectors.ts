@@ -104,7 +104,7 @@ export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
         break;
       }
       case 'title':
-        cmp = a.title.localeCompare(b.title);
+        cmp = (a.title ?? '').localeCompare(b.title ?? '');
         break;
       case 'createdAt':
         cmp = a.createdAt.getTime() - b.createdAt.getTime();

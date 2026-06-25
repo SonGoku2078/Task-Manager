@@ -1,20 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { useStore } from '../store';
+import { useStore, DEFAULT_PALETTE } from '../store';
 import type { Project } from '../types';
 import { readTaskIds } from '../dnd';
 import ClearableInput from './ClearableInput';
 import './ProjectsPanel.css';
 
+const EMPTY_LABELS: Record<string, string> = {};
+
 interface ProjectsPanelProps {
   mode?: 'projects' | 'someday';
   calendarShown?: boolean;
   onToggleCalendar?: () => void;
+  onOpenDetail?: () => void;
 }
 
 export default function ProjectsPanel({
   mode = 'projects',
   calendarShown,
   onToggleCalendar,
+  onOpenDetail,
 }: ProjectsPanelProps) {
   const projects = useStore((s) => s.projects);
   const tasks = useStore((s) => s.tasks);
@@ -24,7 +28,12 @@ export default function ProjectsPanel({
   const toggleProjectSelected = useStore((s) => s.toggleProjectSelected);
   const addProject = useStore((s) => s.addProject);
   const reorderProjects = useStore((s) => s.reorderProjects);
+  const updateProject = useStore((s) => s.updateProject);
   const updateTask = useStore((s) => s.updateTask);
+  const colorPalette = useStore((s) => Array.isArray(s.settings.colorPalette) ? s.settings.colorPalette : DEFAULT_PALETTE);
+  const colorLabels = useStore((s) => (s.settings.colorLabels && typeof s.settings.colorLabels === 'object' ? s.settings.colorLabels : EMPTY_LABELS));
+  const addPaletteColor = useStore((s) => s.addPaletteColor);
+  const removePaletteColor = useStore((s) => s.removePaletteColor);
   const storedWidth = useStore((s) => s.settings.projectsPanelWidth);
   const setProjectsPanelWidth = useStore((s) => s.setProjectsPanelWidth);
 
@@ -35,6 +44,19 @@ export default function ProjectsPanel({
   const [newName, setNewName] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  // Which project's colour popover is open (null = none).
+  const [colorPickerId, setColorPickerId] = useState<string | null>(null);
+
+  // Close the colour popover on an outside click.
+  useEffect(() => {
+    if (!colorPickerId) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest('.projects-color-wrap')) setColorPickerId(null);
+    };
+    window.addEventListener('mousedown', onDown);
+    return () => window.removeEventListener('mousedown', onDown);
+  }, [colorPickerId]);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(storedWidth ?? 240);
@@ -60,7 +82,7 @@ export default function ProjectsPanel({
     tasks.filter((t) => t.projectId === projectId && !t.completed).length;
 
   const matchesQuery = (p: Project) =>
-    p.name.toLowerCase().includes(query.trim().toLowerCase());
+    (p.name ?? '').toLowerCase().includes(query.trim().toLowerCase());
 
   // Group the projects depending on the panel mode.
   const all = projects.filter(matchesQuery);
@@ -126,9 +148,68 @@ export default function ProjectsPanel({
       }}
     >
       {p.pinned && <span className="projects-active-dot" title="Aktiv">●</span>}
-      <span className="projects-dot" style={{ background: p.color }} />
-      <span className="projects-item-name" title={p.name}>
-        {p.name}
+      <span className="projects-color-wrap">
+        <button
+          className="projects-dot"
+          style={{ background: p.color }}
+          title="Farbe ändern"
+          onClick={(e) => {
+            e.stopPropagation();
+            setColorPickerId((cur) => (cur === p.id ? null : p.id));
+          }}
+        />
+        {colorPickerId === p.id && (
+          <div className="projects-color-pop" onClick={(e) => e.stopPropagation()}>
+            <div className="projects-swatches">
+              {colorPalette.map((c) => {
+                const label = colorLabels[c] ?? '';
+                return (
+                  <div key={c} className="projects-swatch-wrap">
+                    <button
+                      className={`projects-swatch ${(p.color ?? '').toLowerCase() === c ? 'selected' : ''}`}
+                      style={{ background: c }}
+                      title={label || c}
+                      onClick={() => {
+                        updateProject(p.id, { color: c });
+                        setColorPickerId(null);
+                      }}
+                    />
+                    {label && <span className="projects-swatch-label">{label}</span>}
+                    <button
+                      className="projects-swatch-del"
+                      title="Farbe entfernen"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePaletteColor(c);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <label className="projects-color-custom">
+              Hinzufügen
+              <input
+                type="color"
+                defaultValue="#888888"
+                title="Farbe zur Palette hinzufügen"
+                onChange={(e) => {
+                  updateProject(p.id, { color: e.target.value });
+                }}
+                onBlur={(e) => addPaletteColor(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
+      </span>
+      <span
+        className="projects-item-name"
+        title={p.name ?? ''}
+        onDoubleClick={(e) => { e.stopPropagation(); onOpenDetail?.(); }}
+      >
+        {p.name ?? '(kein Name)'}
         {p.label && <span className="projects-item-label">{p.label}</span>}
       </span>
       <span className="projects-item-count">{openCount(p.id)}</span>

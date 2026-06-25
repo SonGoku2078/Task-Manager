@@ -20,6 +20,9 @@ import ReportsView from './components/ReportsView';
 import MembersView from './components/MembersView';
 import SettingsView from './components/SettingsView';
 import ClearableInput from './components/ClearableInput';
+import BulkAddTasks from './components/BulkAddTasks';
+import ConfirmDialog from './components/ConfirmDialog';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { parseTaskHash, parseAddTaskHash } from './config';
 
 const VIEW_TITLES: Record<ViewType, string> = {
@@ -106,6 +109,9 @@ function App() {
   const quickAddRef = useRef<HTMLInputElement>(null);
 
   const [projectDetailOpen, setProjectDetailOpen] = useState(false);
+  const [editingProjectName, setEditingProjectName] = useState(false);
+  const [bulkAddOpen, setBulkAddOpen] = useState(false);
+  const [confirmPending, setConfirmPending] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Show/hide the calendar docked between the projects panel and the task list.
@@ -132,6 +138,11 @@ function App() {
   // click followed by a shift+click always has a valid range start.
   useEffect(() => {
     if (ui.selectedTaskId) selectAnchor.current = ui.selectedTaskId;
+  }, [ui.selectedTaskId]);
+
+  // Clicking a task closes the project detail panel; they share the right slot.
+  useEffect(() => {
+    if (ui.selectedTaskId) setProjectDetailOpen(false);
   }, [ui.selectedTaskId]);
 
   // When a ctrl/shift selection drops back to empty, leave selection mode so the
@@ -288,12 +299,19 @@ function App() {
     <div className="app-container">
       <Sidebar />
       {ui.sidePanel === 'projects' && (
-        <ProjectsPanel
-          calendarShown={projCalShown}
-          onToggleCalendar={() => setProjCalShown((v) => !v)}
-        />
+        <ErrorBoundary>
+          <ProjectsPanel
+            calendarShown={projCalShown}
+            onToggleCalendar={() => setProjCalShown((v) => !v)}
+            onOpenDetail={() => { selectTask(null); setProjectDetailOpen(true); }}
+          />
+        </ErrorBoundary>
       )}
-      {ui.sidePanel === 'someday' && <ProjectsPanel mode="someday" />}
+      {ui.sidePanel === 'someday' && (
+        <ErrorBoundary>
+          <ProjectsPanel mode="someday" />
+        </ErrorBoundary>
+      )}
       {ui.sidePanel === 'calendar' && <CalendarPanel />}
       {ui.currentView === 'projects' && projCalShown && (
         <div className="calendar-mid-dock">
@@ -319,13 +337,25 @@ function App() {
                   <span className="project-active-knob" />
                 </button>
               )}
-              <input
-                className="project-title-input"
-                value={currentProject.name}
-                onChange={(e) =>
-                  updateProject(currentProject.id, { name: e.target.value })
-                }
-              />
+              {editingProjectName ? (
+                <input
+                  autoFocus
+                  className="project-title-input"
+                  value={currentProject.name}
+                  onChange={(e) => updateProject(currentProject.id, { name: e.target.value })}
+                  onBlur={() => setEditingProjectName(false)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditingProjectName(false); }}
+                />
+              ) : (
+                <span
+                  className="project-title-input project-title-label"
+                  title="Klick: Details · Doppelklick: umbenennen"
+                  onClick={() => { selectTask(null); setProjectDetailOpen(true); }}
+                  onDoubleClick={(e) => { e.stopPropagation(); setProjectDetailOpen(false); setEditingProjectName(true); }}
+                >
+                  {currentProject.name}
+                </span>
+              )}
               {currentProject.kind !== 'area' && (
                 <button
                   className={`project-pin-btn ${currentProject.pinned ? 'on' : ''}`}
@@ -338,7 +368,11 @@ function App() {
               <button
                 className={`project-pin-btn ${projectDetailOpen ? 'on' : ''}`}
                 title="Projektdetails anzeigen"
-                onClick={() => setProjectDetailOpen((v) => !v)}
+                onClick={() => {
+                  const opening = !projectDetailOpen;
+                  setProjectDetailOpen(opening);
+                  if (opening) selectTask(null);
+                }}
               >
                 📋
               </button>
@@ -372,17 +406,27 @@ function App() {
             {currentProject && (
               <button
                 className="header-icon-btn"
+                title="Mehrere Tasks anlegen"
+                onClick={() => setBulkAddOpen(true)}
+              >
+                ⊞
+              </button>
+            )}
+            {currentProject && (
+              <button
+                className="header-icon-btn"
                 title="Projekt löschen"
                 onClick={() => {
-                  if (
-                    window.confirm(
-                      `Projekt "${currentProject.name}" löschen? Aufgaben wandern in die Inbox.`
-                    )
-                  ) {
-                    deleteProject(currentProject.id);
-                    setSidePanel('none');
-                    setView('inbox');
-                  }
+                  setConfirmPending({
+                    message: `Projekt „${currentProject.name}" und alle seine Aufgaben löschen?`,
+                    onConfirm: () => {
+                      const backView = ui.currentView === 'someday' ? 'someday' : 'projects';
+                      deleteProject(currentProject.id);
+                      setSidePanel(backView);
+                      setView(backView);
+                      setConfirmPending(null);
+                    },
+                  });
                 }}
               >
                 🗑️
@@ -548,6 +592,21 @@ function App() {
         <ProjectDetailPanel project={currentProject} onClose={() => setProjectDetailOpen(false)} />
       ) : (
         selectedTask && <TaskDetailPanel task={selectedTask} />
+      )}
+
+      {bulkAddOpen && currentProject && (
+        <BulkAddTasks
+          projectId={currentProject.id}
+          projectName={currentProject.name}
+          onClose={() => setBulkAddOpen(false)}
+        />
+      )}
+      {confirmPending && (
+        <ConfirmDialog
+          message={confirmPending.message}
+          onConfirm={confirmPending.onConfirm}
+          onCancel={() => setConfirmPending(null)}
+        />
       )}
     </div>
   );
