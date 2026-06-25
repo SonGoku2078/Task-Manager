@@ -47,9 +47,10 @@ CREATE TABLE IF NOT EXISTS projects (
   pinned      INTEGER NOT NULL DEFAULT 0,
   active      INTEGER NOT NULL DEFAULT 1,
   kind        TEXT NOT NULL DEFAULT 'project',
-  description TEXT,
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  nozbe_id    TEXT
+  description     TEXT,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  nozbe_id        TEXT,
+  parent_area_id  TEXT
 );
 
 CREATE TABLE IF NOT EXISTS categories (

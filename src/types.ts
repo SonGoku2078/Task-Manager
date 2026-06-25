@@ -166,6 +166,7 @@ export interface Project {
   kind?: ProjectKind; // 'area' = ongoing responsibility (e.g. Finanzen); undefined = project
   description?: string;
   nozbeId?: string;
+  parentAreaId?: string | null; // if set: this project is grouped under this area
 }
 
 // A recurring weekly time block reserved for a project (e.g. Mo–Mi 8–12 Projekt A).

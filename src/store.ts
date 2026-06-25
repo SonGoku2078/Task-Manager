@@ -774,9 +774,13 @@ export const useStore = create<AppState>()((set, get) => ({
           if (!target) return {};
           const completing = !target.completed;
           const now = new Date();
-          const tasks = state.tasks.map((t) =>
-            t.id === id ? { ...t, completed: completing, completedAt: completing ? now : null, updatedAt: now } : t
-          );
+          const tasks = state.tasks.map((t) => {
+            if (t.id === id) return { ...t, completed: completing, completedAt: completing ? now : null, updatedAt: now };
+            // When completing a parent, close all its subtasks too.
+            if (completing && t.parentId === id && !t.completed)
+              return { ...t, completed: true, completedAt: now, updatedAt: now };
+            return t;
+          });
           const activityLog = pushLog(
             state.activityLog,
             taskEntry(
@@ -815,7 +819,15 @@ export const useStore = create<AppState>()((set, get) => ({
           return { tasks, activityLog, nextTaskNumber };
         });
         const t = get().tasks.find(x => x.id === id);
-        if (t) tasksApi.update(id, { completed: t.completed }).catch(console.error);
+        if (t) {
+          tasksApi.update(id, { completed: t.completed, completedAt: t.completedAt }).catch(console.error);
+          // Persist subtask completions too.
+          if (t.completed) {
+            get().tasks.filter(x => x.parentId === id && x.completed).forEach(sub =>
+              tasksApi.update(sub.id, { completed: true, completedAt: sub.completedAt }).catch(console.error)
+            );
+          }
+        }
         // Write the completion change back to Nozbe (if connected + enabled).
         if (before) syncCompletion(get(), before, !before.completed);
       },

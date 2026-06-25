@@ -134,7 +134,16 @@ export default function ProjectsPanel({
       onDrop={(e) => {
         e.preventDefault();
         if (dragId) {
-          reorderProjects(dragId, p.id);
+          const dragged = projects.find((x) => x.id === dragId);
+          if (p.kind === 'area' && dragged && dragged.kind !== 'area') {
+            // Drop project onto area → assign to area (and activate if someday)
+            updateProject(dragId, {
+              parentAreaId: p.id,
+              active: true,
+            });
+          } else {
+            reorderProjects(dragId, p.id);
+          }
         } else {
           // A task (or multi-selection) dropped here moves to this project.
           readTaskIds(e).forEach((id) => updateTask(id, { projectId: p.id }));
@@ -279,6 +288,15 @@ export default function ProjectsPanel({
             {somedayProjects.length === 0 && (
               <p className="projects-empty">Keine inaktiven Projekte.</p>
             )}
+            {areas.length > 0 && (
+              <>
+                <div className="projects-divider" />
+                <div className="projects-group-head">
+                  <span className="projects-group-title">📦 In Area verschieben</span>
+                </div>
+                {areas.map(renderItem)}
+              </>
+            )}
           </>
         ) : (
           <>
@@ -288,23 +306,34 @@ export default function ProjectsPanel({
             )}
 
             <div className="projects-divider" />
-            <div className="projects-group-head">
-              <span className="projects-group-title">📦 Areas</span>
-              <button
-                className="projects-add-btn"
-                title="Area hinzufügen (wiederkehrender Bereich)"
-                onClick={() => {
-                  setAdding('area');
-                  setNewName('');
-                }}
-              >
-                +
-              </button>
+            <div
+              className={`projects-areas-section ${overId === '__areas__' ? 'drag-over' : ''}`}
+              onDragOver={(e) => { if (dragId) { e.preventDefault(); setOverId('__areas__'); } }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setOverId((cur) => cur === '__areas__' ? null : cur);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragId) {
+                  const dragged = projects.find((x) => x.id === dragId);
+                  if (dragged && dragged.kind !== 'area') {
+                    updateProject(dragId, { kind: 'area' });
+                  }
+                }
+                setDragId(null);
+                setOverId(null);
+              }}
+            >
+              <div className="projects-group-head">
+                <span className="projects-group-title">📦 Areas</span>
+              </div>
+              {areas.map(renderItem)}
+              {areas.length === 0 && (
+                <p className="projects-empty">Projekte hierher ziehen um sie zu Areas zu machen.</p>
+              )}
             </div>
-            {areas.map(renderItem)}
-            {areas.length === 0 && (
-              <p className="projects-empty">Noch keine Areas.</p>
-            )}
           </>
         )}
       </div>

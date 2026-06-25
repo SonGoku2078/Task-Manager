@@ -187,6 +187,17 @@
   border-right: 1px solid var(--border-light);
 }
 
+.week-gutter-label-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.week-gutter-label-toggle:hover { color: var(--text); }
+.week-allday-arrow { font-size: 9px; margin-top: 1px; }
+
 .week-allday-cell {
   border-left: 1px solid var(--border-light);
   padding: 4px;

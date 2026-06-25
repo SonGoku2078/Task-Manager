@@ -68,6 +68,15 @@
   gap: 6px;
 }
 
+.projects-areas-section {
+  border-radius: 6px;
+  min-height: 40px;
+}
+.projects-areas-section.drag-over {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: 1px dashed var(--accent);
+}
+
 .projects-group-head {
   margin: 4px 0;
   font-size: 11px;
@@ -91,6 +100,12 @@
   height: 1px;
   background: var(--border-dark, rgba(255, 255, 255, 0.12));
   margin: 14px 0 8px;
+}
+
+.projects-area-child {
+  padding-left: 12px;
+  border-left: 2px solid var(--border-dark, rgba(255,255,255,0.1));
+  margin-left: 8px;
 }
 
 .projects-search,

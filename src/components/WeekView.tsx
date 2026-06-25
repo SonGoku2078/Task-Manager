@@ -95,6 +95,7 @@ export default function WeekView({ mode }: WeekViewProps) {
 
   // Blocker editor state.
   const [showBlockers, setShowBlockers] = useState(false);
+  const [allDayOpen, setAllDayOpen] = useState(true);
   // Only projects that actually have tasks in Next Week can get a blocker.
   const nextWeekProjectIds = new Set(
     tasks
@@ -448,8 +449,15 @@ export default function WeekView({ mode }: WeekViewProps) {
 
       {/* "ohne Zeit" — tasks that only have a date */}
       <div className="week-allday" style={{ gridTemplateColumns: cols }}>
-        <div className="week-gutter-label">ohne&nbsp;Zeit</div>
-        {days.map((d) => {
+        <div
+          className="week-gutter-label week-gutter-label-toggle"
+          onClick={() => setAllDayOpen((v) => !v)}
+          title={allDayOpen ? 'Einklappen' : 'Ausklappen'}
+        >
+          <span className="week-allday-arrow">{allDayOpen ? '▾' : '▸'}</span>
+          ohne&nbsp;Zeit
+        </div>
+        {allDayOpen && days.map((d) => {
           const dayTasks = tasksOnDate(tasks, d).filter(
             (t) => !t.parentId && t.startMinutes == null
           );

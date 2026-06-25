@@ -15,23 +15,25 @@ function rowToProject(r: Record<string, unknown>) {
     kind:        r.kind ?? 'project',
     description: r.description ?? undefined,
     sortOrder:   r.sort_order ?? 0,
-    nozbeId:     r.nozbe_id ?? null,
+    nozbeId:      r.nozbe_id ?? null,
+    parentAreaId: r.parent_area_id ?? null,
   };
 }
 
 function projectToRow(p: Record<string, unknown>) {
   return {
-    id:          p.id,
-    name:        p.name ?? '',
-    color:       p.color ?? '#4caf50',
-    icon:        p.icon ?? '📁',
-    label:       p.label ?? null,
-    pinned:      p.pinned ? 1 : 0,
-    active:      p.active !== false ? 1 : 0,
-    kind:        p.kind ?? 'project',
-    description: p.description ?? null,
-    sort_order:  p.sortOrder ?? 0,
-    nozbe_id:    p.nozbeId ?? null,
+    id:             p.id,
+    name:           p.name ?? '',
+    color:          p.color ?? '#4caf50',
+    icon:           p.icon ?? '📁',
+    label:          p.label ?? null,
+    pinned:         p.pinned ? 1 : 0,
+    active:         p.active !== false ? 1 : 0,
+    kind:           p.kind ?? 'project',
+    description:    p.description ?? null,
+    sort_order:     p.sortOrder ?? 0,
+    nozbe_id:       p.nozbeId ?? null,
+    parent_area_id: p.parentAreaId ?? null,
   };
 }
 
@@ -43,7 +45,7 @@ router.get('/', (_req, res) => {
 router.post('/', (req, res) => {
   const row = projectToRow(req.body);
   db.prepare(`INSERT INTO projects VALUES (
-    @id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id
+    @id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id,@parent_area_id
   )`).run(row);
   res.status(201).json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(row.id as string) as Record<string, unknown>));
 });
@@ -62,7 +64,7 @@ router.patch('/:id', (req, res) => {
   const merged = projectToRow({ ...rowToProject(existing), ...req.body, id });
   db.prepare(`UPDATE projects SET name=@name, color=@color, icon=@icon, label=@label,
     pinned=@pinned, active=@active, kind=@kind, description=@description,
-    sort_order=@sort_order, nozbe_id=@nozbe_id WHERE id=@id`).run(merged);
+    sort_order=@sort_order, nozbe_id=@nozbe_id, parent_area_id=@parent_area_id WHERE id=@id`).run(merged);
   return res.json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>));
 });
 
