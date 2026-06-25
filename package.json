@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev:server": "cd server && npm run dev",
+    "build": "tsc -b && vite build && cd server && npm run build",
+    "build:electron": "npm run build && cd electron && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

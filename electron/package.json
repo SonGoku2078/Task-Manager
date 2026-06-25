@@ -1,0 +1,49 @@
+{
+  "name": "task-manager-electron",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "tsc && electron-builder --win --x64",
+    "build:mac": "tsc && electron-builder --mac",
+    "build:linux": "tsc && electron-builder --linux"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.5.0"
+  },
+  "build": {
+    "appId": "at.selfmanaged.app",
+    "productName": "SelfManaged",
+    "directories": {
+      "output": "../dist-electron"
+    },
+    "extraResources": [
+      {
+        "from": "../server/dist",
+        "to": "server",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../dist",
+        "to": "public",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "../public/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "../public/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
