@@ -323,6 +323,7 @@ export interface NewTaskInput {
   thisWeek?: boolean;
   assigneeId?: string | null;
   assigneeIds?: string[];
+  linkedProjectId?: string | null;
 }
 
 interface AppState {
@@ -534,6 +535,7 @@ export const useStore = create<AppState>()(
             (input.assigneeId ? [input.assigneeId] : [SELF_MEMBER_ID]),
           recurrence: input.recurrence ?? 'none',
           recurrenceEnd: null,
+          linkedProjectId: input.linkedProjectId ?? null,
         };
         set((state) => ({
           // Honour the quick-add direction toggle: prepend or append.

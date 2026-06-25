@@ -152,6 +152,70 @@ export default function TaskList({
   );
 
   const renderTask = (task: Task) => {
+    // --- Project-reference task: renders as a dependency chip, not a normal row ---
+    if (task.linkedProjectId) {
+      const linked = projects.find((p) => p.id === task.linkedProjectId);
+      const linkedTasks = allTasks.filter(
+        (t) => t.projectId === task.linkedProjectId && !t.parentId
+      );
+      const linkedDone = linkedTasks.filter((t) => t.completed).length;
+      const pct = linkedTasks.length ? Math.round((linkedDone / linkedTasks.length) * 100) : 0;
+      const isBlocking = !task.completed;
+      return (
+        <div key={task.id} className="task-row">
+          <div
+            className={`task-item task-projref ${task.completed ? 'is-completed' : ''} ${
+              overId === task.id ? 'drag-over' : ''
+            } ${dragId === task.id ? 'dragging' : ''}`}
+            draggable={dragEnabled}
+            onDragStart={(e) => { if (!dragEnabled) return; setDragId(task.id); writeTaskIds(e, task.id, dragPayload(task.id)); }}
+            onDragOver={(e) => { if (!dragEnabled || !dragId) return; e.preventDefault(); setOverId(task.id); }}
+            onDragLeave={() => setOverId((cur) => (cur === task.id ? null : cur))}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const ids = readTaskIds(e).filter((id) => id !== task.id); if (dragEnabled && ids.length) { if (grouped) ids.forEach((id) => dropTaskOnTask(id, task.id)); else ids.forEach((id) => reorderTasks(id, task.id)); } setDragId(null); setOverId(null); }}
+            onDragEnd={() => { setDragId(null); setOverId(null); }}
+          >
+            <span className="task-subtoggle-spacer" />
+            <input
+              type="checkbox"
+              className="task-checkbox"
+              checked={task.completed}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => { e.stopPropagation(); toggleTask(task.id); }}
+              title={task.completed ? 'Abhängigkeit aufgelöst' : 'Als abgeschlossen markieren'}
+            />
+            <span className="task-projref-icon" title={isBlocking ? 'Blockierendes Projekt' : 'Abgeschlossene Abhängigkeit'}>
+              {isBlocking ? '🔒' : '🔓'}
+            </span>
+            <div className="task-content">
+              {linked ? (
+                <button
+                  className="task-projref-name"
+                  style={{ color: linked.color }}
+                  onClick={(e) => { e.stopPropagation(); selectProject(linked.id); }}
+                  title={`Zu Projekt „${linked.name}" springen`}
+                >
+                  <span className="task-project-dot" style={{ background: linked.color }} />
+                  {linked.name}
+                </button>
+              ) : (
+                <span className="task-projref-name task-projref-missing">
+                  Projekt nicht gefunden
+                </span>
+              )}
+              {linked && linkedTasks.length > 0 && (
+                <div className="task-projref-progress">
+                  <div className="task-projref-bar">
+                    <div className="task-projref-fill" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="task-projref-count">{linkedDone}/{linkedTasks.length}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const project = projects.find((p) => p.id === task.projectId);
     const taskCats = categories.filter((c) => task.categoryIds.includes(c.id));
     const kids = childrenByParent.get(task.id) ?? [];

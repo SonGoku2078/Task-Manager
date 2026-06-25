@@ -107,6 +107,8 @@ function App() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const quickAddRef = useRef<HTMLInputElement>(null);
+  const [projRefPickerOpen, setProjRefPickerOpen] = useState(false);
+  const [projRefQuery, setProjRefQuery] = useState('');
 
   const [projectDetailOpen, setProjectDetailOpen] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(false);
@@ -502,6 +504,54 @@ function App() {
           <button className="btn btn-primary" onClick={handleAddTask}>
             Hinzufügen
           </button>
+          {currentProject && (
+            <div className="projref-picker-wrap">
+              <button
+                className="btn"
+                title="Anderes Projekt als Abhängigkeit verknüpfen"
+                onClick={() => { setProjRefPickerOpen((v) => !v); setProjRefQuery(''); }}
+              >
+                🔗
+              </button>
+              {projRefPickerOpen && (
+                <div className="projref-dropdown">
+                  <input
+                    autoFocus
+                    className="projref-search"
+                    placeholder="Projekt suchen…"
+                    value={projRefQuery}
+                    onChange={(e) => setProjRefQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Escape' && setProjRefPickerOpen(false)}
+                  />
+                  <div className="projref-list">
+                    {projects
+                      .filter((p) =>
+                        p.id !== currentProject.id &&
+                        p.id !== 'p-single' &&
+                        (p.name ?? '').toLowerCase().includes(projRefQuery.toLowerCase())
+                      )
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          className="projref-option"
+                          onClick={() => {
+                            addTask({
+                              title: p.name,
+                              projectId: currentProject.id,
+                              linkedProjectId: p.id,
+                            });
+                            setProjRefPickerOpen(false);
+                          }}
+                        >
+                          <span className="task-project-dot" style={{ background: p.color }} />
+                          {p.name}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         )}
 

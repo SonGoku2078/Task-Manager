@@ -140,6 +140,7 @@ export interface Task {
   assigneeIds?: string[]; // responsible members; defaults to [self member 'u-me']
   attachments?: Attachment[];
   nozbeId?: string; // source id when imported from Nozbe (traceability / re-import)
+  linkedProjectId?: string | null; // project-reference task: this task represents another project as a dependency
 }
 
 // A user-defined group within a project to bundle tasks (e.g. "Vorbereitung").

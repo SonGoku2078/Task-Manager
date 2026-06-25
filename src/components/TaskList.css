@@ -465,6 +465,75 @@
   opacity: 0.8;
 }
 
+/* Project-reference task row */
+.task-item.task-projref {
+  gap: 12px;
+  padding: 12px 20px;
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 4%, var(--main-bg));
+}
+
+.task-item.task-projref.is-completed {
+  opacity: 0.5;
+}
+
+.task-projref-icon {
+  font-size: 14px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.task-projref-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.task-projref-name:hover {
+  text-decoration: underline;
+}
+
+.task-projref-missing {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.task-projref-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.task-projref-bar {
+  flex: 1;
+  max-width: 120px;
+  height: 4px;
+  background: var(--border-light);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.task-projref-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.task-projref-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 /* Scrollbar */
 .task-list::-webkit-scrollbar {
   width: 8px;
