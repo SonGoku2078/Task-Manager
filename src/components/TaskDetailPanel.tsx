@@ -35,6 +35,32 @@ const renderWithLinks = (text: string) =>
     )
   );
 
+function parseDuration(s: string): number | null {
+  const t = s.trim();
+  if (!t) return null;
+  // e.g. 1h30m
+  const hm = t.match(/^(\d+)h\s*(\d+)m$/i);
+  if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2]);
+  // e.g. 1h
+  const h = t.match(/^(\d+)h$/i);
+  if (h) return parseInt(h[1]) * 60;
+  // e.g. 30m
+  const m = t.match(/^(\d+)m$/i);
+  if (m) return parseInt(m[1]);
+  // plain number = minutes
+  const n = parseInt(t);
+  if (!isNaN(n) && n > 0) return n;
+  return null;
+}
+
+function formatDuration(min: number): string {
+  if (min < 60) return `${min}m`;
+  if (min === 60) return '1h';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
 const toDateInput = (d: Date | null) =>
   d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
 
@@ -103,6 +129,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const [commentText, setCommentText] = useState('');
   // Description: show clickable links when viewing, switch to a textarea on click.
   const [editingDesc, setEditingDesc] = useState(false);
+  const [editingDuration, setEditingDuration] = useState(false);
+  const [durationInput, setDurationInput] = useState('');
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [attachError, setAttachError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -305,6 +333,44 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               ⏳ Warten auf
             </button>
           </div>
+        </div>
+
+        <div className="detail-field detail-duration-row">
+          <label className="detail-label">⏱ Dauer</label>
+          {editingDuration ? (
+            <input
+              autoFocus
+              className="detail-input detail-duration-input"
+              value={durationInput}
+              placeholder="z.B. 30m, 1h, 1h30m"
+              onChange={(e) => setDurationInput(e.target.value)}
+              onBlur={() => {
+                const val = parseDuration(durationInput);
+                updateTask(task.id, { durationMin: val });
+                setEditingDuration(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = parseDuration(durationInput);
+                  updateTask(task.id, { durationMin: val });
+                  setEditingDuration(false);
+                } else if (e.key === 'Escape') {
+                  setEditingDuration(false);
+                }
+              }}
+            />
+          ) : (
+            <span
+              className="detail-duration-display"
+              title="Klicken zum Bearbeiten"
+              onClick={() => {
+                setDurationInput(task.durationMin ? formatDuration(task.durationMin) : '');
+                setEditingDuration(true);
+              }}
+            >
+              {task.durationMin ? formatDuration(task.durationMin) : '—'}
+            </span>
+          )}
         </div>
 
         {task.waiting && (

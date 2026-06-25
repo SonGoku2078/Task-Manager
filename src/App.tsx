@@ -10,6 +10,7 @@ import WeekView from './components/WeekView';
 import ProjectsPanel from './components/ProjectsPanel';
 import TaskList from './components/TaskList';
 import TaskDetailPanel from './components/TaskDetailPanel';
+import ProjectDetailPanel from './components/ProjectDetailPanel';
 import CategoryBar from './components/CategoryBar';
 import FilterBar from './components/FilterBar';
 import BulkActionBar from './components/BulkActionBar';
@@ -104,6 +105,7 @@ function App() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const quickAddRef = useRef<HTMLInputElement>(null);
 
+  const [projectDetailOpen, setProjectDetailOpen] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Show/hide the calendar docked between the projects panel and the task list.
@@ -333,6 +335,13 @@ function App() {
                   📌
                 </button>
               )}
+              <button
+                className={`project-pin-btn ${projectDetailOpen ? 'on' : ''}`}
+                title="Projektdetails anzeigen"
+                onClick={() => setProjectDetailOpen((v) => !v)}
+              >
+                📋
+              </button>
             </div>
           ) : (
             <h2>{headerTitle}</h2>
@@ -535,7 +544,11 @@ function App() {
         )}
       </div>
 
-      {selectedTask && <TaskDetailPanel task={selectedTask} />}
+      {projectDetailOpen && currentProject ? (
+        <ProjectDetailPanel project={currentProject} onClose={() => setProjectDetailOpen(false)} />
+      ) : (
+        selectedTask && <TaskDetailPanel task={selectedTask} />
+      )}
     </div>
   );
 }

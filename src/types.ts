@@ -160,6 +160,7 @@ export interface Project {
   pinned?: boolean; // user-marked "active" project: floats to the top, others dim
   active?: boolean; // GTD: active (under Projekte) vs inactive/someday. undefined = active
   kind?: ProjectKind; // 'area' = ongoing responsibility (e.g. Finanzen); undefined = project
+  description?: string;
   nozbeId?: string;
 }
 
