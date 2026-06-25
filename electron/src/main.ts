@@ -1,29 +1,20 @@
 import { app, BrowserWindow, shell } from 'electron';
-import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
 
 const PORT = 3001;
-let serverProcess: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
 
-// Resolve path to the bundled server or dev server.
-function getServerEntry(): string {
-  if (app.isPackaged) {
-    // In production: server/index.js lives in the extraResources folder.
-    return path.join(process.resourcesPath, 'server', 'index.js');
-  }
-  // In dev: compiled server next to the electron folder.
-  return path.join(__dirname, '..', '..', 'server', 'dist', 'index.js');
-}
-
+// In production: load the Express server directly in this process.
 function startServer(): void {
-  const entry = getServerEntry();
-  serverProcess = spawn(process.execPath, [entry], {
-    env: { ...process.env, PORT: String(PORT) },
-    stdio: 'inherit',
-  });
-  serverProcess.on('error', (err) => console.error('Server start error:', err));
+  const entry = path.join(process.resourcesPath, 'server', 'index.js');
+  process.env.PORT = String(PORT);
+  try {
+    require(entry);
+  } catch (e) {
+    const { dialog } = require('electron');
+    dialog.showErrorBox('Server Start Error', String(e));
+  }
 }
 
 function waitForServer(retries = 30): Promise<void> {
@@ -91,5 +82,5 @@ app.on('window-all-closed', () => {
 });
 
 app.on('quit', () => {
-  if (serverProcess) serverProcess.kill();
+  // Server runs in-process, nothing to kill separately.
 });

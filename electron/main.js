@@ -34,28 +34,21 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
-const child_process_1 = require("child_process");
 const path = __importStar(require("path"));
 const http = __importStar(require("http"));
 const PORT = 3001;
-let serverProcess = null;
 let mainWindow = null;
-// Resolve path to the bundled server or dev server.
-function getServerEntry() {
-    if (electron_1.app.isPackaged) {
-        // In production: server/index.js lives in the extraResources folder.
-        return path.join(process.resourcesPath, 'server', 'index.js');
-    }
-    // In dev: compiled server next to the electron folder.
-    return path.join(__dirname, '..', '..', 'server', 'dist', 'index.js');
-}
+// In production: load the Express server directly in this process.
 function startServer() {
-    const entry = getServerEntry();
-    serverProcess = (0, child_process_1.spawn)(process.execPath, [entry], {
-        env: { ...process.env, PORT: String(PORT) },
-        stdio: 'inherit',
-    });
-    serverProcess.on('error', (err) => console.error('Server start error:', err));
+    const entry = path.join(process.resourcesPath, 'server', 'index.js');
+    process.env.PORT = String(PORT);
+    try {
+        require(entry);
+    }
+    catch (e) {
+        const { dialog } = require('electron');
+        dialog.showErrorBox('Server Start Error', String(e));
+    }
 }
 function waitForServer(retries = 30) {
     return new Promise((resolve, reject) => {
@@ -121,6 +114,5 @@ electron_1.app.on('window-all-closed', () => {
         electron_1.app.quit();
 });
 electron_1.app.on('quit', () => {
-    if (serverProcess)
-        serverProcess.kill();
+    // Server runs in-process, nothing to kill separately.
 });

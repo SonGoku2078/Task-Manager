@@ -29,7 +29,12 @@
         "filter": ["**/*"]
       },
       {
-        "from": "../dist",
+        "from": "../server/node_modules",
+        "to": "server/node_modules",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../server/public",
         "to": "public",
         "filter": ["**/*"]
       }
