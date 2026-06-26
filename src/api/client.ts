@@ -5,7 +5,7 @@ export const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 
 
 // Date fields that must be revived from ISO strings to Date objects.
 const DATE_KEYS = new Set([
-  'dueDate', 'createdAt', 'updatedAt', 'recurrenceEnd', 'at',
+  'dueDate', 'createdAt', 'updatedAt', 'recurrenceEnd', 'completedAt', 'at',
   'startDate', 'endDate',
 ]);
 

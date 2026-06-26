@@ -15,7 +15,7 @@ export default function CompletionCalendar({ tasks }: Props) {
   const counts: Record<string, number> = {};
   for (const t of tasks) {
     if (t.completed && t.completedAt) {
-      const d = t.completedAt;
+      const d = new Date(t.completedAt);
       if (d.getFullYear() === year && d.getMonth() === month) {
         const key = `${year}-${month}-${d.getDate()}`;
         counts[key] = (counts[key] ?? 0) + 1;

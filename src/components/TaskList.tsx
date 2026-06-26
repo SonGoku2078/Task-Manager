@@ -44,6 +44,7 @@ export default function TaskList({
   const reorderTasks = useStore((s) => s.reorderTasks);
   const dropTaskOnTask = useStore((s) => s.dropTaskOnTask);
   const setTaskParent = useStore((s) => s.setTaskParent);
+  const deleteTask = useStore((s) => s.deleteTask);
   const assignTaskSection = useStore((s) => s.assignTaskSection);
   const reorderSections = useStore((s) => s.reorderSections);
   const addSection = useStore((s) => s.addSection);
@@ -103,7 +104,7 @@ export default function TaskList({
   const isCentralBand = (e: DragEvent): boolean => {
     const r = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - r.top;
-    return y > r.height * 0.25 && y < r.height * 0.75;
+    return y > r.height * 0.35 && y < r.height * 0.65;
   };
   // Grouping works for a single project OR for the list-style GTD views.
   const singleProject =
@@ -186,6 +187,8 @@ export default function TaskList({
       const linkedDone = linkedTasks.filter((t) => t.completed).length;
       const pct = linkedTasks.length ? Math.round((linkedDone / linkedTasks.length) * 100) : 0;
       const isBlocking = !task.completed;
+      // Inactive (Someday) linked projects are shown greyed out.
+      const linkInactive = !!linked && linked.active !== true;
       return (
         <div key={task.id} className="task-row">
           <div
@@ -214,13 +217,14 @@ export default function TaskList({
             <div className="task-content">
               {linked ? (
                 <button
-                  className="task-projref-name"
-                  style={{ color: linked.color }}
+                  className={`task-projref-name ${linkInactive ? 'is-inactive' : ''}`}
+                  style={{ color: linkInactive ? undefined : linked.color }}
                   onClick={(e) => { e.stopPropagation(); selectProject(linked.id); }}
-                  title={`Zu Projekt „${linked.name}" springen`}
+                  title={linkInactive ? `„${linked.name}" (inaktiv / Someday)` : `Zu Projekt „${linked.name}" springen`}
                 >
-                  <span className="task-project-dot" style={{ background: linked.color }} />
+                  <span className="task-project-dot" style={{ background: linkInactive ? '#9ca3af' : linked.color }} />
                   {linked.name}
+                  {linkInactive && <span className="task-projref-inactive-tag">inaktiv</span>}
                 </button>
               ) : (
                 <span className="task-projref-name task-projref-missing">
@@ -235,6 +239,15 @@ export default function TaskList({
                   <span className="task-projref-count">{linkedDone}/{linkedTasks.length}</span>
                 </div>
               )}
+            </div>
+            <div className="task-actions">
+              <button
+                className="task-projref-del"
+                title="Projekt-Verknüpfung entfernen"
+                onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
+              >
+                ×
+              </button>
             </div>
           </div>
         </div>
@@ -359,7 +372,7 @@ export default function TaskList({
             )}
             {task.completed && task.completedAt && (
               <span className="task-completed-at" title="Erledigt am">
-                ✓ {task.completedAt.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                ✓ {new Date(task.completedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             )}
             {!task.completed && task.dueDate && (

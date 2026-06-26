@@ -671,24 +671,28 @@ function App() {
         )}
 
         {ui.currentView === 'completed' && (
-          <CompletionCalendar tasks={tasks} />
+          <ErrorBoundary>
+            <CompletionCalendar tasks={tasks} />
+          </ErrorBoundary>
         )}
 
-        <TaskList
-          tasks={visibleTasks}
-          emptyHint={
-            ui.currentView === 'priority'
-              ? 'Keine offenen Aufgaben — markiere welche mit ★ oder setze Priorität Hoch.'
-              : ui.currentView === 'completed'
-                ? 'Noch nichts erledigt (oder Filter zu eng). Hake Aufgaben ab — sie erscheinen hier.'
-                : undefined
-          }
-          selectionMode={bulkMode}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          onCtrlSelect={ctrlSelect}
-          onShiftSelect={shiftSelect}
-        />
+        <ErrorBoundary>
+          <TaskList
+            tasks={visibleTasks}
+            emptyHint={
+              ui.currentView === 'priority'
+                ? 'Keine offenen Aufgaben — markiere welche mit ★ oder setze Priorität Hoch.'
+                : ui.currentView === 'completed'
+                  ? 'Noch nichts erledigt (oder Filter zu eng). Hake Aufgaben ab — sie erscheinen hier.'
+                  : undefined
+            }
+            selectionMode={bulkMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onCtrlSelect={ctrlSelect}
+            onShiftSelect={shiftSelect}
+          />
+        </ErrorBoundary>
         </>
         )}
         </>
