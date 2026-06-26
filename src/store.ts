@@ -32,24 +32,7 @@ import {
   tasksApi, projectsApi, categoriesApi, membersApi,
   sectionsApi, blockersApi, savedViewsApi, activityLogApi, settingsApi,
 } from './api';
-
-const DATE_KEYS = new Set([
-  'dueDate',
-  'createdAt',
-  'updatedAt',
-  'recurrenceEnd',
-  'currentDate',
-  'at',
-]);
-
-// Revive ISO date strings back into Date objects when loading from storage.
-const dateReviver = (key: string, value: unknown) => {
-  if (DATE_KEYS.has(key) && typeof value === 'string') {
-    const d = new Date(value);
-    return isNaN(d.getTime()) ? null : d;
-  }
-  return value;
-};
+import { enqueue, flush as flushOutbox } from './api/outbox';
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -338,12 +321,17 @@ interface AppState {
   settings: Settings;
   nextTaskNumber: number;
   ui: UIState;
+  // True once data has been loaded from the backend at least once. False while
+  // the server is unreachable so the UI can avoid implying the (empty) memory
+  // state is real.
+  dataLoaded: boolean;
 
   loadAll: () => Promise<void>;
 
   // Task CRUD
   addTask: (input: NewTaskInput) => Task;
   addSubtask: (parentId: string, title: string) => Task | null;
+  setTaskParent: (id: string, parentId: string | null) => void;
   bulkCreateTasks: (
     projectId: string | null,
     rows: { section?: string; title: string; description?: string; duration?: string; recurrence?: string }[]
@@ -505,8 +493,17 @@ export const useStore = create<AppState>()((set, get) => ({
   settings: defaultSettings,
   nextTaskNumber: 1,
   ui: defaultUIState,
+  dataLoaded: false,
 
   loadAll: async () => {
+    // SQLite is the single source of truth. We NEVER fall back to the legacy
+    // `nozbe-clone-state` localStorage snapshot — doing so resurrected stale
+    // data and could overwrite the real DB. Any unsynced edits live in the
+    // durable outbox; flush them first so the server is up to date, then load.
+    try {
+      await flushOutbox();
+    } catch { /* offline — the load below will fail and we stay in offline mode */ }
+
     try {
       const [tasks, projects, sections, blockers, categories, savedViews, activityLog, members, settingsData] = await Promise.all([
         tasksApi.getAll(),
@@ -523,61 +520,14 @@ export const useStore = create<AppState>()((set, get) => ({
       const settings = { ...defaultSettings, ...rawSettings };
       const safeMembers = members.length ? members : [SELF_MEMBER];
 
-      // If server returned no tasks but localStorage has data, fall back to
-      // localStorage so the user can still work and then trigger migration.
-      if (tasks.length === 0) {
-        try {
-          const raw = localStorage.getItem('nozbe-clone-state');
-          if (raw) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const parsed = JSON.parse(raw, dateReviver) as any;
-            const s = parsed.state ?? parsed;
-            if (s?.tasks?.length) {
-              set({
-                tasks:          s.tasks          ?? [],
-                projects:       s.projects       ?? [],
-                sections:       s.sections       ?? [],
-                blockers:       s.blockers       ?? [],
-                categories:     s.categories     ?? [],
-                savedViews:     s.savedViews     ?? [],
-                activityLog:    s.activityLog    ?? [],
-                members:        s.members?.length ? s.members : [SELF_MEMBER],
-                settings:       { ...defaultSettings, ...(s.settings ?? {}) },
-                nextTaskNumber: s.nextTaskNumber ?? 1,
-              });
-              return;
-            }
-          }
-        } catch (_) { /* ignore */ }
-      }
-
-      set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members: safeMembers, settings, nextTaskNumber: nextTaskNumber ?? 1 });
+      // Trust the server completely — an empty DB is legitimately empty.
+      set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members: safeMembers, settings, nextTaskNumber: nextTaskNumber ?? 1, dataLoaded: true });
     } catch (e) {
-      console.warn('Server not reachable, falling back to localStorage', e);
-      // Fallback: load from the old zustand-persist localStorage key so the
-      // app is fully usable even without the backend running.
-      try {
-        const raw = localStorage.getItem('nozbe-clone-state');
-        if (!raw) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const parsed = JSON.parse(raw, dateReviver) as any;
-        const s = parsed.state ?? parsed;
-        if (!s?.tasks) return;
-        set({
-          tasks:          s.tasks          ?? [],
-          projects:       s.projects       ?? [],
-          sections:       s.sections       ?? [],
-          blockers:       s.blockers       ?? [],
-          categories:     s.categories     ?? [],
-          savedViews:     s.savedViews     ?? [],
-          activityLog:    s.activityLog    ?? [],
-          members:        s.members?.length ? s.members : [SELF_MEMBER],
-          settings:       { ...defaultSettings, ...(s.settings ?? {}) },
-          nextTaskNumber: s.nextTaskNumber ?? 1,
-        });
-      } catch (le) {
-        console.warn('localStorage fallback also failed', le);
-      }
+      // Backend unreachable. Do NOT load or overwrite anything — keep whatever
+      // is already in memory and let the offline banner inform the user. The
+      // app will retry loadAll() automatically once the server is back.
+      console.warn('Server not reachable; staying in offline mode (no data touched)', e);
+      set({ dataLoaded: false });
     }
   },
 
@@ -623,7 +573,7 @@ export const useStore = create<AppState>()((set, get) => ({
             taskEntry('created', task, state.settings.userName)
           ),
         }));
-        tasksApi.create(task).catch(console.error);
+        enqueue('task.create', { task });
         return task;
       },
 
@@ -681,6 +631,43 @@ export const useStore = create<AppState>()((set, get) => ({
         return task;
       },
 
+      // Convert a task into a subtask of `parentId`, or promote it back to a
+      // root task with `parentId = null`. Guards against cycles and enforces a
+      // single nesting level (the chosen parent must itself be a root task).
+      setTaskParent: (id, parentId) => {
+        const state = get();
+        const task = state.tasks.find((t) => t.id === id);
+        if (!task) return;
+        if (id === parentId) return; // can't parent to self
+        if ((task.parentId ?? null) === (parentId ?? null)) return; // no-op
+
+        if (parentId !== null) {
+          const parent = state.tasks.find((t) => t.id === parentId);
+          if (!parent) return;
+          // The target must be a root task (no nesting beyond one level).
+          if (parent.parentId) return;
+          // The dragged task must not currently have its own children, else
+          // moving it under a parent would create a 2-level chain.
+          if (state.tasks.some((t) => t.parentId === id)) return;
+        }
+
+        const now = new Date();
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id === id ? { ...t, parentId, updatedAt: now } : t
+          ),
+          activityLog: pushLog(
+            s.activityLog,
+            taskEntry('updated', task, s.settings.userName, {
+              field: 'Unteraufgabe',
+              from: task.parentId ? 'Unteraufgabe' : 'Hauptaufgabe',
+              to: parentId ? 'Unteraufgabe' : 'Hauptaufgabe',
+            })
+          ),
+        }));
+        enqueue('task.update', { id, patch: { parentId } });
+      },
+
       updateTask: (id, rawUpdates) => {
         set((state) => {
           const before = state.tasks.find((t) => t.id === id);
@@ -710,7 +697,7 @@ export const useStore = create<AppState>()((set, get) => ({
           }
           return { tasks, activityLog };
         });
-        tasksApi.update(id, rawUpdates).catch(console.error);
+        enqueue('task.update', { id, patch: rawUpdates });
       },
 
       deleteTask: (id) => {
@@ -744,7 +731,7 @@ export const useStore = create<AppState>()((set, get) => ({
                 : state.ui,
           };
         });
-        tasksApi.remove(id).catch(console.error);
+        enqueue('task.remove', { id });
       },
 
       restoreTask: (entryId) =>
@@ -820,11 +807,11 @@ export const useStore = create<AppState>()((set, get) => ({
         });
         const t = get().tasks.find(x => x.id === id);
         if (t) {
-          tasksApi.update(id, { completed: t.completed, completedAt: t.completedAt }).catch(console.error);
+          enqueue('task.update', { id, patch: { completed: t.completed, completedAt: t.completedAt } });
           // Persist subtask completions too.
           if (t.completed) {
             get().tasks.filter(x => x.parentId === id && x.completed).forEach(sub =>
-              tasksApi.update(sub.id, { completed: true, completedAt: sub.completedAt }).catch(console.error)
+              enqueue('task.update', { id: sub.id, patch: { completed: true, completedAt: sub.completedAt } })
             );
           }
         }
@@ -866,7 +853,7 @@ export const useStore = create<AppState>()((set, get) => ({
           };
         });
         const t = get().tasks.find(x => x.id === taskId);
-        if (t) tasksApi.update(taskId, { comments: t.comments }).catch(console.error);
+        if (t) enqueue('task.update', { id: taskId, patch: { comments: t.comments } });
       },
 
       deleteComment: (taskId, commentId) =>
@@ -1039,13 +1026,13 @@ export const useStore = create<AppState>()((set, get) => ({
           };
         });
         const ids = get().tasks.map(t => t.id);
-        tasksApi.reorder(ids).catch(console.error);
+        enqueue('task.reorder', { ids });
       },
 
       addSection: (scope, name) => {
         const section: Section = { id: uid('sec'), scope, name };
         set((state) => ({ sections: [...state.sections, section] }));
-        sectionsApi.create(section).catch(console.error);
+        enqueue('section.create', { section });
         return section;
       },
 
@@ -1053,7 +1040,7 @@ export const useStore = create<AppState>()((set, get) => ({
         set((state) => ({
           sections: state.sections.map((s) => (s.id === id ? { ...s, name } : s)),
         }));
-        sectionsApi.update(id, { name }).catch(console.error);
+        enqueue('section.update', { id, patch: { name } });
       },
 
       deleteSection: (id) => {
@@ -1064,7 +1051,7 @@ export const useStore = create<AppState>()((set, get) => ({
             t.sectionId === id ? { ...t, sectionId: null } : t
           ),
         }));
-        sectionsApi.remove(id).catch(console.error);
+        enqueue('section.remove', { id });
       },
 
       reorderSections: (draggedId, targetId) =>
@@ -1129,7 +1116,7 @@ export const useStore = create<AppState>()((set, get) => ({
           };
         });
         const ids = get().projects.map(p => p.id);
-        projectsApi.reorder(ids).catch(console.error);
+        enqueue('project.reorder', { ids });
       },
 
       clearAll: () =>
@@ -1205,7 +1192,7 @@ export const useStore = create<AppState>()((set, get) => ({
             plainEntry('project-created', project.name, state.settings.userName)
           ),
         }));
-        projectsApi.create(project).catch(console.error);
+        enqueue('project.create', { project });
         return project;
       },
 
@@ -1215,7 +1202,7 @@ export const useStore = create<AppState>()((set, get) => ({
             p.id === id ? { ...p, ...updates } : p
           ),
         }));
-        projectsApi.update(id, updates).catch(console.error);
+        enqueue('project.update', { id, patch: updates });
       },
 
       toggleProjectPinned: (id) => {
@@ -1225,7 +1212,7 @@ export const useStore = create<AppState>()((set, get) => ({
           ),
         }));
         const p = get().projects.find(x => x.id === id);
-        if (p) projectsApi.update(id, { pinned: p.pinned }).catch(console.error);
+        if (p) enqueue('project.update', { id, patch: { pinned: p.pinned } });
       },
 
       // Active (under Projekte) ↔ inactive/someday. Areas stay always active.
@@ -1238,13 +1225,13 @@ export const useStore = create<AppState>()((set, get) => ({
           ),
         }));
         const p = get().projects.find(x => x.id === id);
-        if (p) projectsApi.update(id, { active: p.active }).catch(console.error);
+        if (p) enqueue('project.update', { id, patch: { active: p.active } });
       },
 
       addBlocker: (blocker) => {
         const b = { ...blocker, id: uid('blk') };
         set((state) => ({ blockers: [...state.blockers, b] }));
-        blockersApi.create(b).catch(console.error);
+        enqueue('blocker.create', { blocker: b });
       },
 
       updateBlocker: (id, updates) => {
@@ -1253,14 +1240,14 @@ export const useStore = create<AppState>()((set, get) => ({
             b.id === id ? { ...b, ...updates } : b
           ),
         }));
-        blockersApi.update(id, updates).catch(console.error);
+        enqueue('blocker.update', { id, patch: updates });
       },
 
       deleteBlocker: (id) => {
         set((state) => ({
           blockers: state.blockers.filter((b) => b.id !== id),
         }));
-        blockersApi.remove(id).catch(console.error);
+        enqueue('blocker.remove', { id });
       },
 
       reorderNav: (draggedId, targetId) =>
@@ -1287,7 +1274,7 @@ export const useStore = create<AppState>()((set, get) => ({
               ? { ...state.ui, selectedProjectId: null }
               : state.ui,
         }));
-        projectsApi.remove(id).catch(console.error);
+        enqueue('project.remove', { id });
       },
 
       createProjectFromTemplate: (template) => {
@@ -1336,7 +1323,7 @@ export const useStore = create<AppState>()((set, get) => ({
           color: color ?? PROJECT_COLORS[get().categories.length % PROJECT_COLORS.length],
         };
         set((state) => ({ categories: [...state.categories, category] }));
-        categoriesApi.create(category).catch(console.error);
+        enqueue('category.create', { category });
         return category;
       },
 
@@ -1346,7 +1333,7 @@ export const useStore = create<AppState>()((set, get) => ({
             c.id === id ? { ...c, ...updates } : c
           ),
         }));
-        categoriesApi.update(id, updates).catch(console.error);
+        enqueue('category.update', { id, patch: updates });
       },
 
       deleteCategory: (id) => {
@@ -1358,7 +1345,7 @@ export const useStore = create<AppState>()((set, get) => ({
               : t
           ),
         }));
-        categoriesApi.remove(id).catch(console.error);
+        enqueue('category.remove', { id });
       },
 
       selectTask: (id) =>
@@ -1469,7 +1456,7 @@ export const useStore = create<AppState>()((set, get) => ({
           searchQuery: ui.searchQuery,
         };
         set((state) => ({ savedViews: [...state.savedViews, view] }));
-        savedViewsApi.create(view).catch(console.error);
+        enqueue('savedView.create', { view });
         return view;
       },
 
@@ -1481,7 +1468,7 @@ export const useStore = create<AppState>()((set, get) => ({
               ? { ...state.ui, activeSavedViewId: null, currentView: 'inbox' }
               : state.ui,
         }));
-        savedViewsApi.remove(id).catch(console.error);
+        enqueue('savedView.remove', { id });
       },
 
       applySavedView: (id) =>
@@ -1510,7 +1497,7 @@ export const useStore = create<AppState>()((set, get) => ({
           color: PROJECT_COLORS[get().members.length % PROJECT_COLORS.length],
         };
         set((state) => ({ members: [...state.members, member] }));
-        membersApi.create(member).catch(console.error);
+        enqueue('member.create', { member });
         return member;
       },
 
@@ -1520,7 +1507,7 @@ export const useStore = create<AppState>()((set, get) => ({
             m.id === id ? { ...m, ...updates } : m
           ),
         }));
-        membersApi.update(id, updates).catch(console.error);
+        enqueue('member.update', { id, patch: updates });
       },
 
       deleteMember: (id) => {
@@ -1534,7 +1521,7 @@ export const useStore = create<AppState>()((set, get) => ({
               : t;
           }),
         }));
-        membersApi.remove(id).catch(console.error);
+        enqueue('member.remove', { id });
       },
 
       // Add/remove a responsible member on a task (multi-assignee).
@@ -1554,27 +1541,27 @@ export const useStore = create<AppState>()((set, get) => ({
 
       setUserName: (name) => {
         set((state) => ({ settings: { ...state.settings, userName: name } }));
-        settingsApi.patch({ userName: name }).catch(console.error);
+        enqueue('settings.patch', { patch: { userName: name } });
       },
 
       setTheme: (theme) => {
         set((state) => ({ settings: { ...state.settings, theme } }));
-        settingsApi.patch({ theme }).catch(console.error);
+        enqueue('settings.patch', { patch: { theme } });
       },
 
       setAddToTop: (v) => {
         set((state) => ({ settings: { ...state.settings, addToTop: v } }));
-        settingsApi.patch({ addToTop: v }).catch(console.error);
+        enqueue('settings.patch', { patch: { addToTop: v } });
       },
 
       setProjectSort: (sort) => {
         set((state) => ({ settings: { ...state.settings, projectSort: sort } }));
-        settingsApi.patch({ projectSort: sort }).catch(console.error);
+        enqueue('settings.patch', { patch: { projectSort: sort } });
       },
 
       setCalendarMode: (mode) => {
         set((state) => ({ settings: { ...state.settings, calendarMode: mode } }));
-        settingsApi.patch({ calendarMode: mode }).catch(console.error);
+        enqueue('settings.patch', { patch: { calendarMode: mode } });
       },
 
       setCalendarHours: (startHour, endHour) => {
@@ -1586,7 +1573,7 @@ export const useStore = create<AppState>()((set, get) => ({
           };
         });
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       setCalendarMonthCount: (count) => {
@@ -1597,7 +1584,7 @@ export const useStore = create<AppState>()((set, get) => ({
           },
         }));
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       setCalendarHourHeight: (px) => {
@@ -1608,7 +1595,7 @@ export const useStore = create<AppState>()((set, get) => ({
           },
         }));
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       setProjectsPanelWidth: (px) => {
@@ -1619,7 +1606,7 @@ export const useStore = create<AppState>()((set, get) => ({
           },
         }));
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       addPaletteColor: (color) => {
@@ -1629,7 +1616,7 @@ export const useStore = create<AppState>()((set, get) => ({
           return { settings: { ...state.settings, colorPalette: [...palette, color.toLowerCase()] } };
         });
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       removePaletteColor: (color) => {
@@ -1646,7 +1633,7 @@ export const useStore = create<AppState>()((set, get) => ({
           };
         });
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       setColorLabel: (color, label) => {
@@ -1660,7 +1647,7 @@ export const useStore = create<AppState>()((set, get) => ({
           },
         }));
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       setDetailPanelWidth: (px) => {
@@ -1671,7 +1658,7 @@ export const useStore = create<AppState>()((set, get) => ({
           },
         }));
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       connectNozbe: (token, clientId) => {
@@ -1686,7 +1673,7 @@ export const useStore = create<AppState>()((set, get) => ({
           },
         }));
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       disconnectNozbe: () => {
@@ -1696,7 +1683,7 @@ export const useStore = create<AppState>()((set, get) => ({
           return { settings: rest };
         });
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 
       setNozbeSync: (enabled) => {
@@ -1711,6 +1698,6 @@ export const useStore = create<AppState>()((set, get) => ({
             : {}
         );
         const s = get().settings;
-        settingsApi.patch(s).catch(console.error);
+        enqueue('settings.patch', { patch: s });
       },
 }));

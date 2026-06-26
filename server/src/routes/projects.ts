@@ -44,7 +44,11 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const row = projectToRow(req.body);
-  db.prepare(`INSERT INTO projects VALUES (
+  // Explicit column list so an ALTER-added column can't shift positional mapping.
+  // INSERT OR REPLACE so a replayed offline-queue create is idempotent.
+  db.prepare(`INSERT OR REPLACE INTO projects
+    (id,name,color,icon,label,pinned,active,kind,description,sort_order,nozbe_id,parent_area_id)
+    VALUES (
     @id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id,@parent_area_id
   )`).run(row);
   res.status(201).json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(row.id as string) as Record<string, unknown>));

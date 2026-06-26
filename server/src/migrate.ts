@@ -1,4 +1,5 @@
 import type { DB } from './db';
+import { backupDb } from './db';
 
 // Accept either the raw Zustand persist envelope or the unwrapped state object.
 function unwrap(data: Record<string, unknown>): Record<string, unknown> {
@@ -6,6 +7,7 @@ function unwrap(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 export function runMigration(db: DB, raw: Record<string, unknown>): number {
+  backupDb('pre-migrate');
   const state = unwrap(raw);
   const tasks    = (state.tasks    as unknown[]) ?? [];
   const projects = (state.projects as unknown[]) ?? [];
@@ -24,7 +26,13 @@ export function runMigration(db: DB, raw: Record<string, unknown>): number {
   db.exec('BEGIN');
 
   // Tasks
-  const insTask = db.prepare(`INSERT OR REPLACE INTO tasks VALUES (
+  const insTask = db.prepare(`INSERT OR REPLACE INTO tasks
+    (id,number,title,description,project_id,parent_id,section_id,
+     due_date,start_minutes,duration_min,priority,completed,starred,
+     someday,this_week,waiting,waiting_for,recurrence,recurrence_end,
+     recur_interval,recur_unit,recur_month_day,completed_at,created_at,updated_at,
+     nozbe_id,sort_order,category_ids,assignee_ids,comments,attachments,links,linked_project_id)
+    VALUES (
     @id,@number,@title,@description,@project_id,@parent_id,@section_id,
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
     @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
@@ -64,7 +72,9 @@ export function runMigration(db: DB, raw: Record<string, unknown>): number {
   });
 
   // Projects
-  const insProj = db.prepare(`INSERT OR REPLACE INTO projects VALUES (@id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id)`);
+  const insProj = db.prepare(`INSERT OR REPLACE INTO projects
+    (id,name,color,icon,label,pinned,active,kind,description,sort_order,nozbe_id)
+    VALUES (@id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id)`);
   projects.forEach((p: unknown, i: number) => {
     const proj = p as Record<string, unknown>;
     insProj.run({ id: proj.id, name: proj.name ?? '', color: proj.color ?? '#4caf50', icon: proj.icon ?? '📁', label: proj.label ?? null, pinned: proj.pinned ? 1 : 0, active: proj.active !== false ? 1 : 0, kind: proj.kind ?? 'project', description: proj.description ?? null, sort_order: i, nozbe_id: proj.nozbeId ?? null });

@@ -13,7 +13,7 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const { id, name, color, nozbeId, sortOrder } = req.body;
-  db.prepare('INSERT INTO categories VALUES (@id,@name,@color,@sort_order,@nozbe_id)').run({ id, name, color: color ?? '#4caf50', sort_order: sortOrder ?? 0, nozbe_id: nozbeId ?? null });
+  db.prepare('INSERT OR REPLACE INTO categories VALUES (@id,@name,@color,@sort_order,@nozbe_id)').run({ id, name, color: color ?? '#4caf50', sort_order: sortOrder ?? 0, nozbe_id: nozbeId ?? null });
   res.status(201).json(rowToCat(db.prepare('SELECT * FROM categories WHERE id=?').get(id) as Record<string, unknown>));
 });
 

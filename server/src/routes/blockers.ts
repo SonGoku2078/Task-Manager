@@ -13,7 +13,7 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const { id, projectId, weekdays, startMinutes, durationMin } = req.body;
-  db.prepare('INSERT INTO blockers VALUES (@id,@project_id,@weekdays,@start_minutes,@duration_min)').run({ id, project_id: projectId, weekdays: JSON.stringify(weekdays ?? []), start_minutes: startMinutes ?? 0, duration_min: durationMin ?? 60 });
+  db.prepare('INSERT OR REPLACE INTO blockers VALUES (@id,@project_id,@weekdays,@start_minutes,@duration_min)').run({ id, project_id: projectId, weekdays: JSON.stringify(weekdays ?? []), start_minutes: startMinutes ?? 0, duration_min: durationMin ?? 60 });
   res.status(201).json(rowToBlocker(db.prepare('SELECT * FROM blockers WHERE id=?').get(id) as Record<string, unknown>));
 });
 

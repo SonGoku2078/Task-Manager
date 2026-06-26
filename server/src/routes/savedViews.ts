@@ -20,7 +20,7 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const { id, name, filters, sortField, sortDir, searchQuery, sortOrder } = req.body;
-  db.prepare('INSERT INTO saved_views VALUES (@id,@name,@filters,@sort_field,@sort_dir,@search_query,@sort_order)').run({
+  db.prepare('INSERT OR REPLACE INTO saved_views VALUES (@id,@name,@filters,@sort_field,@sort_dir,@search_query,@sort_order)').run({
     id, name, filters: JSON.stringify(filters ?? {}),
     sort_field: sortField ?? 'manual', sort_dir: sortDir ?? 'asc',
     search_query: searchQuery ?? '', sort_order: sortOrder ?? 0,

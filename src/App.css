@@ -97,6 +97,16 @@ body {
   min-height: 0;
 }
 
+.server-sync-banner {
+  flex-shrink: 0;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 16px;
+  text-align: center;
+  z-index: 100;
+}
+
 .server-offline-banner code {
   background: rgba(255,255,255,0.2);
   border-radius: 3px;

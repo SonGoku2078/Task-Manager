@@ -20,7 +20,7 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const e = req.body;
-  db.prepare(`INSERT INTO activity_log VALUES (@id,@at,@actor,@kind,@task_id,@task_number,@task_title,@field,@from_val,@to_val,@payload)`).run({
+  db.prepare(`INSERT OR REPLACE INTO activity_log VALUES (@id,@at,@actor,@kind,@task_id,@task_number,@task_title,@field,@from_val,@to_val,@payload)`).run({
     id: e.id, at: new Date(e.at).toISOString(), actor: e.actor ?? '',
     kind: e.kind, task_id: e.taskId ?? null, task_number: e.taskNumber ?? null,
     task_title: e.taskTitle ?? '', field: e.field ?? null,

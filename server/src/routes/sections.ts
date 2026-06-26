@@ -13,7 +13,7 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const { id, scope, name, sortOrder } = req.body;
-  db.prepare('INSERT INTO sections VALUES (@id,@scope,@name,@sort_order)').run({ id, scope, name, sort_order: sortOrder ?? 0 });
+  db.prepare('INSERT OR REPLACE INTO sections VALUES (@id,@scope,@name,@sort_order)').run({ id, scope, name, sort_order: sortOrder ?? 0 });
   res.status(201).json(rowToSection(db.prepare('SELECT * FROM sections WHERE id=?').get(id) as Record<string, unknown>));
 });
 

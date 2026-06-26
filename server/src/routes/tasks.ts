@@ -104,7 +104,16 @@ router.get('/', (_req, res) => {
 // POST /api/tasks
 router.post('/', (req, res) => {
   const row = taskToRow(req.body);
-  db.prepare(`INSERT INTO tasks VALUES (
+  // Explicit column list (NOT positional VALUES) so a column added later via
+  // ALTER TABLE — which SQLite appends at the end — can't shift the mapping.
+  // INSERT OR REPLACE so a replayed offline-queue create is idempotent.
+  db.prepare(`INSERT OR REPLACE INTO tasks
+    (id,number,title,description,project_id,parent_id,section_id,
+     due_date,start_minutes,duration_min,priority,completed,starred,
+     someday,this_week,waiting,waiting_for,recurrence,recurrence_end,
+     recur_interval,recur_unit,recur_month_day,completed_at,created_at,updated_at,
+     nozbe_id,sort_order,category_ids,assignee_ids,comments,attachments,links,linked_project_id)
+    VALUES (
     @id,@number,@title,@description,@project_id,@parent_id,@section_id,
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
     @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,

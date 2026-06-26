@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type DragEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
 import { isOverdue } from '../selectors';
@@ -43,6 +43,7 @@ export default function TaskList({
   const allTasks = useStore((s) => s.tasks);
   const reorderTasks = useStore((s) => s.reorderTasks);
   const dropTaskOnTask = useStore((s) => s.dropTaskOnTask);
+  const setTaskParent = useStore((s) => s.setTaskParent);
   const assignTaskSection = useStore((s) => s.assignTaskSection);
   const reorderSections = useStore((s) => s.reorderSections);
   const addSection = useStore((s) => s.addSection);
@@ -51,6 +52,9 @@ export default function TaskList({
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  // When set, hovering the central band of this root task row will nest the
+  // dragged task as its subtask instead of reordering.
+  const [nestId, setNestId] = useState<string | null>(null);
   const [dragSectionId, setDragSectionId] = useState<string | null>(null);
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false);
@@ -84,6 +88,23 @@ export default function TaskList({
     selectionMode && selectedIds?.has(id) ? [...selectedIds] : undefined;
   const assignAll = (ids: string[], sectionId: string | null) =>
     ids.forEach((id) => assignTaskSection(id, sectionId));
+
+  // Whether dropping the currently-dragged task onto `target` may NEST it as a
+  // subtask: single drag, target is a different root task, and the dragged task
+  // has no children of its own (we only allow one nesting level).
+  const canNest = (target: Task): boolean => {
+    if (!dragId || dragId === target.id) return false;
+    if (target.parentId) return false; // target must be a root task
+    if (childrenByParent.has(dragId)) return false; // dragged task has children
+    return true;
+  };
+  // Pointer in the central 50% band of a row → nest; the top/bottom edges keep
+  // the familiar reorder behaviour.
+  const isCentralBand = (e: DragEvent): boolean => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - r.top;
+    return y > r.height * 0.25 && y < r.height * 0.75;
+  };
   // Grouping works for a single project OR for the list-style GTD views.
   const singleProject =
     (currentView === 'projects' || currentView === 'someday') &&
@@ -116,7 +137,11 @@ export default function TaskList({
       key={child.id}
       className={`task-item is-child ${selectedTaskId === child.id ? 'selected' : ''} ${
         child.completed ? 'is-completed' : ''
-      }`}
+      } ${dragId === child.id ? 'dragging' : ''}`}
+      draggable
+      onDragStart={(e) => { setDragId(child.id); writeTaskIds(e, child.id); }}
+      onDragEnd={() => { setDragId(null); setOverId(null); setNestId(null); }}
+      title="Zum Hauptaufgaben-Bereich ziehen, um sie zu einer eigenständigen Aufgabe zu machen"
       onClick={() => selectTask(selectedTaskId === child.id ? null : child.id)}
     >
       <input
@@ -229,7 +254,7 @@ export default function TaskList({
           task.completed ? 'is-completed' : ''
         } ${selectionMode && selectedIds?.has(task.id) ? 'bulk-selected' : ''} ${
           overId === task.id ? 'drag-over' : ''
-        } ${dragId === task.id ? 'dragging' : ''}`}
+        } ${nestId === task.id ? 'nest-target' : ''} ${dragId === task.id ? 'dragging' : ''}`}
         draggable={dragEnabled}
         onDragStart={(e) => {
           if (!dragEnabled) return;
@@ -239,23 +264,46 @@ export default function TaskList({
         onDragOver={(e) => {
           if (!dragEnabled || !dragId) return;
           e.preventDefault();
-          setOverId(task.id);
+          // Central band over a valid root target → nest; edges → reorder.
+          if (canNest(task) && isCentralBand(e)) {
+            setNestId(task.id);
+            setOverId(null);
+          } else {
+            setOverId(task.id);
+            setNestId((cur) => (cur === task.id ? null : cur));
+          }
         }}
-        onDragLeave={() => setOverId((cur) => (cur === task.id ? null : cur))}
+        onDragLeave={() => {
+          setOverId((cur) => (cur === task.id ? null : cur));
+          setNestId((cur) => (cur === task.id ? null : cur));
+        }}
         onDrop={(e) => {
           e.preventDefault();
           e.stopPropagation();
           const ids = readTaskIds(e).filter((id) => id !== task.id);
           if (dragEnabled && ids.length) {
-            if (grouped) ids.forEach((id) => dropTaskOnTask(id, task.id));
-            else ids.forEach((id) => reorderTasks(id, task.id));
+            if (nestId === task.id && canNest(task)) {
+              // Nest the dragged task(s) as subtasks of this root task.
+              ids.forEach((id) => setTaskParent(id, task.id));
+            } else {
+              // Reorder. If a dragged task is currently a subtask, promote it to
+              // root first so dropping it among root tasks moves it out.
+              ids.forEach((id) => {
+                const dragged = allTasks.find((t) => t.id === id);
+                if (dragged?.parentId) setTaskParent(id, null);
+              });
+              if (grouped) ids.forEach((id) => dropTaskOnTask(id, task.id));
+              else ids.forEach((id) => reorderTasks(id, task.id));
+            }
           }
           setDragId(null);
           setOverId(null);
+          setNestId(null);
         }}
         onDragEnd={() => {
           setDragId(null);
           setOverId(null);
+          setNestId(null);
         }}
         onClick={(e) => {
           if (e.shiftKey) onShiftSelect?.(task.id);
@@ -474,7 +522,11 @@ export default function TaskList({
         onDragLeave={() => setOverSectionId((c) => (c === '__none__' ? null : c))}
         onDrop={(e) => {
           e.preventDefault();
-          if (dragId) assignTaskSection(dragId, null);
+          if (dragId) {
+            // Dropping a subtask here promotes it to a standalone root task.
+            if (allTasks.find((t) => t.id === dragId)?.parentId) setTaskParent(dragId, null);
+            assignTaskSection(dragId, null);
+          }
           setDragId(null);
           setOverSectionId(null);
         }}

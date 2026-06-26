@@ -13,7 +13,7 @@ router.get('/', (_req, res) => {
 
 router.post('/', (req, res) => {
   const { id, name, role, color, avatarUrl } = req.body;
-  db.prepare('INSERT INTO members VALUES (@id,@name,@role,@color,@avatar_url)').run({ id, name, role: role ?? 'editor', color: color ?? '#4caf50', avatar_url: avatarUrl ?? null });
+  db.prepare('INSERT OR REPLACE INTO members VALUES (@id,@name,@role,@color,@avatar_url)').run({ id, name, role: role ?? 'editor', color: color ?? '#4caf50', avatar_url: avatarUrl ?? null });
   res.status(201).json(rowToMember(db.prepare('SELECT * FROM members WHERE id=?').get(id) as Record<string, unknown>));
 });
 

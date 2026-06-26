@@ -25,6 +25,7 @@ import ConfirmDialog from './components/ConfirmDialog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import CompletionCalendar from './components/CompletionCalendar';
 import { parseTaskHash, parseAddTaskHash } from './config';
+import { onChange as outboxOnChange, flush as flushOutbox } from './api/outbox';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -58,18 +59,39 @@ function App() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Server connectivity check — warn user when backend is unreachable.
+  // Server connectivity + write-queue status. The offline banner reflects both:
+  // it warns when the backend is unreachable and shows how many edits are still
+  // queued for sync. When the server returns, we flush the outbox and re-load.
+  const dataLoaded = useStore((s) => s.dataLoaded);
+  const loadAll = useStore((s) => s.loadAll);
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+  const [pendingWrites, setPendingWrites] = useState(0);
+  useEffect(() => outboxOnChange(setPendingWrites), []);
   useEffect(() => {
     let cancelled = false;
+    let wasOnline = true;
     const check = () =>
       fetch('/health', { signal: AbortSignal.timeout(3000) })
-        .then((r) => { if (!cancelled) setServerOnline(r.ok); })
-        .catch(() => { if (!cancelled) setServerOnline(false); });
+        .then((r) => {
+          if (cancelled) return;
+          setServerOnline(r.ok);
+          if (r.ok) {
+            // Came back online (or first success): drain the queue and, if we
+            // never managed an initial load, load now.
+            if (!wasOnline || !useStore.getState().dataLoaded) {
+              flushOutbox();
+              if (!useStore.getState().dataLoaded) loadAll();
+            }
+          }
+          wasOnline = r.ok;
+        })
+        .catch(() => { if (!cancelled) { setServerOnline(false); wasOnline = false; } });
     check();
     const id = window.setInterval(check, 15000);
-    return () => { cancelled = true; window.clearInterval(id); };
-  }, []);
+    const onOnline = () => flushOutbox();
+    window.addEventListener('online', onOnline);
+    return () => { cancelled = true; window.clearInterval(id); window.removeEventListener('online', onOnline); };
+  }, [loadAll]);
 
   // Deep-link support: open the task referenced by #/t/<number> in the URL.
   useEffect(() => {
@@ -313,11 +335,22 @@ function App() {
 
   return (
     <div className="app-container">
-      {serverOnline === false && (
+      {serverOnline === false ? (
         <div className="server-offline-banner">
-          ⚠ Server nicht erreichbar — Änderungen werden nicht gespeichert. Bitte <code>npm run dev</code> im <code>server/</code>-Verzeichnis starten.
+          ⚠ Server nicht erreichbar — Bitte <code>npm run dev</code> im <code>server/</code>-Verzeichnis starten.
+          {pendingWrites > 0
+            ? ` Deine ${pendingWrites} Änderung(en) sind sicher gespeichert und werden synchronisiert, sobald der Server läuft.`
+            : ' Deine Änderungen werden zwischengespeichert und synchronisiert, sobald der Server läuft.'}
         </div>
-      )}
+      ) : pendingWrites > 0 ? (
+        <div className="server-sync-banner">
+          ⟳ {pendingWrites} Änderung(en) werden synchronisiert…
+        </div>
+      ) : !dataLoaded ? (
+        <div className="server-offline-banner">
+          ⚠ Daten konnten nicht geladen werden — Verbindung zum Server wird hergestellt…
+        </div>
+      ) : null}
       <div className="app-row">
       <Sidebar />
       {ui.sidePanel === 'projects' && (

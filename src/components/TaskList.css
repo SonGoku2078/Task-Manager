@@ -212,6 +212,20 @@
 .task-item.drag-over {
   box-shadow: inset 0 2px 0 var(--accent);
 }
+/* Dropping here will nest the dragged task as a subtask. */
+.task-item.nest-target {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-soft, rgba(76, 175, 80, 0.12));
+}
+.task-item.nest-target::after {
+  content: '↳ Unteraufgabe';
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
 
 /* Completed tasks are dimmed to light grey across all lists. */
 .task-item.is-completed {
