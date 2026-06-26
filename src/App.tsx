@@ -134,6 +134,8 @@ function App() {
   const deleteProject = useStore((s) => s.deleteProject);
   const toggleProjectPinned = useStore((s) => s.toggleProjectPinned);
   const toggleProjectActive = useStore((s) => s.toggleProjectActive);
+  const archiveProject = useStore((s) => s.archiveProject);
+  const reopenProject = useStore((s) => s.reopenProject);
   const addProject = useStore((s) => s.addProject);
   const addCategory = useStore((s) => s.addCategory);
   const categories = useStore((s) => s.categories);
@@ -474,6 +476,35 @@ function App() {
               >
                 ⊞
               </button>
+            )}
+            {currentProject && currentProject.kind !== 'area' && (
+              currentProject.archived ? (
+                <button
+                  className="header-icon-btn"
+                  title="Projekt wieder öffnen"
+                  onClick={() => reopenProject(currentProject.id)}
+                >
+                  ↩
+                </button>
+              ) : (
+                <button
+                  className="header-icon-btn"
+                  title="Projekt abschliessen (alle offenen Aufgaben werden erledigt)"
+                  onClick={() => {
+                    setConfirmPending({
+                      message: `Projekt „${currentProject.name}" abschliessen? Alle offenen Aufgaben werden als erledigt markiert und das Projekt wandert ins Archiv.`,
+                      onConfirm: () => {
+                        archiveProject(currentProject.id);
+                        setSidePanel('projects');
+                        setView('projects');
+                        setConfirmPending(null);
+                      },
+                    });
+                  }}
+                >
+                  ✅
+                </button>
+              )
             )}
             {currentProject && (
               <button

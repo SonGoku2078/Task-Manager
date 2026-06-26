@@ -396,6 +396,8 @@ interface AppState {
     opts?: { active?: boolean; kind?: ProjectKind }
   ) => Project;
   toggleProjectActive: (id: string) => void;
+  archiveProject: (id: string) => void;
+  reopenProject: (id: string) => void;
   reorderNav: (draggedId: string, targetId: string) => void;
   addBlocker: (blocker: Omit<ProjectBlocker, 'id'>) => void;
   updateBlocker: (id: string, updates: Partial<ProjectBlocker>) => void;
@@ -1237,6 +1239,40 @@ export const useStore = create<AppState>()((set, get) => ({
         }));
         const p = get().projects.find(x => x.id === id);
         if (p) enqueue('project.update', { id, patch: { active: p.active } });
+      },
+
+      // Close a finished project: archive it (hidden from active + someday, shown
+      // in Archiv) and mark all its still-open tasks as completed.
+      archiveProject: (id) => {
+        const now = new Date();
+        const changedIds = get().tasks
+          .filter((t) => t.projectId === id && !t.completed)
+          .map((t) => t.id);
+        const changed = new Set(changedIds);
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            changed.has(t.id)
+              ? { ...t, completed: true, completedAt: now, updatedAt: now }
+              : t
+          ),
+          projects: state.projects.map((p) =>
+            p.id === id ? { ...p, archived: true, active: false } : p
+          ),
+        }));
+        enqueue('project.update', { id, patch: { archived: true, active: false } });
+        for (const tid of changedIds) {
+          enqueue('task.update', { id: tid, patch: { completed: true, completedAt: now } });
+        }
+      },
+
+      // Reopen an archived project → back to active.
+      reopenProject: (id) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id ? { ...p, archived: false, active: true } : p
+          ),
+        }));
+        enqueue('project.update', { id, patch: { archived: false, active: true } });
       },
 
       addBlocker: (blocker) => {

@@ -102,6 +102,14 @@
   margin: 14px 0 8px;
 }
 
+.projects-archive-head {
+  cursor: pointer;
+  user-select: none;
+}
+.projects-archive-head:hover {
+  color: #c2c8cd;
+}
+
 .projects-area-child {
   padding-left: 12px;
   border-left: 2px solid var(--border-dark, rgba(255,255,255,0.1));

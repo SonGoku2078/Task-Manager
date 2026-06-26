@@ -17,6 +17,7 @@ function rowToProject(r: Record<string, unknown>) {
     sortOrder:   r.sort_order ?? 0,
     nozbeId:      r.nozbe_id ?? null,
     parentAreaId: r.parent_area_id ?? null,
+    archived:    !!(r.archived as number),
   };
 }
 
@@ -34,6 +35,7 @@ function projectToRow(p: Record<string, unknown>) {
     sort_order:     p.sortOrder ?? 0,
     nozbe_id:       p.nozbeId ?? null,
     parent_area_id: p.parentAreaId ?? null,
+    archived:       p.archived ? 1 : 0,
   };
 }
 
@@ -47,9 +49,9 @@ router.post('/', (req, res) => {
   // Explicit column list so an ALTER-added column can't shift positional mapping.
   // INSERT OR REPLACE so a replayed offline-queue create is idempotent.
   db.prepare(`INSERT OR REPLACE INTO projects
-    (id,name,color,icon,label,pinned,active,kind,description,sort_order,nozbe_id,parent_area_id)
+    (id,name,color,icon,label,pinned,active,kind,description,sort_order,nozbe_id,parent_area_id,archived)
     VALUES (
-    @id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id,@parent_area_id
+    @id,@name,@color,@icon,@label,@pinned,@active,@kind,@description,@sort_order,@nozbe_id,@parent_area_id,@archived
   )`).run(row);
   res.status(201).json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(row.id as string) as Record<string, unknown>));
 });
@@ -68,7 +70,8 @@ router.patch('/:id', (req, res) => {
   const merged = projectToRow({ ...rowToProject(existing), ...req.body, id });
   db.prepare(`UPDATE projects SET name=@name, color=@color, icon=@icon, label=@label,
     pinned=@pinned, active=@active, kind=@kind, description=@description,
-    sort_order=@sort_order, nozbe_id=@nozbe_id, parent_area_id=@parent_area_id WHERE id=@id`).run(merged);
+    sort_order=@sort_order, nozbe_id=@nozbe_id, parent_area_id=@parent_area_id,
+    archived=@archived WHERE id=@id`).run(merged);
   return res.json(rowToProject(db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>));
 });
 

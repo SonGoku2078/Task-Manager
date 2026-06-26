@@ -221,6 +221,7 @@ ensureColumns('projects', {
   sort_order: 'INTEGER NOT NULL DEFAULT 0',
   nozbe_id: 'TEXT',
   parent_area_id: 'TEXT',
+  archived: 'INTEGER NOT NULL DEFAULT 0',
 });
 
 console.log(`SQLite database: ${DB_PATH}`);

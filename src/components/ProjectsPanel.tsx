@@ -46,6 +46,7 @@ export default function ProjectsPanel({
   const [overId, setOverId] = useState<string | null>(null);
   // Which project's colour popover is open (null = none).
   const [colorPickerId, setColorPickerId] = useState<string | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   // Close the colour popover on an outside click.
   useEffect(() => {
@@ -84,11 +85,13 @@ export default function ProjectsPanel({
   const matchesQuery = (p: Project) =>
     (p.name ?? '').toLowerCase().includes(query.trim().toLowerCase());
 
-  // Group the projects depending on the panel mode.
+  // Group the projects depending on the panel mode. Archived projects are kept
+  // out of every normal group and only shown in the dedicated Archiv section.
   const all = projects.filter(matchesQuery);
-  const activeProjects = all.filter((p) => p.kind !== 'area' && p.active === true);
-  const areas = all.filter((p) => p.kind === 'area');
-  const somedayProjects = all.filter((p) => p.kind !== 'area' && p.active !== true);
+  const activeProjects = all.filter((p) => p.kind !== 'area' && p.active === true && !p.archived);
+  const areas = all.filter((p) => p.kind === 'area' && !p.archived);
+  const somedayProjects = all.filter((p) => p.kind !== 'area' && p.active !== true && !p.archived);
+  const archivedProjects = all.filter((p) => p.archived);
 
   const pinnedFirst = (list: Project[]) => [
     ...list.filter((p) => p.pinned),
@@ -294,15 +297,6 @@ export default function ProjectsPanel({
             {somedayProjects.length === 0 && (
               <p className="projects-empty">Keine inaktiven Projekte.</p>
             )}
-            {areas.length > 0 && (
-              <>
-                <div className="projects-divider" />
-                <div className="projects-group-head">
-                  <span className="projects-group-title">📦 In Area verschieben</span>
-                </div>
-                {areas.map(renderItem)}
-              </>
-            )}
           </>
         ) : (
           <>
@@ -340,6 +334,21 @@ export default function ProjectsPanel({
                 <p className="projects-empty">Projekte hierher ziehen um sie zu Areas zu machen.</p>
               )}
             </div>
+
+            {archivedProjects.length > 0 && (
+              <>
+                <div className="projects-divider" />
+                <div
+                  className="projects-group-head projects-archive-head"
+                  onClick={() => setArchiveOpen((o) => !o)}
+                >
+                  <span className="projects-group-title">
+                    {archiveOpen ? '▾' : '▸'} 🗄 Archiv ({archivedProjects.length})
+                  </span>
+                </div>
+                {archiveOpen && archivedProjects.map(renderItem)}
+              </>
+            )}
           </>
         )}
       </div>
