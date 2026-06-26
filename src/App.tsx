@@ -58,6 +58,19 @@ function App() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  // Server connectivity check — warn user when backend is unreachable.
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const check = () =>
+      fetch('/health', { signal: AbortSignal.timeout(3000) })
+        .then((r) => { if (!cancelled) setServerOnline(r.ok); })
+        .catch(() => { if (!cancelled) setServerOnline(false); });
+    check();
+    const id = window.setInterval(check, 15000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, []);
+
   // Deep-link support: open the task referenced by #/t/<number> in the URL.
   useEffect(() => {
     const openFromHash = () => {
@@ -300,6 +313,12 @@ function App() {
 
   return (
     <div className="app-container">
+      {serverOnline === false && (
+        <div className="server-offline-banner">
+          ⚠ Server nicht erreichbar — Änderungen werden nicht gespeichert. Bitte <code>npm run dev</code> im <code>server/</code>-Verzeichnis starten.
+        </div>
+      )}
+      <div className="app-row">
       <Sidebar />
       {ui.sidePanel === 'projects' && (
         <ErrorBoundary>
@@ -663,6 +682,7 @@ function App() {
           onCancel={() => setConfirmPending(null)}
         />
       )}
+      </div>
     </div>
   );
 }

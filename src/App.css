@@ -76,8 +76,32 @@ body {
 
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
+}
+
+.server-offline-banner {
+  flex-shrink: 0;
+  background: #b71c1c;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 16px;
+  text-align: center;
+  z-index: 100;
+}
+.app-row {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.server-offline-banner code {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: monospace;
 }
 
 .main-content {
