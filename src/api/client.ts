@@ -23,8 +23,12 @@ function reviveDates(obj: unknown): unknown {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  // Always time out — a request that hangs (e.g. fired mid server-restart) must
+  // not block the write queue forever. AbortError surfaces as a network error,
+  // so the outbox keeps the op and retries it on the next tick.
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    signal: init?.signal ?? AbortSignal.timeout(10000),
     ...init,
   });
   if (!res.ok) {
