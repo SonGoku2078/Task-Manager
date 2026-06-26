@@ -37,6 +37,17 @@ import { enqueue, flush as flushOutbox } from './api/outbox';
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
+// Debounce a full settings save: rapid typing (e.g. a color label) coalesces
+// into one settings.patch shortly after typing stops, instead of one per key.
+let settingsSaveTimer: ReturnType<typeof setTimeout> | null = null;
+const debouncedSettingsSave = (settings: Settings, delay = 500) => {
+  if (settingsSaveTimer) clearTimeout(settingsSaveTimer);
+  settingsSaveTimer = setTimeout(() => {
+    settingsSaveTimer = null;
+    enqueue('settings.patch', { patch: settings });
+  }, delay);
+};
+
 const ACTIVITY_CAP = 500;
 
 // Parse recurrence strings (DE + EN) → RecurrenceType.
@@ -1646,8 +1657,8 @@ export const useStore = create<AppState>()((set, get) => ({
             },
           },
         }));
-        const s = get().settings;
-        enqueue('settings.patch', { patch: s });
+        // Debounced so a burst of keystrokes produces one save, not one per key.
+        debouncedSettingsSave(get().settings);
       },
 
       setDetailPanelWidth: (px) => {

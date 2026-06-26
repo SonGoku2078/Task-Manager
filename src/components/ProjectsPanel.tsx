@@ -170,7 +170,13 @@ export default function ProjectsPanel({
         {colorPickerId === p.id && (
           <div className="projects-color-pop" onClick={(e) => e.stopPropagation()}>
             <div className="projects-swatches">
-              {colorPalette.map((c) => {
+              {colorPalette
+                .filter(
+                  (c) =>
+                    (colorLabels[c] ?? '').trim() !== '' ||
+                    (p.color ?? '').toLowerCase() === c
+                )
+                .map((c) => {
                 const label = colorLabels[c] ?? '';
                 return (
                   <div key={c} className="projects-swatch-wrap">

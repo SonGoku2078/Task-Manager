@@ -67,6 +67,17 @@ function App() {
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
   const [pendingWrites, setPendingWrites] = useState(0);
   useEffect(() => outboxOnChange(setPendingWrites), []);
+  // Only show the sync banner once writes have been pending for a moment. Quick
+  // saves (e.g. one keystroke) drain in well under this delay, so the banner
+  // never flashes — which previously caused a layout jump on every keypress.
+  const [syncVisible, setSyncVisible] = useState(false);
+  useEffect(() => {
+    if (pendingWrites > 0) {
+      const id = window.setTimeout(() => setSyncVisible(true), 800);
+      return () => window.clearTimeout(id);
+    }
+    setSyncVisible(false);
+  }, [pendingWrites]);
   useEffect(() => {
     let cancelled = false;
     let wasOnline = true;
@@ -342,7 +353,7 @@ function App() {
             ? ` Deine ${pendingWrites} Änderung(en) sind sicher gespeichert und werden synchronisiert, sobald der Server läuft.`
             : ' Deine Änderungen werden zwischengespeichert und synchronisiert, sobald der Server läuft.'}
         </div>
-      ) : pendingWrites > 0 ? (
+      ) : syncVisible && pendingWrites > 0 ? (
         <div className="server-sync-banner">
           ⟳ {pendingWrites} Änderung(en) werden synchronisiert…
         </div>
