@@ -211,6 +211,13 @@ export const selectVisibleTasks = (
       if (ids.length) {
         const set = new Set(ids);
         result = result.filter((t) => t.projectId && set.has(t.projectId));
+      } else {
+        // No specific project selected: show only tasks of the projects visible
+        // in the Projekte panel (active projects + areas) — not every project.
+        const visible = new Set(
+          projects.filter((p) => p.kind === 'area' || p.active === true).map((p) => p.id)
+        );
+        result = result.filter((t) => t.projectId && visible.has(t.projectId));
       }
       break;
     }
