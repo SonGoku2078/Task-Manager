@@ -114,9 +114,13 @@ function wrapDB(raw: RawDB): DB {
 }
 
 // ── Open the database ─────────────────────────────────────────────────────────
+// DB selection per environment:
+//   DB_PATH  — full path override (wins if set)
+//   DB_FILE  — file name under ~/.task-manager (e.g. 'dev.db' for Dev/Test)
+//   default  — ~/.task-manager/data.db (Production)
 const DB_PATH =
   process.env.DB_PATH ??
-  path.join(os.homedir(), '.task-manager', 'data.db');
+  path.join(os.homedir(), '.task-manager', process.env.DB_FILE ?? 'data.db');
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 

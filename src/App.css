@@ -97,6 +97,24 @@ body {
   min-height: 0;
 }
 
+.env-banner {
+  flex-shrink: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    #c62828,
+    #c62828 14px,
+    #b71c1c 14px,
+    #b71c1c 28px
+  );
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 5px 16px;
+  text-align: center;
+  z-index: 101;
+}
+
 .server-sync-banner {
   flex-shrink: 0;
   background: #2e7d32;

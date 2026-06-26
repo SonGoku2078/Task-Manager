@@ -349,8 +349,15 @@ function App() {
     ui.currentView
   );
 
+  const appEnv = (import.meta.env.VITE_APP_ENV as string | undefined) ?? 'development';
+
   return (
     <div className="app-container">
+      {appEnv !== 'production' && (
+        <div className="env-banner" title={`Umgebung: ${appEnv}`}>
+          🚧 ENTWICKLUNG &amp; TEST — getrennte Datenbank, keine Produktionsdaten
+        </div>
+      )}
       {serverOnline === false ? (
         <div className="server-offline-banner">
           ⚠ Server nicht erreichbar — Bitte <code>npm run dev</code> im <code>server/</code>-Verzeichnis starten.

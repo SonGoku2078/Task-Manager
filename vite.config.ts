@@ -11,8 +11,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true },
-      '/health': { target: 'http://localhost:3001', changeOrigin: true },
+      // Dev/Test backend runs on 3002 (separate dev.db). See .env.development.
+      '/api': { target: 'http://localhost:3002', changeOrigin: true },
+      '/health': { target: 'http://localhost:3002', changeOrigin: true },
       '/nozbe-api': {
         target: 'https://api.nozbe.com:3000',
         changeOrigin: true,

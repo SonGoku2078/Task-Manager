@@ -8,6 +8,8 @@
     "dev:server": "cd server && npm run dev",
     "build": "tsc -b && vite build && cd server && npm run build",
     "build:electron": "npm run build && cd electron && npm run build",
+    "start:prod": "npm run build && cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
+    "db:seed-dev": "node scripts/seed-dev-db.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -24,6 +26,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "cross-env": "^7.0.3",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

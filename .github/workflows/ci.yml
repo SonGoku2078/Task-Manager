@@ -1,0 +1,29 @@
+name: CI
+
+# Build + typecheck gate. Runs on every push and PR so build-breaking changes
+# (e.g. the kind that caused a white screen) are caught before they land.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install server dependencies
+        run: npm install
+        working-directory: server
+
+      - name: Typecheck + build (frontend + server)
+        run: npm run build

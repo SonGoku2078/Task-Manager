@@ -1,7 +1,36 @@
 # Task Manager — Nozbe Clone
 
 A fully-functional, local-first task manager built with React, TypeScript, Vite and Zustand —
-a Nozbe-inspired GTD app. No backend: all data lives in `localStorage`.
+a Nozbe-inspired GTD app. Data is stored by a local Express + SQLite backend
+(`~/.task-manager/`), with a durable offline write queue in the browser.
+
+## 🌐 Environments & Releases
+
+The app runs locally in the browser in two clearly separated environments, each with its **own
+database** — so testing never touches your real data.
+
+| | **Production** (daily use) | **Development & Test** (sandbox) |
+|---|---|---|
+| Start | `npm run start:prod` | `npm run dev:server` **and** `npm run dev` (two terminals) |
+| Open | http://localhost:3001 | http://localhost:5173 |
+| Database | `~/.task-manager/data.db` | `~/.task-manager/dev.db` |
+| Marker | — | 🚧 **red "ENTWICKLUNG & TEST" banner** |
+| Backend port | 3001 | 3002 |
+
+Both can run at the same time. To test against realistic data, copy Prod → Dev/Test once:
+
+```bash
+npm run db:seed-dev   # copies data.db → dev.db (never writes data.db)
+```
+
+### CI / Releases (GitHub)
+- **CI** (`.github/workflows/ci.yml`): every push/PR builds + typechecks the app — a gate that
+  catches build-breaking changes before they land.
+- **Release** (`.github/workflows/release.yml`): "going to production" = tag a version:
+  ```bash
+  git tag v0.1.0 && git push origin v0.1.0
+  ```
+  GitHub then builds the app and publishes a **Release** with auto notes + a runnable bundle.
 
 ## ✨ Features
 
