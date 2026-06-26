@@ -80,23 +80,20 @@ function App() {
   }, [pendingWrites]);
   useEffect(() => {
     let cancelled = false;
-    let wasOnline = true;
     const check = () =>
       fetch('/health', { signal: AbortSignal.timeout(3000) })
         .then((r) => {
           if (cancelled) return;
           setServerOnline(r.ok);
           if (r.ok) {
-            // Came back online (or first success): drain the queue and, if we
-            // never managed an initial load, load now.
-            if (!wasOnline || !useStore.getState().dataLoaded) {
-              flushOutbox();
-              if (!useStore.getState().dataLoaded) loadAll();
-            }
+            // Always try to drain the queue while online, so a single op that
+            // failed once keeps getting retried (not only on an offline→online
+            // transition). If we never managed an initial load, load now.
+            flushOutbox();
+            if (!useStore.getState().dataLoaded) loadAll();
           }
-          wasOnline = r.ok;
         })
-        .catch(() => { if (!cancelled) { setServerOnline(false); wasOnline = false; } });
+        .catch(() => { if (!cancelled) setServerOnline(false); });
     check();
     const id = window.setInterval(check, 15000);
     const onOnline = () => flushOutbox();
