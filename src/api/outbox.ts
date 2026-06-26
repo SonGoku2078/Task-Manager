@@ -172,15 +172,15 @@ export async function flush(): Promise<void> {
         persist();
       } catch (e) {
         const status = httpStatus(e);
-        if (status === null || status >= 500) {
-          // Connectivity failure OR a server-side error (e.g. a missing column
-          // / transient 500). These are recoverable — NEVER drop the op. Keep
-          // the whole queue intact and retry on the next tick.
+        if (status === null) {
+          // Connectivity failure — the server is unreachable, so nothing else
+          // will succeed either. Keep the whole queue and retry on the next tick.
           break;
         }
-        // 4xx: the server permanently rejected this specific op (bad request,
-        // not found). Retry a few times, then move it aside so one bad op can't
-        // block the rest of the queue forever.
+        // Any HTTP error (4xx client error OR 5xx server error). Retry a few
+        // times; if it keeps failing, park it to the dead-letter list so ONE
+        // poison op can never block the rest of the queue (and the user's other
+        // edits) forever. Dead-letters are recovered and retried on next load.
         op.attempts = (op.attempts ?? 0) + 1;
         if (op.attempts >= MAX_ATTEMPTS) {
           deadLetter(op, String(e));
