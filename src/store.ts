@@ -441,6 +441,8 @@ interface AppState {
   setUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
   setAddToTop: (v: boolean) => void;
+  setFiltersCollapsed: (v: boolean) => void;
+  setSectionsCollapsed: (v: boolean) => void;
   setProjectSort: (sort: ProjectSort) => void;
   setProjectsPanelWidth: (px: number) => void;
   setDetailPanelWidth: (px: number) => void;
@@ -1599,6 +1601,16 @@ export const useStore = create<AppState>()((set, get) => ({
       setAddToTop: (v) => {
         set((state) => ({ settings: { ...state.settings, addToTop: v } }));
         enqueue('settings.patch', { patch: { addToTop: v } });
+      },
+
+      setFiltersCollapsed: (v) => {
+        set((state) => ({ settings: { ...state.settings, filtersCollapsed: v } }));
+        enqueue('settings.patch', { patch: { filtersCollapsed: v } });
+      },
+
+      setSectionsCollapsed: (v) => {
+        set((state) => ({ settings: { ...state.settings, sectionsCollapsed: v } }));
+        enqueue('settings.patch', { patch: { sectionsCollapsed: v } });
       },
 
       setProjectSort: (sort) => {

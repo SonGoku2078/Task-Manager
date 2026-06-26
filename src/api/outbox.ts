@@ -39,19 +39,25 @@ let queue: Op[] = load();
 let flushing = false;
 let listeners: Array<(n: number) => void> = [];
 
-// Recover anything previously moved to the dead-letter list (e.g. ops that
-// failed while the server had a bug). They go back to the FRONT so their
-// original order is roughly preserved, and their attempt counters reset.
+// Recover dead-lettered ops that failed for a TRANSIENT reason (server 5xx /
+// network) — those may now succeed. Ops that failed permanently (4xx, e.g. a
+// 404 update for a task that no longer exists on the server) stay dead so they
+// don't cycle back into the queue on every reload.
 (function recoverDeadLetters() {
   try {
     const raw = localStorage.getItem(DEAD_KEY);
     if (!raw) return;
-    const dead = JSON.parse(raw) as Op[];
-    if (Array.isArray(dead) && dead.length) {
-      queue = [...dead.map((o) => ({ ...o, attempts: 0 })), ...queue];
-      localStorage.removeItem(DEAD_KEY);
-      persist();
+    const dead = JSON.parse(raw) as Array<Op & { reason?: string }>;
+    if (!Array.isArray(dead) || !dead.length) return;
+    const is4xx = (o: { reason?: string }) => /:\s4\d\d\b/.test(o.reason ?? '');
+    const permanent = dead.filter(is4xx);
+    const recoverable = dead.filter((o) => !is4xx(o));
+    if (recoverable.length) {
+      queue = [...recoverable.map((o) => ({ ...o, attempts: 0 })), ...queue];
     }
+    if (permanent.length) localStorage.setItem(DEAD_KEY, JSON.stringify(permanent));
+    else localStorage.removeItem(DEAD_KEY);
+    persist();
   } catch {
     /* ignore */
   }

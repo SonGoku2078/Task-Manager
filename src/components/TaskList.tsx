@@ -45,6 +45,8 @@ export default function TaskList({
   const dropTaskOnTask = useStore((s) => s.dropTaskOnTask);
   const setTaskParent = useStore((s) => s.setTaskParent);
   const deleteTask = useStore((s) => s.deleteTask);
+  const sectionsCollapsed = useStore((s) => s.settings.sectionsCollapsed ?? false);
+  const setSectionsCollapsed = useStore((s) => s.setSectionsCollapsed);
   const assignTaskSection = useStore((s) => s.assignTaskSection);
   const reorderSections = useStore((s) => s.reorderSections);
   const addSection = useStore((s) => s.addSection);
@@ -483,6 +485,17 @@ export default function TaskList({
     <div className="task-list">
       {/* Section index: jump to a section or drop a task straight onto it. */}
       {scopeSections.length > 0 && (
+        <div className="section-index-head">
+          <button
+            className="section-index-toggle"
+            onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
+            title={sectionsCollapsed ? 'Gruppen/Sektionen anzeigen' : 'Gruppen/Sektionen einklappen'}
+          >
+            {sectionsCollapsed ? '▸' : '▾'} Gruppen/Sektionen ({scopeSections.length})
+          </button>
+        </div>
+      )}
+      {scopeSections.length > 0 && !sectionsCollapsed && (
         <div className="section-index">
           {scopeSections.map((sec) => {
             const cnt = tasks.filter((t) => t.sectionId === sec.id);

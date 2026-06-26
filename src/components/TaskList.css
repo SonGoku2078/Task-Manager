@@ -5,6 +5,28 @@
 }
 
 /* Sticky index of all sections: jump to / drop onto a section. */
+.section-index-head {
+  display: flex;
+  padding: 6px 16px;
+  background: var(--main-bg);
+  border-bottom: 1px solid var(--border-light);
+}
+/* Match the Filter toggle (FilterBar .filter-toggle): bordered pill, left-aligned. */
+.section-index-toggle {
+  border: 1px solid var(--border-light);
+  background: #fff;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.section-index-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .section-index {
   position: sticky;
   top: 0;

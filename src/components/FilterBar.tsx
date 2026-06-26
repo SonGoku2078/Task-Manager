@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import type { Priority, SortField } from '../types';
 import './FilterBar.css';
@@ -15,6 +16,9 @@ export default function FilterBar() {
   const filters = useStore((s) => s.ui.filters);
   const sortField = useStore((s) => s.ui.sortField);
   const sortDir = useStore((s) => s.ui.sortDir);
+  const currentView = useStore((s) => s.ui.currentView);
+  const selectedProjectId = useStore((s) => s.ui.selectedProjectId);
+  const selectedProjectIds = useStore((s) => s.ui.selectedProjectIds);
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
   const members = useStore((s) => s.members);
@@ -23,6 +27,25 @@ export default function FilterBar() {
   const setSort = useStore((s) => s.setSort);
   const addSavedView = useStore((s) => s.addSavedView);
   const applySavedView = useStore((s) => s.applySavedView);
+  const collapsed = useStore((s) => s.settings.filtersCollapsed ?? false);
+  const setFiltersCollapsed = useStore((s) => s.setFiltersCollapsed);
+
+  // Inside a single open project the project dropdown is redundant.
+  const inSingleProject =
+    (currentView === 'projects' || currentView === 'custom') &&
+    !!selectedProjectId &&
+    (selectedProjectIds?.length ?? 0) <= 1;
+
+  const [dateOpen, setDateOpen] = useState(false);
+  const dateWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!dateOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!dateWrapRef.current?.contains(e.target as Node)) setDateOpen(false);
+    };
+    window.addEventListener('mousedown', onDown);
+    return () => window.removeEventListener('mousedown', onDown);
+  }, [dateOpen]);
 
   const hasActiveFilter =
     filters.projectId !== null ||
@@ -32,21 +55,60 @@ export default function FilterBar() {
     filters.dueFrom !== null ||
     filters.dueTo !== null ||
     (filters.assigneeId ?? null) !== null;
+  const activeCount = [
+    filters.projectId,
+    filters.categoryId,
+    filters.priority,
+    filters.completed,
+    filters.dueFrom || filters.dueTo ? 'date' : null,
+    filters.assigneeId ?? null,
+  ].filter((v) => v !== null && v !== undefined).length;
+  const dateActive = filters.dueFrom !== null || filters.dueTo !== null;
+
+  if (collapsed) {
+    return (
+      <div className="filter-bar filter-bar-collapsed">
+        <button
+          className="filter-toggle"
+          title="Filter anzeigen"
+          onClick={() => setFiltersCollapsed(false)}
+        >
+          ▸ Filter
+        </button>
+        {activeCount > 0 && <span className="filter-active-badge">{activeCount}</span>}
+        {hasActiveFilter && (
+          <button className="filter-reset" onClick={resetFilters}>
+            ✕ zurücksetzen
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="filter-bar">
-      <select
-        className="filter-select"
-        value={filters.projectId ?? ''}
-        onChange={(e) => setFilter('projectId', e.target.value || null)}
+      <button
+        className="filter-toggle"
+        title="Filter einklappen"
+        onClick={() => setFiltersCollapsed(true)}
       >
-        <option value="">Alle Projekte</option>
-        {projects.map((p) => (
-          <option key={p.id} value={p.id} style={{ color: p.color }}>
-            ● {p.name}
-          </option>
-        ))}
-      </select>
+        ▾
+      </button>
+
+      {!inSingleProject && (
+        <select
+          className="filter-select"
+          value={filters.projectId ?? ''}
+          onChange={(e) => setFilter('projectId', e.target.value || null)}
+        >
+          <option value="">Alle Projekte</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id} style={{ color: p.color }}>
+              ● {p.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       <select
         className="filter-select"
@@ -101,22 +163,46 @@ export default function FilterBar() {
         ))}
       </select>
 
-      <span className="filter-date-label" title="Fälligkeit von – bis">📅</span>
-      <input
-        type="date"
-        className="filter-select filter-date"
-        value={filters.dueFrom ?? ''}
-        onChange={(e) => setFilter('dueFrom', e.target.value || null)}
-        title="Fällig ab"
-      />
-      <span className="filter-date-sep">–</span>
-      <input
-        type="date"
-        className="filter-select filter-date"
-        value={filters.dueTo ?? ''}
-        onChange={(e) => setFilter('dueTo', e.target.value || null)}
-        title="Fällig bis"
-      />
+      {/* Date range behind one compact button + popover */}
+      <div className="filter-date-wrap" ref={dateWrapRef}>
+        <button
+          className={`filter-select filter-date-btn ${dateActive ? 'active' : ''}`}
+          onClick={() => setDateOpen((o) => !o)}
+          title="Fälligkeit von – bis"
+        >
+          📅 Zeitraum{dateActive ? ' •' : ''}
+        </button>
+        {dateOpen && (
+          <div className="filter-date-pop" onClick={(e) => e.stopPropagation()}>
+            <label className="filter-date-row">
+              <span>Von</span>
+              <input
+                type="date"
+                className="filter-select"
+                value={filters.dueFrom ?? ''}
+                onChange={(e) => setFilter('dueFrom', e.target.value || null)}
+              />
+            </label>
+            <label className="filter-date-row">
+              <span>Bis</span>
+              <input
+                type="date"
+                className="filter-select"
+                value={filters.dueTo ?? ''}
+                onChange={(e) => setFilter('dueTo', e.target.value || null)}
+              />
+            </label>
+            {dateActive && (
+              <button
+                className="filter-reset filter-date-clear"
+                onClick={() => { setFilter('dueFrom', null); setFilter('dueTo', null); }}
+              >
+                ✕ Zeitraum löschen
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="filter-spacer" />
 
@@ -154,10 +240,10 @@ export default function FilterBar() {
               }
             }}
           >
-            💾 Ansicht speichern
+            💾
           </button>
           <button className="filter-reset" onClick={resetFilters}>
-            ✕ Filter zurücksetzen
+            ✕
           </button>
         </>
       )}

@@ -48,6 +48,8 @@ export interface Settings {
   navOrder?: ViewType[]; // user-defined order of the main sidebar menus
   colorPalette?: string[]; // project color swatches
   colorLabels?: Record<string, string>; // hex → label name (e.g. '#9c27b0' → 'Lifestyle')
+  filtersCollapsed?: boolean; // collapse the filter bar to save vertical space
+  sectionsCollapsed?: boolean; // collapse the Gruppen/Sektionen jump-bar
 }
 
 export type ViewType =
