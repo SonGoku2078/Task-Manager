@@ -16,6 +16,9 @@ interface TaskListProps {
   onToggleSelect?: (id: string) => void;
   onCtrlSelect?: (id: string) => void;
   onShiftSelect?: (id: string) => void;
+  // When false, TaskList does not render its own Gruppen/Sektionen toggle —
+  // the FilterBar shows it instead (so both toggles share one line).
+  showSectionToggle?: boolean;
 }
 
 export default function TaskList({
@@ -26,6 +29,7 @@ export default function TaskList({
   onToggleSelect,
   onCtrlSelect,
   onShiftSelect,
+  showSectionToggle = true,
 }: TaskListProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const toggleStar = useStore((s) => s.toggleStar);
@@ -483,8 +487,10 @@ export default function TaskList({
 
   return (
     <div className="task-list">
-      {/* Section index: jump to a section or drop a task straight onto it. */}
-      {scopeSections.length > 0 && (
+      {/* Section index: jump to a section or drop a task straight onto it. The
+          toggle is shown here only when the FilterBar isn't (otherwise FilterBar
+          renders it so both toggles share one line). */}
+      {showSectionToggle && scopeSections.length > 0 && (
         <div className="section-index-head">
           <button
             className="section-index-toggle"

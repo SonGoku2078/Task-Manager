@@ -343,6 +343,12 @@ function App() {
     selectTask(created.id);
   };
 
+  // Views that render the FilterBar; there the FilterBar owns the
+  // Gruppen/Sektionen toggle, so TaskList must not render its own.
+  const isFilterView = ['inbox', 'priority', 'projects', 'today', 'search', 'categories', 'custom', 'completed'].includes(
+    ui.currentView
+  );
+
   return (
     <div className="app-container">
       {serverOnline === false ? (
@@ -690,9 +696,7 @@ function App() {
 
         {ui.currentView === 'categories' && <CategoryBar />}
 
-        {['inbox', 'priority', 'projects', 'today', 'search', 'categories', 'custom', 'completed'].includes(
-          ui.currentView
-        ) && <FilterBar />}
+        {isFilterView && <FilterBar />}
 
         {bulkMode && (
           <BulkActionBar
@@ -730,6 +734,7 @@ function App() {
             onToggleSelect={toggleSelect}
             onCtrlSelect={ctrlSelect}
             onShiftSelect={shiftSelect}
+            showSectionToggle={!isFilterView}
           />
         </ErrorBoundary>
         </>

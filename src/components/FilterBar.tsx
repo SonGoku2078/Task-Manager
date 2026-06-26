@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
+import { selectScopeSections } from '../selectors';
 import type { Priority, SortField } from '../types';
 import './FilterBar.css';
 
@@ -29,6 +30,20 @@ export default function FilterBar() {
   const applySavedView = useStore((s) => s.applySavedView);
   const collapsed = useStore((s) => s.settings.filtersCollapsed ?? false);
   const setFiltersCollapsed = useStore((s) => s.setFiltersCollapsed);
+  const sections = useStore((s) => s.sections);
+  const ui = useStore((s) => s.ui);
+  const sectionsCollapsed = useStore((s) => s.settings.sectionsCollapsed ?? false);
+  const setSectionsCollapsed = useStore((s) => s.setSectionsCollapsed);
+  const scopeSections = selectScopeSections(ui, sections);
+  const sectionToggle = scopeSections.length > 0 && (
+    <button
+      className="filter-toggle"
+      title={sectionsCollapsed ? 'Gruppen/Sektionen anzeigen' : 'Gruppen/Sektionen einklappen'}
+      onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
+    >
+      {sectionsCollapsed ? '▸' : '▾'} Gruppen/Sektionen ({scopeSections.length})
+    </button>
+  );
 
   // Inside a single open project the project dropdown is redundant.
   const inSingleProject =
@@ -75,6 +90,7 @@ export default function FilterBar() {
         >
           ▸ Filter
         </button>
+        {sectionToggle}
         {activeCount > 0 && <span className="filter-active-badge">{activeCount}</span>}
         {hasActiveFilter && (
           <button className="filter-reset" onClick={resetFilters}>
@@ -92,8 +108,9 @@ export default function FilterBar() {
         title="Filter einklappen"
         onClick={() => setFiltersCollapsed(true)}
       >
-        ▾
+        ▾ Filter
       </button>
+      {sectionToggle}
 
       {!inSingleProject && (
         <select

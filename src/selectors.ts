@@ -1,7 +1,22 @@
-import type { Task, UIState, Priority, Project, Member } from './types';
+import type { Task, UIState, Priority, Project, Member, Section } from './types';
 import { taskAssigneeIds } from './members';
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
+
+// Sections that belong to the current view's scope (a single project, or the
+// per-view bucket for the GTD list views). Mirrors TaskList's grouping logic so
+// FilterBar and TaskList agree on whether a Gruppen/Sektionen bar applies.
+export const selectScopeSections = (ui: UIState, sections: Section[]): Section[] => {
+  const singleProject =
+    (ui.currentView === 'projects' || ui.currentView === 'someday') &&
+    !!ui.selectedProjectId &&
+    (ui.selectedProjectIds?.length ?? 0) <= 1;
+  const VIEW_GROUPABLE = ['priority', 'today', 'nextweek', 'someday'];
+  const grouped = singleProject || (VIEW_GROUPABLE.includes(ui.currentView) && !singleProject);
+  if (!grouped) return [];
+  const scopeKey = singleProject ? ui.selectedProjectId! : `view:${ui.currentView}`;
+  return sections.filter((s) => s.scope === scopeKey);
+};
 
 // Views that render the FilterBar — only there do ui.filters apply (see App.tsx).
 const FILTERABLE_VIEWS = new Set<UIState['currentView']>([
