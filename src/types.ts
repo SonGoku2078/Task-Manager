@@ -144,6 +144,7 @@ export interface Task {
   attachments?: Attachment[];
   nozbeId?: string; // source id when imported from Nozbe (traceability / re-import)
   linkedProjectId?: string | null; // project-reference task: this task represents another project as a dependency
+  sortOrder?: number; // manual ordering (also orders subtasks within a parent)
 }
 
 // A user-defined group within a project to bundle tasks (e.g. "Vorbereitung").

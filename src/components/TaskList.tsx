@@ -48,6 +48,7 @@ export default function TaskList({
   const reorderTasks = useStore((s) => s.reorderTasks);
   const dropTaskOnTask = useStore((s) => s.dropTaskOnTask);
   const setTaskParent = useStore((s) => s.setTaskParent);
+  const reorderSubtask = useStore((s) => s.reorderSubtask);
   const deleteTask = useStore((s) => s.deleteTask);
   const sectionsCollapsed = useStore((s) => s.settings.sectionsCollapsed ?? false);
   const setSectionsCollapsed = useStore((s) => s.setSectionsCollapsed);
@@ -62,6 +63,8 @@ export default function TaskList({
   // When set, hovering the central band of this root task row will nest the
   // dragged task as its subtask instead of reordering.
   const [nestId, setNestId] = useState<string | null>(null);
+  // Subtask row currently hovered as a drop target (sibling reorder).
+  const [overChildId, setOverChildId] = useState<string | null>(null);
   const [dragSectionId, setDragSectionId] = useState<string | null>(null);
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false);
@@ -78,7 +81,8 @@ export default function TaskList({
       return next;
     });
 
-  // Index subtasks by parent once per render.
+  // Index subtasks by parent once per render, ordered by sortOrder then creation
+  // (so they show in the order they were entered / drag-reordered).
   const childrenByParent = new Map<string, Task[]>();
   for (const t of allTasks) {
     if (t.parentId) {
@@ -86,6 +90,9 @@ export default function TaskList({
       if (arr) arr.push(t);
       else childrenByParent.set(t.parentId, [t]);
     }
+  }
+  for (const arr of childrenByParent.values()) {
+    arr.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || +a.createdAt - +b.createdAt);
   }
 
   // Tasks stay draggable in selection mode too, so a multi-selection can be moved.
@@ -138,17 +145,32 @@ export default function TaskList({
     );
   }
 
-  // Compact row for an inline subtask (no drag / section / bulk handling).
+  // Compact row for an inline subtask. Draggable: drop on a sibling to reorder,
+  // drag out to the top-level area to promote to a standalone task.
   const renderChild = (child: Task) => (
     <div
       key={child.id}
       className={`task-item is-child ${selectedTaskId === child.id ? 'selected' : ''} ${
         child.completed ? 'is-completed' : ''
-      } ${dragId === child.id ? 'dragging' : ''}`}
+      } ${dragId === child.id ? 'dragging' : ''} ${overChildId === child.id ? 'drag-over' : ''}`}
       draggable
       onDragStart={(e) => { setDragId(child.id); writeTaskIds(e, child.id); }}
-      onDragEnd={() => { setDragId(null); setOverId(null); setNestId(null); }}
-      title="Zum Hauptaufgaben-Bereich ziehen, um sie zu einer eigenständigen Aufgabe zu machen"
+      onDragOver={(e) => {
+        if (!dragId || dragId === child.id) return;
+        e.preventDefault();
+        setOverChildId(child.id);
+      }}
+      onDragLeave={() => setOverChildId((cur) => (cur === child.id ? null : cur))}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const ids = readTaskIds(e).filter((id) => id !== child.id);
+        if (ids.length) reorderSubtask(ids[0], child.id);
+        setDragId(null);
+        setOverChildId(null);
+      }}
+      onDragEnd={() => { setDragId(null); setOverId(null); setNestId(null); setOverChildId(null); }}
+      title="Ziehen: auf eine andere Unteraufgabe = sortieren · in den Hauptbereich = eigenständige Aufgabe"
       onClick={() => selectTask(selectedTaskId === child.id ? null : child.id)}
     >
       <input

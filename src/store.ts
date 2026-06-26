@@ -318,6 +318,7 @@ export interface NewTaskInput {
   assigneeId?: string | null;
   assigneeIds?: string[];
   linkedProjectId?: string | null;
+  sortOrder?: number;
 }
 
 interface AppState {
@@ -342,6 +343,7 @@ interface AppState {
   // Task CRUD
   addTask: (input: NewTaskInput) => Task;
   addSubtask: (parentId: string, title: string) => Task | null;
+  reorderSubtask: (draggedId: string, targetId: string) => void;
   setTaskParent: (id: string, parentId: string | null) => void;
   bulkCreateTasks: (
     projectId: string | null,
@@ -576,6 +578,7 @@ export const useStore = create<AppState>()((set, get) => ({
           recurrence: input.recurrence ?? 'none',
           recurrenceEnd: null,
           linkedProjectId: input.linkedProjectId ?? null,
+          sortOrder: input.sortOrder ?? 0,
         };
         set((state) => ({
           // Honour the quick-add direction toggle: prepend or append.
@@ -632,10 +635,15 @@ export const useStore = create<AppState>()((set, get) => ({
       addSubtask: (parentId, title) => {
         const parent = get().tasks.find((t) => t.id === parentId);
         if (!parent) return null;
+        // Append after existing siblings so subtasks keep their entry order.
+        const siblingMax = get().tasks
+          .filter((t) => t.parentId === parentId)
+          .reduce((m, t) => Math.max(m, t.sortOrder ?? 0), -1);
         const task = get().addTask({
           title,
           parentId,
           projectId: parent.projectId,
+          sortOrder: siblingMax + 1,
         });
         set((state) => ({
           activityLog: pushLog(
@@ -644,6 +652,32 @@ export const useStore = create<AppState>()((set, get) => ({
           ),
         }));
         return task;
+      },
+
+      // Reorder a subtask within its parent: move `draggedId` to just before
+      // `targetId` among its siblings, then renumber their sortOrder.
+      reorderSubtask: (draggedId, targetId) => {
+        if (draggedId === targetId) return;
+        const tasks = get().tasks;
+        const dragged = tasks.find((t) => t.id === draggedId);
+        const target = tasks.find((t) => t.id === targetId);
+        if (!dragged || !target) return;
+        const parentId = dragged.parentId ?? null;
+        if ((target.parentId ?? null) !== parentId || parentId === null) return;
+        const siblings = tasks
+          .filter((t) => t.parentId === parentId)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || +a.createdAt - +b.createdAt);
+        const without = siblings.filter((t) => t.id !== draggedId);
+        const at = without.findIndex((t) => t.id === targetId);
+        without.splice(at < 0 ? without.length : at, 0, dragged);
+        const orderById = new Map(without.map((t, i) => [t.id, i]));
+        const now = new Date();
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            orderById.has(t.id) ? { ...t, sortOrder: orderById.get(t.id)!, updatedAt: now } : t
+          ),
+        }));
+        enqueue('task.reorder', { ids: without.map((t) => t.id) });
       },
 
       // Convert a task into a subtask of `parentId`, or promote it back to a
