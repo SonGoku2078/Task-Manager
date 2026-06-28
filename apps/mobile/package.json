@@ -1,0 +1,7 @@
+{
+  "name": "selfmanaged-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "comment": "Reuses the repo-root dependencies; run via root scripts dev:mobile / build:mobile."
+}
