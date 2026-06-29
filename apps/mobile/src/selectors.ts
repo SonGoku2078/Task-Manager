@@ -9,9 +9,11 @@ import {
   addDays,
   isSameDay,
   dateKey,
+  startOfWeek,
+  weekDays7,
 } from '../../../src/selectors';
 
-export { selectPriorityTasks, isInNextWeekWindow, isOverdue, tasksOnDate, addDays, isSameDay, dateKey };
+export { selectPriorityTasks, isInNextWeekWindow, isOverdue, tasksOnDate, addDays, isSameDay, dateKey, startOfWeek, weekDays7 };
 
 const root = (t: Task) => !t.parentId; // hide subtasks from the flat mobile lists
 
