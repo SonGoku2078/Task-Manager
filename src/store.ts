@@ -831,10 +831,34 @@ export const useStore = create<AppState>()((set, get) => ({
 
       toggleTask: (id) => {
         const before = get().tasks.find((t) => t.id === id);
+        const completing = before ? !before.completed : false;
+
+        // Pre-compute the next recurring occurrence (if any) so we can both add
+        // it to state AND persist it via the outbox (otherwise it lives only in
+        // memory and is lost on the next load).
+        let spawned: Task | null = null;
+        if (before && completing && before.recurrence !== 'none' && before.dueDate) {
+          const nextDue = nextRecurrence(before.dueDate, before);
+          if (!before.recurrenceEnd || nextDue <= before.recurrenceEnd) {
+            const now = new Date();
+            spawned = {
+              ...before,
+              id: uid('task'),
+              number: get().nextTaskNumber,
+              completed: false,
+              completedAt: null,
+              dueDate: nextDue,
+              createdAt: now,
+              updatedAt: now,
+              comments: [],
+              attachments: [],
+            };
+          }
+        }
+
         set((state) => {
           const target = state.tasks.find((t) => t.id === id);
           if (!target) return {};
-          const completing = !target.completed;
           const now = new Date();
           const tasks = state.tasks.map((t) => {
             if (t.id === id) return { ...t, completed: completing, completedAt: completing ? now : null, updatedAt: now };
@@ -843,6 +867,7 @@ export const useStore = create<AppState>()((set, get) => ({
               return { ...t, completed: true, completedAt: now, updatedAt: now };
             return t;
           });
+          if (spawned) tasks.push(spawned);
           const activityLog = pushLog(
             state.activityLog,
             taskEntry(
@@ -851,34 +876,7 @@ export const useStore = create<AppState>()((set, get) => ({
               state.settings.userName
             )
           );
-
-          // Recurring task: spawn the next occurrence when completed.
-          let nextTaskNumber = state.nextTaskNumber;
-          if (
-            completing &&
-            target.recurrence !== 'none' &&
-            target.dueDate
-          ) {
-            const nextDue = nextRecurrence(target.dueDate, target);
-            const withinRange =
-              !target.recurrenceEnd || nextDue <= target.recurrenceEnd;
-            if (withinRange) {
-              const now = new Date();
-              tasks.push({
-                ...target,
-                id: uid('task'),
-                number: nextTaskNumber,
-                completed: false,
-                dueDate: nextDue,
-                createdAt: now,
-                updatedAt: now,
-                comments: [],
-                attachments: [],
-              });
-              nextTaskNumber += 1;
-            }
-          }
-          return { tasks, activityLog, nextTaskNumber };
+          return { tasks, activityLog, nextTaskNumber: state.nextTaskNumber + (spawned ? 1 : 0) };
         });
         const t = get().tasks.find(x => x.id === id);
         if (t) {
@@ -889,6 +887,11 @@ export const useStore = create<AppState>()((set, get) => ({
               enqueue('task.update', { id: sub.id, patch: { completed: true, completedAt: sub.completedAt } })
             );
           }
+        }
+        // Persist the spawned recurring occurrence + the advanced counter.
+        if (spawned) {
+          enqueue('task.create', { task: spawned });
+          enqueue('settings.patch', { patch: { nextTaskNumber: get().nextTaskNumber } });
         }
         // Write the completion change back to Nozbe (if connected + enabled).
         if (before) syncCompletion(get(), before, !before.completed);
