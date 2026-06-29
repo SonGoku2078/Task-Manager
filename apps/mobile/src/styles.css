@@ -48,10 +48,31 @@ body {
   text-align: center;
   padding: 4px 8px;
 }
+.m-sync-banner {
+  flex-shrink: 0;
+  background: #2e7d32; color: #fff; font-size: 12px; text-align: center; padding: 4px 8px;
+}
+.m-offline-banner {
+  flex-shrink: 0;
+  background: #b26a00; color: #fff; font-size: 12px; text-align: center; padding: 4px 8px;
+}
+
 .m-header {
   flex-shrink: 0;
   padding: 14px 16px 8px;
 }
+
+/* Settings */
+.m-settings-row { display: flex; align-items: center; gap: 10px; }
+.m-btn-ghost {
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border-light); border-radius: 10px;
+  background: var(--card-bg); color: var(--text-primary);
+  font-family: inherit; font-size: 15px; cursor: pointer;
+}
+.m-btn-ghost:disabled { opacity: 0.5; }
+.m-ok { color: #2e7d32; font-weight: 600; }
+.m-fail { color: var(--alert-red); font-weight: 600; }
 .m-title { font-size: 24px; font-weight: 800; }
 
 .m-main {

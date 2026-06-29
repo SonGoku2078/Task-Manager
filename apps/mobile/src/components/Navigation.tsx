@@ -1,5 +1,3 @@
-import { useStore } from '../store';
-
 export type MobileTab = 'inbox' | 'nextweek' | 'nextaction' | 'calendar';
 
 const TABS: { key: MobileTab; label: string; icon: string }[] = [
@@ -12,13 +10,12 @@ const TABS: { key: MobileTab; label: string; icon: string }[] = [
 export default function Navigation({
   tab,
   onChange,
+  onOpenSettings,
 }: {
   tab: MobileTab;
   onChange: (t: MobileTab) => void;
+  onOpenSettings: () => void;
 }) {
-  const theme = useStore((s) => s.settings.theme);
-  const setTheme = useStore((s) => s.setTheme);
-
   return (
     <nav className="m-nav">
       {TABS.map((t) => (
@@ -31,13 +28,9 @@ export default function Navigation({
           <span className="m-nav-label">{t.label}</span>
         </button>
       ))}
-      <button
-        className="m-nav-btn"
-        title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      >
-        <span className="m-nav-icon">{theme === 'dark' ? '☀️' : '🌙'}</span>
-        <span className="m-nav-label">Theme</span>
+      <button className="m-nav-btn" title="Einstellungen" onClick={onOpenSettings}>
+        <span className="m-nav-icon">⚙️</span>
+        <span className="m-nav-label">Mehr</span>
       </button>
     </nav>
   );

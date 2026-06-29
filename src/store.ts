@@ -33,6 +33,7 @@ import {
   sectionsApi, blockersApi, savedViewsApi, activityLogApi, settingsApi,
 } from './api';
 import { enqueue, flush as flushOutbox } from './api/outbox';
+import { saveSnapshot, loadSnapshot } from './api/cache';
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -517,6 +518,23 @@ export const useStore = create<AppState>()((set, get) => ({
     // `nozbe-clone-state` localStorage snapshot — doing so resurrected stale
     // data and could overwrite the real DB. Any unsynced edits live in the
     // durable outbox; flush them first so the server is up to date, then load.
+    // Offline display: if memory is still empty, hydrate from the local snapshot
+    // first so the app shows last-known data instantly (and works fully offline).
+    // A successful fetch below overwrites it; the cache is never pushed to the server.
+    if (get().tasks.length === 0) {
+      const snap = loadSnapshot();
+      if (snap?.tasks?.length) {
+        set({
+          tasks: snap.tasks, projects: snap.projects ?? [], sections: snap.sections ?? [],
+          blockers: snap.blockers ?? [], categories: snap.categories ?? [],
+          savedViews: snap.savedViews ?? [], activityLog: snap.activityLog ?? [],
+          members: snap.members?.length ? snap.members : [SELF_MEMBER],
+          settings: { ...defaultSettings, ...(snap.settings ?? {}) },
+          nextTaskNumber: snap.nextTaskNumber ?? 1,
+        });
+      }
+    }
+
     try {
       await flushOutbox();
     } catch { /* offline — the load below will fail and we stay in offline mode */ }
@@ -545,6 +563,8 @@ export const useStore = create<AppState>()((set, get) => ({
 
       // Trust the server completely — an empty DB is legitimately empty.
       set({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members: safeMembers, settings, nextTaskNumber: nextTaskNumber ?? 1, dataLoaded: true });
+      // Refresh the offline display cache with server truth.
+      saveSnapshot({ tasks, projects, sections, blockers, categories, savedViews, activityLog, members: safeMembers, settings, nextTaskNumber: nextTaskNumber ?? 1 });
     } catch (e) {
       // Backend unreachable. Do NOT load or overwrite anything — keep whatever
       // is already in memory and let the offline banner inform the user. The
@@ -1800,3 +1820,19 @@ export const useStore = create<AppState>()((set, get) => ({
         enqueue('settings.patch', { patch: s });
       },
 }));
+
+// Keep the offline display cache in sync with optimistic in-memory changes so a
+// relaunch (or offline launch) shows the latest local state. Debounced; display-only.
+let snapshotTimer: ReturnType<typeof setTimeout> | null = null;
+useStore.subscribe((state) => {
+  if (!state.dataLoaded && state.tasks.length === 0) return; // nothing meaningful yet
+  if (snapshotTimer) clearTimeout(snapshotTimer);
+  snapshotTimer = setTimeout(() => {
+    saveSnapshot({
+      tasks: state.tasks, projects: state.projects, sections: state.sections,
+      blockers: state.blockers, categories: state.categories, savedViews: state.savedViews,
+      activityLog: state.activityLog, members: state.members, settings: state.settings,
+      nextTaskNumber: state.nextTaskNumber,
+    });
+  }, 800);
+});
