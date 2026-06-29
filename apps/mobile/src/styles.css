@@ -60,6 +60,13 @@ body {
 .m-header {
   flex-shrink: 0;
   padding: 14px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.m-header-gear {
+  border: none; background: none; font-size: 22px; cursor: pointer;
+  width: 44px; height: 44px; flex-shrink: 0;
 }
 
 /* Settings */
@@ -73,6 +80,11 @@ body {
 .m-btn-ghost:disabled { opacity: 0.5; }
 .m-ok { color: #2e7d32; font-weight: 600; }
 .m-fail { color: var(--alert-red); font-weight: 600; }
+.m-settings-info {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  background: var(--hover-bg); border-radius: 8px; padding: 8px 10px;
+}
+.m-settings-info code { font-size: 12px; overflow-wrap: anywhere; }
 .m-title { font-size: 24px; font-weight: 800; }
 
 .m-main {

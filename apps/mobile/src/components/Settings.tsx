@@ -6,36 +6,37 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const theme = useStore((s) => s.settings.theme);
   const setTheme = useStore((s) => s.setTheme);
   const loadAll = useStore((s) => s.loadAll);
+  const taskCount = useStore((s) => s.tasks.length);
 
   const [url, setUrl] = useState(getBaseUrl());
-  const [test, setTest] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
-  const [syncing, setSyncing] = useState(false);
+  const [status, setStatus] = useState<string>('');
+  const [busy, setBusy] = useState(false);
 
-  const testConn = async () => {
-    setTest('testing');
+  // Test connects, SAVES the URL, and actually loads data — so "ok" means the
+  // app is really talking to the backend (not just /health reachable).
+  const testAndConnect = async () => {
+    setBusy(true);
+    setStatus('… verbinde');
+    const base = url.trim().replace(/\/+$/, '');
+    setBaseUrl(base);
+    setUrl(base);
     try {
-      const base = url.trim().replace(/\/+$/, '');
-      const r = await fetch(`${base}/health`, { signal: AbortSignal.timeout(4000) });
-      setTest(r.ok ? 'ok' : 'fail');
-    } catch {
-      setTest('fail');
+      const health = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) });
+      if (!health.ok) { setStatus(`✕ /health antwortet ${health.status}`); return; }
+      const tasks = await (await fetch(`${base}/api/tasks`, { signal: AbortSignal.timeout(8000) })).json();
+      const n = Array.isArray(tasks) ? tasks.length : 0;
+      await loadAll();
+      setStatus(`✓ Verbunden — ${n} Aufgaben geladen`);
+    } catch (e) {
+      setStatus(`✕ nicht erreichbar (${e instanceof Error ? e.message : 'Fehler'})`);
+    } finally {
+      setBusy(false);
     }
-  };
-
-  const save = () => {
-    setBaseUrl(url);
-    onClose();
-    loadAll();
   };
 
   const syncNow = async () => {
-    setSyncing(true);
-    try {
-      await flushOutbox();
-      await loadAll();
-    } finally {
-      setSyncing(false);
-    }
+    setBusy(true);
+    try { await flushOutbox(); await loadAll(); } finally { setBusy(false); }
   };
 
   return (
@@ -47,27 +48,34 @@ export default function Settings({ onClose }: { onClose: () => void }) {
         </div>
 
         <label className="m-field">
-          <span>Server-URL (Backend im WLAN)</span>
+          <span>Server-URL (Dev-Backend im WLAN)</span>
           <input
             value={url}
             placeholder="http://192.168.1.193:3002"
             inputMode="url"
             autoCapitalize="off"
             autoCorrect="off"
-            onChange={(e) => { setUrl(e.target.value); setTest('idle'); }}
+            spellCheck={false}
+            onChange={(e) => { setUrl(e.target.value); setStatus(''); }}
           />
         </label>
-        <div className="m-settings-row">
-          <button className="m-btn-ghost" onClick={testConn}>
-            {test === 'testing' ? '… teste' : 'Verbindung testen'}
-          </button>
-          {test === 'ok' && <span className="m-ok">✓ erreichbar</span>}
-          {test === 'fail' && <span className="m-fail">✕ nicht erreichbar</span>}
+
+        <button className="m-btn-ghost" onClick={testAndConnect} disabled={busy || !url.trim()}>
+          {busy ? '… verbinde' : 'Verbinden & Daten laden'}
+        </button>
+        {status && (
+          <div className={status.startsWith('✓') ? 'm-ok' : status.startsWith('✕') ? 'm-fail' : ''}>
+            {status}
+          </div>
+        )}
+
+        <div className="m-settings-info">
+          Aktive URL: <code>{getBaseUrl() || '(keine — Server-URL eingeben)'}</code><br />
+          Geladene Aufgaben: <strong>{taskCount}</strong>
+          {taskCount > 0 && ' — Daten sind da. Tabs sind gefiltert (Inbox = projektlos, Woche = bald fällig, Aktion = ★).'}
         </div>
 
-        <button className="m-btn-ghost" onClick={syncNow} disabled={syncing}>
-          {syncing ? '… synchronisiere' : '↻ Jetzt synchronisieren'}
-        </button>
+        <button className="m-btn-ghost" onClick={syncNow} disabled={busy}>↻ Jetzt synchronisieren</button>
 
         <label className="m-toggle">
           <input
@@ -79,7 +87,7 @@ export default function Settings({ onClose }: { onClose: () => void }) {
         </label>
 
         <div className="m-modal-foot">
-          <button className="m-btn-save" onClick={save}>Speichern</button>
+          <button className="m-btn-save" onClick={onClose}>Schließen</button>
         </div>
       </div>
     </div>

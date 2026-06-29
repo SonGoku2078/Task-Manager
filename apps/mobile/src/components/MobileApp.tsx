@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { outboxOnChange } from '../api';
 import Navigation, { type MobileTab } from './Navigation';
 import QuickAdd from './QuickAdd';
+import AllTasks from './AllTasks';
 import Inbox from './Inbox';
 import NextWeek from './NextWeek';
 import NextAction from './NextAction';
@@ -13,7 +14,7 @@ import Settings from './Settings';
 export default function MobileApp() {
   const theme = useStore((s) => s.settings.theme);
   const dataLoaded = useStore((s) => s.dataLoaded);
-  const [tab, setTab] = useState<MobileTab>('inbox');
+  const [tab, setTab] = useState<MobileTab>('alle');
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pending, setPending] = useState(0);
@@ -38,23 +39,26 @@ export default function MobileApp() {
 
       <header className="m-header">
         <span className="m-title">
+          {tab === 'alle' && 'Alle Aufgaben'}
           {tab === 'inbox' && 'Inbox'}
           {tab === 'nextweek' && 'Next Week'}
           {tab === 'nextaction' && 'Next Action'}
           {tab === 'calendar' && 'Kalender'}
         </span>
+        <button className="m-header-gear" title="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙️</button>
       </header>
 
       {tab !== 'calendar' && <QuickAdd />}
 
       <main className="m-main">
+        {tab === 'alle' && <AllTasks onOpenTask={setOpenTaskId} />}
         {tab === 'inbox' && <Inbox onOpenTask={setOpenTaskId} />}
         {tab === 'nextweek' && <NextWeek onOpenTask={setOpenTaskId} />}
         {tab === 'nextaction' && <NextAction onOpenTask={setOpenTaskId} />}
         {tab === 'calendar' && <Calendar onOpenTask={setOpenTaskId} />}
       </main>
 
-      <Navigation tab={tab} onChange={setTab} onOpenSettings={() => setSettingsOpen(true)} />
+      <Navigation tab={tab} onChange={setTab} />
 
       {openTaskId && (
         <TaskDetailModal taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
