@@ -38,6 +38,10 @@ body {
   height: 100dvh;
   max-width: 768px;
   margin: 0 auto;
+  /* Keep content below the device status bar (notch / clock / battery).
+     max() guarantees clearance even if Android reports no safe-area inset. */
+  padding-top: max(env(safe-area-inset-top), 28px);
+  background: var(--main-bg);
 }
 .m-env-prod, .m-env-dev, .m-env-other {
   flex-shrink: 0;
@@ -190,20 +194,54 @@ body {
 .m-nav {
   flex-shrink: 0;
   display: flex;
+  gap: 4px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--border-light);
   background: var(--nav-bg);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 .m-nav-btn {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; min-height: 56px;
-  border: none; background: none; cursor: pointer;
+  gap: 3px; min-height: 52px;
+  border: 1px solid transparent; border-radius: 12px;
+  background: none; cursor: pointer;
   color: var(--text-secondary); font-family: inherit;
+  transition: background 0.12s, color 0.12s, transform 0.06s;
+  -webkit-user-select: none; user-select: none;
 }
-.m-nav-btn.active { color: var(--accent); }
+/* Tactile press feedback. */
+.m-nav-btn:active {
+  transform: scale(0.92);
+  background: var(--hover-bg);
+}
+/* Active tab looks like a pressed/selected button. */
+.m-nav-btn.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  font-weight: 600;
+}
 .m-nav-icon { font-size: 20px; line-height: 1; }
 .m-nav-label { font-size: 11px; }
+
+/* Project list rows + drill-down back button. */
+.m-proj-row {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 56px; padding: 10px 12px;
+  background: var(--card-bg); border: 1px solid var(--border-light);
+  border-radius: 12px; cursor: pointer; font-family: inherit;
+  color: var(--text-primary); font-size: 16px; text-align: left;
+  transition: background 0.12s, transform 0.06s;
+}
+.m-proj-row:active { transform: scale(0.99); background: var(--hover-bg); }
+.m-proj-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-proj-chevron { color: var(--text-secondary); font-size: 20px; }
+.m-back {
+  align-self: flex-start;
+  border: none; background: none; color: var(--accent);
+  font-family: inherit; font-size: 15px; font-weight: 600;
+  padding: 6px 4px; cursor: pointer; min-height: 40px;
+}
 
 /* ── Calendar ── */
 .m-cal { padding: 8px 8px 16px; }

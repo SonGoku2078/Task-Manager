@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { outboxOnChange, getBaseUrl } from '../api';
 import Navigation, { type MobileTab } from './Navigation';
 import QuickAdd from './QuickAdd';
-import AllTasks from './AllTasks';
+import Projects from './Projects';
 import Inbox from './Inbox';
 import NextWeek from './NextWeek';
 import NextAction from './NextAction';
@@ -14,7 +14,7 @@ import Settings from './Settings';
 export default function MobileApp() {
   const theme = useStore((s) => s.settings.theme);
   const dataLoaded = useStore((s) => s.dataLoaded);
-  const [tab, setTab] = useState<MobileTab>('alle');
+  const [tab, setTab] = useState<MobileTab>('projekte');
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pending, setPending] = useState(0);
@@ -47,7 +47,7 @@ export default function MobileApp() {
 
       <header className="m-header">
         <span className="m-title">
-          {tab === 'alle' && 'Alle Aufgaben'}
+          {tab === 'projekte' && 'Projekte'}
           {tab === 'inbox' && 'Inbox'}
           {tab === 'nextweek' && 'Next Week'}
           {tab === 'nextaction' && 'Next Action'}
@@ -56,10 +56,10 @@ export default function MobileApp() {
         <button className="m-header-gear" title="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙️</button>
       </header>
 
-      {tab !== 'calendar' && <QuickAdd />}
+      {tab !== 'calendar' && tab !== 'projekte' && <QuickAdd />}
 
       <main className="m-main">
-        {tab === 'alle' && <AllTasks onOpenTask={setOpenTaskId} />}
+        {tab === 'projekte' && <Projects onOpenTask={setOpenTaskId} />}
         {tab === 'inbox' && <Inbox onOpenTask={setOpenTaskId} />}
         {tab === 'nextweek' && <NextWeek onOpenTask={setOpenTaskId} />}
         {tab === 'nextaction' && <NextAction onOpenTask={setOpenTaskId} />}

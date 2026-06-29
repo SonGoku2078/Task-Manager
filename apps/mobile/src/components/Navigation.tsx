@@ -1,7 +1,7 @@
-export type MobileTab = 'alle' | 'inbox' | 'nextweek' | 'nextaction' | 'calendar';
+export type MobileTab = 'projekte' | 'inbox' | 'nextweek' | 'nextaction' | 'calendar';
 
 const TABS: { key: MobileTab; label: string; icon: string }[] = [
-  { key: 'alle', label: 'Alle', icon: '🗂️' },
+  { key: 'projekte', label: 'Projekte', icon: '📁' },
   { key: 'inbox', label: 'Inbox', icon: '📥' },
   { key: 'nextweek', label: 'Woche', icon: '🗓️' },
   { key: 'nextaction', label: 'Aktion', icon: '⭐' },
