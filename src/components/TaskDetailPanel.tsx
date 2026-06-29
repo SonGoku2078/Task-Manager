@@ -743,6 +743,14 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             <p className="detail-hint">
               ↻ Beim Abhaken wird automatisch die nächste Aufgabe erstellt.
             </p>
+            <button
+              type="button"
+              className="detail-recur-stop"
+              title="Diese Aufgabe wiederholt sich danach nicht mehr"
+              onClick={() => updateTask(task.id, { recurrence: 'none', recurrenceEnd: null })}
+            >
+              ⏹ Wiederholung beenden
+            </button>
           </div>
         )}
 

@@ -127,6 +127,16 @@ export default function TaskDetailModal({
           </div>
         )}
 
+        {task.recurrence !== 'none' && (
+          <button
+            className="m-btn-ghost"
+            title="Diese Aufgabe wiederholt sich danach nicht mehr"
+            onClick={() => updateTask(task.id, { recurrence: 'none', recurrenceEnd: null })}
+          >
+            ⏹ Wiederholung beenden ({task.recurrence})
+          </button>
+        )}
+
         <label className="m-toggle">
           <input
             type="checkbox"

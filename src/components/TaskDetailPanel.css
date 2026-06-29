@@ -524,6 +524,22 @@
   line-height: 1.4;
 }
 
+.detail-recur-stop {
+  margin-top: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--main-bg);
+  color: var(--alert-red);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.detail-recur-stop:hover {
+  background: #fee2e2;
+  border-color: var(--alert-red);
+}
+
 .comment-list {
   display: flex;
   flex-direction: column;
