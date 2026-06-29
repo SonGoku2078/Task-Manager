@@ -10,6 +10,7 @@ import NextAction from './NextAction';
 import Calendar from './Calendar';
 import TaskDetailModal from './TaskDetailModal';
 import Settings from './Settings';
+import { checkForUpdate, openApk, type UpdateInfo } from '../update';
 
 export default function MobileApp() {
   const theme = useStore((s) => s.settings.theme);
@@ -18,11 +19,16 @@ export default function MobileApp() {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pending, setPending] = useState(0);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
   useEffect(() => outboxOnChange(setPending), []);
+  // On launch, ask GitHub whether a newer signed APK is published.
+  useEffect(() => {
+    checkForUpdate().then((u) => { if (u?.available && u.apkUrl) setUpdate(u); });
+  }, []);
 
   // Which environment are we connected to? Derived from the server port so the
   // user always knows whether they're touching real (Prod) or test (Dev) data.
@@ -32,6 +38,11 @@ export default function MobileApp() {
 
   return (
     <div className="m-app">
+      {update?.apkUrl && (
+        <button className="m-update-banner" onClick={() => openApk(update.apkUrl!)}>
+          ⬆ Update {update.latest.replace(/^mobile-v/, 'v')} verfügbar — tippen zum Installieren
+        </button>
+      )}
       {envKind === 'prod' ? (
         <div className="m-env-prod">🔴 PRODUKTION — echte Daten</div>
       ) : envKind === 'dev' ? (

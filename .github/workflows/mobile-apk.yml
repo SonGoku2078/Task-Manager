@@ -1,7 +1,7 @@
 name: Mobile APK
 
-# Build a sideloadable Android APK from the Capacitor mobile app.
-# Trigger: push a tag like `mobile-v0.1.0` (attaches the APK to a Release),
+# Build a sideloadable, stably-signed Android APK from the Capacitor mobile app.
+# Trigger: push a tag like `mobile-v0.2.0` (attaches the APK to a Release),
 # or run manually via the Actions UI (uploads the APK as a run artifact).
 on:
   push:
@@ -33,29 +33,36 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build web app
+      - name: Build web app (bake version)
         run: npm run build:mobile
+        env:
+          VITE_APP_VERSION: ${{ github.ref_name }}
 
       - name: Sync Capacitor (copy web assets into the Android project)
         run: npx cap sync android
         working-directory: apps/mobile
 
-      - name: Build debug APK
+      - name: Decode signing keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > apps/mobile/android/app/selfmanaged.keystore
+
+      - name: Build signed release APK
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon \
+            -PversionName=${{ github.ref_name }} \
+            -PversionCode=${{ github.run_number }}
 
       - name: Attach APK to the Release (tag builds)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          files: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 
       - name: Upload APK artifact (manual runs)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: app-release-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk

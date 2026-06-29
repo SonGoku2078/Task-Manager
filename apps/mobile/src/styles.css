@@ -72,6 +72,14 @@ body {
   flex-shrink: 0;
   background: #b26a00; color: #fff; font-size: 12px; text-align: center; padding: 4px 8px;
 }
+/* New version available → tappable call-to-action. */
+.m-update-banner {
+  flex-shrink: 0;
+  display: block; width: 100%; border: none; cursor: pointer;
+  background: #1565c0; color: #fff; font-size: 13px; font-weight: 600;
+  text-align: center; padding: 8px; appearance: none;
+}
+.m-update-banner:active { background: #0d47a1; }
 
 .m-header {
   flex-shrink: 0;

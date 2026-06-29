@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
+import { checkForUpdate, openApk, APP_VERSION } from '../update';
 
 export default function Settings({ onClose }: { onClose: () => void }) {
   const theme = useStore((s) => s.settings.theme);
@@ -8,9 +9,26 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const loadAll = useStore((s) => s.loadAll);
   const taskCount = useStore((s) => s.tasks.length);
 
-  const [url, setUrl] = useState(getBaseUrl());
+  // Pre-fill with a sensible default so nothing must be typed from scratch
+  // (editable — change the IP/port as needed).
+  const [url, setUrl] = useState(getBaseUrl() || 'http://192.168.8.188:3001');
   const [status, setStatus] = useState<string>('');
   const [busy, setBusy] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState<string>('');
+  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+
+  const checkUpdate = async () => {
+    setUpdateMsg('… suche');
+    setUpdateUrl(null);
+    const u = await checkForUpdate();
+    if (!u) { setUpdateMsg('✕ Update-Prüfung fehlgeschlagen (kein Internet?)'); return; }
+    if (u.available && u.apkUrl) {
+      setUpdateUrl(u.apkUrl);
+      setUpdateMsg(`⬆ Update ${u.latest.replace(/^mobile-v/, 'v')} verfügbar`);
+    } else {
+      setUpdateMsg(`✓ Aktuell (${u.current === 'dev' ? 'Entwicklungs-Build' : 'v' + u.current})`);
+    }
+  };
 
   // Test connects, SAVES the URL, and actually loads data — so "ok" means the
   // app is really talking to the backend (not just /health reachable).
@@ -96,6 +114,21 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           />
           <span>Dark Mode</span>
         </label>
+
+        <button className="m-btn-ghost" onClick={checkUpdate}>⬆ Nach Updates suchen</button>
+        {updateMsg && (
+          <div className={updateMsg.startsWith('✓') ? 'm-ok' : updateMsg.startsWith('✕') ? 'm-fail' : ''}>
+            {updateUrl ? (
+              <button className="m-update-banner" onClick={() => openApk(updateUrl)}>
+                {updateMsg} — tippen zum Installieren
+              </button>
+            ) : updateMsg}
+          </div>
+        )}
+
+        <div className="m-settings-info">
+          App-Version: <code>{APP_VERSION === 'dev' ? 'Entwicklungs-Build' : 'v' + APP_VERSION}</code>
+        </div>
 
         <div className="m-modal-foot">
           <button className="m-btn-save" onClick={onClose}>Schließen</button>
