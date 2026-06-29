@@ -39,14 +39,26 @@ body {
   max-width: 768px;
   margin: 0 auto;
 }
-.m-env-banner {
+.m-env-prod, .m-env-dev, .m-env-other {
   flex-shrink: 0;
-  background: repeating-linear-gradient(45deg, #c62828, #c62828 14px, #b71c1c 14px, #b71c1c 28px);
-  color: #fff;
   font-size: 11px;
   font-weight: 700;
   text-align: center;
   padding: 4px 8px;
+}
+/* Production = real data → bold red warning. */
+.m-env-prod {
+  background: repeating-linear-gradient(45deg, #c62828, #c62828 14px, #b71c1c 14px, #b71c1c 28px);
+  color: #fff;
+}
+/* Dev/Test = separate database → yellow. */
+.m-env-dev {
+  background: #b26a00;
+  color: #fff;
+}
+.m-env-other {
+  background: var(--hover-bg);
+  color: var(--text-secondary);
 }
 .m-sync-banner {
   flex-shrink: 0;

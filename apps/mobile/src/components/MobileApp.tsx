@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { outboxOnChange } from '../api';
+import { outboxOnChange, getBaseUrl } from '../api';
 import Navigation, { type MobileTab } from './Navigation';
 import QuickAdd from './QuickAdd';
 import AllTasks from './AllTasks';
@@ -24,12 +24,20 @@ export default function MobileApp() {
   }, [theme]);
   useEffect(() => outboxOnChange(setPending), []);
 
-  const appEnv = (import.meta.env.VITE_APP_ENV as string | undefined) ?? 'development';
+  // Which environment are we connected to? Derived from the server port so the
+  // user always knows whether they're touching real (Prod) or test (Dev) data.
+  const apiUrl = getBaseUrl();
+  const port = apiUrl.match(/:(\d+)(?:\/|$)/)?.[1] ?? '';
+  const envKind = port === '3001' ? 'prod' : port === '3002' ? 'dev' : 'other';
 
   return (
     <div className="m-app">
-      {appEnv !== 'production' && (
-        <div className="m-env-banner">🚧 ENTWICKLUNG &amp; TEST — getrennte Datenbank</div>
+      {envKind === 'prod' ? (
+        <div className="m-env-prod">🔴 PRODUKTION — echte Daten</div>
+      ) : envKind === 'dev' ? (
+        <div className="m-env-dev">🟡 DEV / TEST — getrennte Datenbank</div>
+      ) : (
+        <div className="m-env-other">⚙ Kein Server gewählt — in ⚙ Einstellungen eintragen</div>
       )}
       {pending > 0 ? (
         <div className="m-sync-banner">↻ {pending} Änderung(en) werden synchronisiert…</div>
