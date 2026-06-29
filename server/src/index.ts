@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
+import os from 'node:os';
 import { db } from './db';
 import tasksRouter from './routes/tasks';
 import projectsRouter from './routes/projects';
@@ -15,11 +16,28 @@ import settingsRouter from './routes/settings';
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
 
+// Private LAN IPv4 addresses of this machine (for mobile access over Wi-Fi).
+function lanIPv4(): string[] {
+  const out: string[] = [];
+  for (const addrs of Object.values(os.networkInterfaces())) {
+    for (const a of addrs ?? []) {
+      if (a.family === 'IPv4' && !a.internal && /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address)) {
+        out.push(a.address);
+      }
+    }
+  }
+  return out;
+}
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // API routes
 app.get('/health', (_req, res) => res.json({ ok: true }));
+// LAN access info for mobile: this PC's reachable URLs on the local network.
+app.get('/api/lan', (_req, res) =>
+  res.json({ port: PORT, ips: lanIPv4(), urls: lanIPv4().map((ip) => `http://${ip}:${PORT}`) }),
+);
 app.use('/api/tasks',        tasksRouter);
 app.use('/api/projects',     projectsRouter);
 app.use('/api/categories',   categoriesRouter);
@@ -56,4 +74,5 @@ app.get('*', (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Task Manager server running at http://localhost:${PORT}`);
+  for (const ip of lanIPv4()) console.log(`  LAN (mobile): http://${ip}:${PORT}`);
 });

@@ -275,3 +275,33 @@
   background: none;
   flex-shrink: 0;
 }
+
+/* Mobile-Zugriff (LAN) section */
+.settings-lan-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-lan-list li {
+  line-height: 1.9;
+}
+.settings-lan-list code {
+  background: var(--hover-bg);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.settings-lan-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  color: #fff;
+}
+.settings-lan-tag.dev { background: #b26a00; }
+.settings-lan-tag.prod { background: #c62828; }

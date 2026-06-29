@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore, DEFAULT_PALETTE } from '../store';
 import type { MemberRole } from '../types';
 import { importFromNozbeApi, mapNozbe, loginNozbe, type NozbeExport } from '../nozbe';
@@ -161,6 +161,8 @@ export default function SettingsView() {
           Wird als Autor von Kommentaren und in der Aktivität verwendet.
         </p>
       </section>
+
+      <MobileAccessSection />
 
       <section className="settings-section">
         <h3 className="settings-heading">Darstellung</h3>
@@ -476,6 +478,43 @@ export default function SettingsView() {
 }
 
 const EMPTY_COLOR_LABELS: Record<string, string> = {};
+
+// Shows this PC's current LAN address(es) so you can type them into the mobile
+// app (⚙ Server-URL). The IP can change (DHCP) — this always reflects the current one.
+function MobileAccessSection() {
+  const [ips, setIps] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    let on = true;
+    fetch('/api/lan')
+      .then((r) => r.json())
+      .then((d) => { if (on) { setIps(Array.isArray(d.ips) ? d.ips : []); setLoaded(true); } })
+      .catch(() => { if (on) setLoaded(true); });
+    return () => { on = false; };
+  }, []);
+  return (
+    <section className="settings-section">
+      <h3 className="settings-heading">📱 Mobile-Zugriff (WLAN)</h3>
+      <p className="settings-hint">
+        Diese Adresse im Handy unter ⚙ „Server-URL" eintragen (Handy im selben WLAN).
+      </p>
+      {!loaded ? (
+        <p className="settings-hint">…</p>
+      ) : ips.length === 0 ? (
+        <p className="settings-hint">Keine LAN-Adresse gefunden (evtl. nicht im WLAN).</p>
+      ) : (
+        <ul className="settings-lan-list">
+          {ips.map((ip) => (
+            <li key={ip}>
+              <code>http://{ip}:3002</code> <span className="settings-lan-tag dev">DEV/TEST</span><br />
+              <code>http://{ip}:3001</code> <span className="settings-lan-tag prod">PROD</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 function ColorPaletteSection() {
   const colorPalette = useStore((s) => s.settings.colorPalette ?? DEFAULT_PALETTE);
