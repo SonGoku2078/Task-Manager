@@ -8,8 +8,10 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Version comes from CI (-PversionCode / -PversionName); falls back for local builds.
-        versionCode (project.findProperty('versionCode') ?: 1) as Integer
-        versionName (project.findProperty('versionName') ?: '1.0').toString()
+        def vCode = (project.findProperty('versionCode') ?: '1').toString().trim()
+        def vName = (project.findProperty('versionName') ?: '1.0').toString().trim()
+        versionCode vCode.toInteger()
+        versionName vName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
