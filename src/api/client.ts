@@ -14,7 +14,10 @@ export function getBaseUrl(): string {
 
 export function setBaseUrl(url: string): void {
   try {
-    const v = url.trim().replace(/\/+$/, '');
+    let v = url.trim().replace(/\/+$/, '');
+    // Force an absolute http(s) URL — otherwise requests resolve relative to the
+    // app's own origin (e.g. Capacitor's localhost), which silently "works".
+    if (v && !/^https?:\/\//i.test(v)) v = `http://${v}`;
     if (v) localStorage.setItem('tm-api-url', v);
     else localStorage.removeItem('tm-api-url');
   } catch { /* ignore */ }

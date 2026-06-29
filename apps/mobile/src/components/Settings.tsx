@@ -17,16 +17,27 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const testAndConnect = async () => {
     setBusy(true);
     setStatus('… verbinde');
-    const base = url.trim().replace(/\/+$/, '');
-    setBaseUrl(base);
+    // setBaseUrl forces an absolute http(s):// URL; read it back normalized.
+    setBaseUrl(url);
+    const base = getBaseUrl();
     setUrl(base);
     try {
+      // Verify it's really OUR backend: /health must return JSON {ok:true}.
+      // (A wrong URL can resolve to the app's own localhost server and return
+      // the SPA HTML with status 200 — that must NOT count as connected.)
       const health = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) });
-      if (!health.ok) { setStatus(`✕ /health antwortet ${health.status}`); return; }
+      const healthData = await health.json().catch(() => null);
+      if (!health.ok || !healthData || healthData.ok !== true) {
+        setStatus('✕ Kein SelfManaged-Server unter dieser URL');
+        return;
+      }
       const tasks = await (await fetch(`${base}/api/tasks`, { signal: AbortSignal.timeout(8000) })).json();
-      const n = Array.isArray(tasks) ? tasks.length : 0;
+      if (!Array.isArray(tasks)) {
+        setStatus('✕ Unerwartete Antwort von /api/tasks');
+        return;
+      }
       await loadAll();
-      setStatus(`✓ Verbunden — ${n} Aufgaben geladen`);
+      setStatus(`✓ Verbunden — ${tasks.length} Aufgaben geladen`);
     } catch (e) {
       setStatus(`✕ nicht erreichbar (${e instanceof Error ? e.message : 'Fehler'})`);
     } finally {
