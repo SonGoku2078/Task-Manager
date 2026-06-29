@@ -43,7 +43,11 @@ jobs:
         working-directory: apps/mobile
 
       - name: Decode signing keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > apps/mobile/android/app/selfmanaged.keystore
+        run: |
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > apps/mobile/android/app/selfmanaged.keystore
+          # Fail loudly here (not silently unsigned later) if the secret is bad.
+          keytool -list -keystore apps/mobile/android/app/selfmanaged.keystore -storepass smkeystore2026 >/dev/null
+          echo "Keystore decoded and valid."
 
       - name: Build signed release APK
         working-directory: apps/mobile/android
