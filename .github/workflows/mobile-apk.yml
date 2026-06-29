@@ -44,7 +44,8 @@ jobs:
 
       - name: Decode signing keystore
         run: |
-          printf '%s' "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > apps/mobile/android/app/selfmanaged.keystore
+          # Strip anything that isn't a base64 char (BOM/CR/whitespace) before decoding.
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_B64 }}" | tr -cd 'A-Za-z0-9+/=' | base64 -d > apps/mobile/android/app/selfmanaged.keystore
           # Fail loudly here (not silently unsigned later) if the secret is bad.
           keytool -list -keystore apps/mobile/android/app/selfmanaged.keystore -storepass smkeystore2026 >/dev/null
           echo "Keystore decoded and valid."
