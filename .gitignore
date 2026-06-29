@@ -15,6 +15,11 @@ server/public
 *.local
 .claude/worktrees/
 
+# Capacitor: built web assets are re-synced in CI from dist/mobile
+apps/mobile/android/app/src/main/assets/public
+apps/mobile/android/.gradle
+apps/mobile/android/local.properties
+
 # Nozbe exports may contain real personal data — never commit
 nozbe-export.json
 outputs/
