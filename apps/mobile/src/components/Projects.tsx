@@ -33,9 +33,12 @@ export default function Projects({ onOpenTask }: { onOpenTask: (id: string) => v
   }
 
   // ── Project list ──
+  // Match the desktop "Projekte" panel: active projects + areas only.
+  // Hide inactive ("Irgendwann"/someday, active !== true) and archived projects.
   const visible = projects
-    .filter((p) => !p.archived)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .filter((p) => !p.archived && (p.kind === 'area' || p.active === true))
+    // Pinned projects float to the top (like desktop), then alphabetical.
+    .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.name.localeCompare(b.name));
 
   if (visible.length === 0) {
     return <p className="m-empty">Keine Projekte (oder noch nicht geladen — siehe ⚙️).</p>;

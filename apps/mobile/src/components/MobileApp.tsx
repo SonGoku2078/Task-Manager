@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { outboxOnChange, getBaseUrl } from '../api';
+import { outboxOnChange, getBaseUrl, flushOutbox } from '../api';
+import { useAutoSync } from '../useAutoSync';
 import Navigation, { type MobileTab } from './Navigation';
 import QuickAdd from './QuickAdd';
 import Projects from './Projects';
@@ -15,11 +16,19 @@ import { checkForUpdate, openApk, type UpdateInfo } from '../update';
 export default function MobileApp() {
   const theme = useStore((s) => s.settings.theme);
   const dataLoaded = useStore((s) => s.dataLoaded);
+  const loadAll = useStore((s) => s.loadAll);
   const [tab, setTab] = useState<MobileTab>('projekte');
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pending, setPending] = useState(0);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  // Auto-sync runs on its own (health poll + online/visibility); this is just
+  // so the banner can show "syncing" vs "offline with pending changes".
+  const serverOnline = useAutoSync();
+
+  // Tapping a pending banner forces an immediate sync (loadAll flushes the
+  // outbox first, then reloads). Optional — sync also happens automatically.
+  const syncNow = () => { flushOutbox(); loadAll(); };
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -51,9 +60,17 @@ export default function MobileApp() {
         <div className="m-env-other">⚙ Kein Server gewählt — in ⚙ Einstellungen eintragen</div>
       )}
       {pending > 0 ? (
-        <div className="m-sync-banner">↻ {pending} Änderung(en) werden synchronisiert…</div>
-      ) : !dataLoaded ? (
-        <div className="m-offline-banner">⚠ Offline — lokaler Stand. Verbindung in „Mehr" prüfen.</div>
+        serverOnline ? (
+          <button className="m-sync-banner" onClick={syncNow}>
+            ↻ {pending} Änderung(en) werden synchronisiert…
+          </button>
+        ) : (
+          <button className="m-pending-offline" onClick={syncNow}>
+            ⏳ {pending} lokale Änderung(en) — offline, wird automatisch synchronisiert
+          </button>
+        )
+      ) : !serverOnline && !dataLoaded ? (
+        <div className="m-offline-banner">⚠ Offline — lokaler Stand.</div>
       ) : null}
 
       <header className="m-header">

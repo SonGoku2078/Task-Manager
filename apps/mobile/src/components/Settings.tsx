@@ -105,6 +105,9 @@ export default function Settings({ onClose }: { onClose: () => void }) {
         </div>
 
         <button className="m-btn-ghost" onClick={syncNow} disabled={busy}>↻ Jetzt synchronisieren</button>
+        <div className="m-settings-hint">
+          Läuft automatisch, sobald wieder eine Verbindung besteht — dieser Knopf erzwingt es sofort.
+        </div>
 
         <label className="m-toggle">
           <input
