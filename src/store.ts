@@ -535,6 +535,12 @@ export const useStore = create<AppState>()((set, get) => ({
       ]);
       const { nextTaskNumber, ...rawSettings } = settingsData;
       const settings = { ...defaultSettings, ...rawSettings };
+      // Defensive: ensure numeric settings are numbers (a stale string value
+      // would break numeric math, e.g. WeekView hour labels / zoom).
+      for (const k of ['calendarStartHour', 'calendarEndHour', 'calendarMonthCount', 'calendarHourHeight', 'projectsPanelWidth', 'detailPanelWidth'] as const) {
+        const v = (settings as Record<string, unknown>)[k];
+        if (typeof v === 'string' && v.trim() !== '') (settings as Record<string, unknown>)[k] = Number(v);
+      }
       const safeMembers = members.length ? members : [SELF_MEMBER];
 
       // Trust the server completely — an empty DB is legitimately empty.

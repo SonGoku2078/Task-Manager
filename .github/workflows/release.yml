@@ -1,7 +1,8 @@
 name: Release
 
-# "Going to production" = push a version tag (e.g. v0.1.0). This builds the app
-# and publishes a GitHub Release with auto-generated notes + a runnable bundle.
+# "Going to production" = push a version tag (e.g. v0.1.0). The app is built,
+# then the production release WAITS for manual approval (the `production`
+# environment has a required reviewer). Nothing reaches prod without that OK.
 on:
   push:
     tags:
@@ -11,7 +12,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  # 1) Always builds the prod bundle and uploads it as a pipeline artifact.
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +53,26 @@ jobs:
           Data lives in %USERPROFILE%\.task-manager\data.db
           EOF
           cd bundle && zip -r ../selfmanaged-${{ github.ref_name }}.zip .
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-bundle
+          path: selfmanaged-${{ github.ref_name }}.zip
+
+  # 2) Publishes the GitHub Release — gated by the `production` environment, which
+  #    requires the user's manual approval in the Actions UI before it runs.
+  publish-production:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - name: Download bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: prod-bundle
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
