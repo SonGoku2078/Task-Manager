@@ -3,8 +3,9 @@
 const REPO = 'SonGoku2078/Task-Manager';
 const TAG_PREFIX = 'mobile-v';
 
+// Baked at build time as e.g. 'mobile-v0.2.0' → normalize to bare '0.2.0'.
 export const APP_VERSION =
-  (import.meta.env.VITE_APP_VERSION as string | undefined)?.replace(/^mobile-/, '') ?? 'dev';
+  (import.meta.env.VITE_APP_VERSION as string | undefined)?.replace(/^mobile-v?/, '') ?? 'dev';
 
 function parseVer(tag: string): number[] {
   return tag.replace(/^mobile-v/, '').replace(/^v/, '').split('.').map((x) => parseInt(x, 10) || 0);
