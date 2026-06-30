@@ -835,16 +835,20 @@ export const useStore = create<AppState>()((set, get) => ({
 
         // Pre-compute the next recurring occurrence (if any) so we can both add
         // it to state AND persist it via the outbox (otherwise it lives only in
-        // memory and is lost on the next load).
+        // memory and is lost on the next load). The occurrence also carries over
+        // the task's subtasks (fresh/uncompleted) — they must not be lost.
         let spawned: Task | null = null;
+        let spawnedSubs: Task[] = [];
         if (before && completing && before.recurrence !== 'none' && before.dueDate) {
           const nextDue = nextRecurrence(before.dueDate, before);
           if (!before.recurrenceEnd || nextDue <= before.recurrenceEnd) {
             const now = new Date();
+            const baseNum = get().nextTaskNumber;
+            const newParentId = uid('task');
             spawned = {
               ...before,
-              id: uid('task'),
-              number: get().nextTaskNumber,
+              id: newParentId,
+              number: baseNum,
               completed: false,
               completedAt: null,
               dueDate: nextDue,
@@ -853,6 +857,23 @@ export const useStore = create<AppState>()((set, get) => ({
               comments: [],
               attachments: [],
             };
+            // Clone subtasks under the new occurrence, reset to "to do", keeping
+            // their entry order. Each consumes the next task number after parent.
+            spawnedSubs = get().tasks
+              .filter((x) => x.parentId === before.id)
+              .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || +a.createdAt - +b.createdAt)
+              .map((s, i) => ({
+                ...s,
+                id: uid('task'),
+                number: baseNum + 1 + i,
+                parentId: newParentId,
+                completed: false,
+                completedAt: null,
+                createdAt: now,
+                updatedAt: now,
+                comments: [],
+                attachments: [],
+              }));
           }
         }
 
@@ -867,7 +888,7 @@ export const useStore = create<AppState>()((set, get) => ({
               return { ...t, completed: true, completedAt: now, updatedAt: now };
             return t;
           });
-          if (spawned) tasks.push(spawned);
+          if (spawned) tasks.push(spawned, ...spawnedSubs);
           const activityLog = pushLog(
             state.activityLog,
             taskEntry(
@@ -876,7 +897,7 @@ export const useStore = create<AppState>()((set, get) => ({
               state.settings.userName
             )
           );
-          return { tasks, activityLog, nextTaskNumber: state.nextTaskNumber + (spawned ? 1 : 0) };
+          return { tasks, activityLog, nextTaskNumber: state.nextTaskNumber + (spawned ? 1 + spawnedSubs.length : 0) };
         });
         const t = get().tasks.find(x => x.id === id);
         if (t) {
@@ -888,9 +909,11 @@ export const useStore = create<AppState>()((set, get) => ({
             );
           }
         }
-        // Persist the spawned recurring occurrence + the advanced counter.
+        // Persist the spawned recurring occurrence + its subtasks (parent first,
+        // so the server has it before the children reference it) + the counter.
         if (spawned) {
           enqueue('task.create', { task: spawned });
+          spawnedSubs.forEach((s) => enqueue('task.create', { task: s }));
           enqueue('settings.patch', { patch: { nextTaskNumber: get().nextTaskNumber } });
         }
         // Write the completion change back to Nozbe (if connected + enabled).
