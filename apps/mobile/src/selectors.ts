@@ -25,6 +25,15 @@ export const mobileInbox = (tasks: Task[]): Task[] =>
 export const mobileNextAction = (tasks: Task[]): Task[] =>
   selectPriorityTasks(tasks.filter(root), 5);
 
+// Completed within the last 7 days (rolling window), newest first. Shown at the
+// bottom of the Woche tab so recently finished work stays visible for a while.
+export const mobileDoneThisWeek = (tasks: Task[]): Task[] => {
+  const since = addDays(new Date(), -7);
+  return tasks
+    .filter((t) => root(t) && t.completed && t.completedAt != null && t.completedAt >= since)
+    .sort((a, b) => +(b.completedAt as Date) - +(a.completedAt as Date));
+};
+
 export interface NextWeekGroup {
   key: 'today' | 'tomorrow' | 'week' | 'future';
   label: string;

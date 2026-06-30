@@ -11,7 +11,9 @@ import NextAction from './NextAction';
 import Calendar from './Calendar';
 import TaskDetailModal from './TaskDetailModal';
 import Settings from './Settings';
+import ShareCapture from './ShareCapture';
 import { checkForUpdate, openApk, type UpdateInfo } from '../update';
+import { consumeSharedIntent, onShareReceived, type SharedPayload } from '../shareTarget';
 
 export default function MobileApp() {
   const theme = useStore((s) => s.settings.theme);
@@ -22,6 +24,7 @@ export default function MobileApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pending, setPending] = useState(0);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [share, setShare] = useState<SharedPayload | null>(null);
   // Auto-sync runs on its own (health poll + online/visibility); this is just
   // so the banner can show "syncing" vs "offline with pending changes".
   const serverOnline = useAutoSync();
@@ -37,6 +40,20 @@ export default function MobileApp() {
   // On launch, ask GitHub whether a newer signed APK is published.
   useEffect(() => {
     checkForUpdate().then((u) => { if (u?.available && u.apkUrl) setUpdate(u); });
+  }, []);
+  // Pick up content shared into the app (Android "Share → SelfManaged"): pull on
+  // launch (cold start), on resume (visibilitychange), and on the warm-start ping.
+  useEffect(() => {
+    let active = true;
+    const pull = async () => {
+      const p = await consumeSharedIntent();
+      if (active && (p.text || p.subject)) setShare(p);
+    };
+    pull();
+    const onVis = () => { if (document.visibilityState === 'visible') pull(); };
+    document.addEventListener('visibilitychange', onVis);
+    const off = onShareReceived(pull);
+    return () => { active = false; document.removeEventListener('visibilitychange', onVis); off(); };
   }, []);
 
   // Which environment are we connected to? Derived from the server port so the
@@ -100,6 +117,7 @@ export default function MobileApp() {
         <TaskDetailModal taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
       )}
       {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+      {share && <ShareCapture payload={share} onClose={() => setShare(null)} />}
     </div>
   );
 }

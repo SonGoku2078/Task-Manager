@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store';
+import type { Project } from '../types';
 import TaskRow from './TaskRow';
 
 // Browse projects → tap one to see (and add to) its open tasks.
@@ -33,29 +34,37 @@ export default function Projects({ onOpenTask }: { onOpenTask: (id: string) => v
   }
 
   // ── Project list ──
-  // Match the desktop "Projekte" panel: active projects + areas only.
-  // Hide inactive ("Irgendwann"/someday, active !== true) and archived projects.
-  const visible = projects
-    .filter((p) => !p.archived && (p.kind === 'area' || p.active === true))
-    // Pinned projects float to the top (like desktop), then alphabetical.
-    .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.name.localeCompare(b.name));
+  // Match the desktop "Projekte" panel: active projects + areas only (hide
+  // inactive/"Irgendwann" and archived). Show projects first, then areas;
+  // pinned float to the top within each group, then alphabetical.
+  const sortGroup = (list: Project[]) =>
+    [...list].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.name.localeCompare(b.name));
+  const shown = projects.filter((p) => !p.archived && (p.kind === 'area' || p.active === true));
+  const projs = sortGroup(shown.filter((p) => p.kind !== 'area'));
+  const areas = sortGroup(shown.filter((p) => p.kind === 'area'));
 
-  if (visible.length === 0) {
+  if (projs.length === 0 && areas.length === 0) {
     return <p className="m-empty">Keine Projekte (oder noch nicht geladen — siehe ⚙️).</p>;
   }
 
+  const row = (p: Project) => (
+    <button key={p.id} className="m-proj-row" onClick={() => setOpenId(p.id)}>
+      <span className="m-dot" style={{ background: p.color }} />
+      <span className="m-proj-name">{p.kind === 'area' ? '∞ ' : ''}{p.name}</span>
+      <span className="m-group-count">{openCount(p.id)}</span>
+      <span className="m-proj-chevron">›</span>
+    </button>
+  );
+
   return (
     <div className="m-list">
-      {visible.map((p) => (
-        <button key={p.id} className="m-proj-row" onClick={() => setOpenId(p.id)}>
-          <span className="m-dot" style={{ background: p.color }} />
-          <span className="m-proj-name">
-            {p.kind === 'area' ? '∞ ' : ''}{p.name}
-          </span>
-          <span className="m-group-count">{openCount(p.id)}</span>
-          <span className="m-proj-chevron">›</span>
-        </button>
-      ))}
+      {projs.map(row)}
+      {areas.length > 0 && (
+        <>
+          <h2 className="m-group-head m-proj-subhead">Bereiche</h2>
+          {areas.map(row)}
+        </>
+      )}
     </div>
   );
 }
