@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../store';
 import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
 import { checkForUpdate, openApk, APP_VERSION } from '../update';
+import { useSwipeDown } from '../gestures';
 
 export default function Settings({ onClose }: { onClose: () => void }) {
   const theme = useStore((s) => s.settings.theme);
@@ -14,6 +15,7 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const [url, setUrl] = useState(getBaseUrl() || 'http://192.168.8.188:3001');
   const [status, setStatus] = useState<string>('');
   const [busy, setBusy] = useState(false);
+  const swipe = useSwipeDown(onClose);
   const [updateMsg, setUpdateMsg] = useState<string>('');
   const [updateUrl, setUpdateUrl] = useState<string | null>(null);
 
@@ -70,7 +72,7 @@ export default function Settings({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="m-modal-backdrop" onClick={onClose}>
-      <div className="m-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="m-modal" onClick={(e) => e.stopPropagation()} style={swipe.style} {...swipe.handlers}>
         <div className="m-modal-head">
           <span className="m-title">Einstellungen</span>
           <button className="m-modal-x" onClick={onClose}>✕</button>

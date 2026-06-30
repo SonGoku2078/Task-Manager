@@ -61,7 +61,7 @@ const statusKeywords = (task: Task): string[] => {
   return k;
 };
 
-const matchesSearch = (task: Task, query: string, members: Member[] = []) => {
+export const matchesSearch = (task: Task, query: string, members: Member[] = []) => {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   // Search by task number, with or without a leading "#".

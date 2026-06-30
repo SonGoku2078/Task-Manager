@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { useStore } from '../store';
 import { outboxOnChange, getBaseUrl, flushOutbox } from '../api';
 import { useAutoSync } from '../useAutoSync';
-import Navigation, { type MobileTab } from './Navigation';
+import { useNavHistory } from '../useNavHistory';
+import { useHorizontalSwipe } from '../gestures';
+import Navigation from './Navigation';
 import QuickAdd from './QuickAdd';
 import Projects from './Projects';
 import Inbox from './Inbox';
@@ -12,37 +15,47 @@ import Calendar from './Calendar';
 import TaskDetailModal from './TaskDetailModal';
 import Settings from './Settings';
 import ShareCapture from './ShareCapture';
+import Search from './Search';
 import { checkForUpdate, openApk, type UpdateInfo } from '../update';
 import { consumeSharedIntent, onShareReceived, type SharedPayload } from '../shareTarget';
+
+const TAB_TITLE: Record<string, string> = {
+  projekte: 'Projekte',
+  inbox: 'Inbox',
+  nextweek: 'Next Week',
+  nextaction: 'Next Action',
+  calendar: 'Kalender',
+};
 
 export default function MobileApp() {
   const theme = useStore((s) => s.settings.theme);
   const dataLoaded = useStore((s) => s.dataLoaded);
   const loadAll = useStore((s) => s.loadAll);
-  const [tab, setTab] = useState<MobileTab>('projekte');
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [pending, setPending] = useState(0);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const [share, setShare] = useState<SharedPayload | null>(null);
-  // Auto-sync runs on its own (health poll + online/visibility); this is just
-  // so the banner can show "syncing" vs "offline with pending changes".
   const serverOnline = useAutoSync();
 
-  // Tapping a pending banner forces an immediate sync (loadAll flushes the
-  // outbox first, then reloads). Optional — sync also happens automatically.
+  // All navigable UI (tab, project drill-down, task detail, settings/search
+  // overlays) lives in a history stack so back/forward (swipe + hardware back)
+  // work like a browser. `share` stays outside — it's a transient capture flow.
+  const nav = useNavHistory();
+  const { tab, projectId, taskId, overlay } = nav.state;
+  const openTask = (id: string) => nav.navigate({ taskId: id, overlay: null });
+  const openProject = (id: string) => nav.navigate({ tab: 'projekte', projectId: id, taskId: null, overlay: null });
+  const changeTab = (t: typeof tab) => nav.navigate({ tab: t, projectId: null, taskId: null, overlay: null });
+
   const syncNow = () => { flushOutbox(); loadAll(); };
+  const swipe = useHorizontalSwipe(nav.back, nav.forward);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
   useEffect(() => outboxOnChange(setPending), []);
-  // On launch, ask GitHub whether a newer signed APK is published.
   useEffect(() => {
     checkForUpdate().then((u) => { if (u?.available && u.apkUrl) setUpdate(u); });
   }, []);
-  // Pick up content shared into the app (Android "Share → SelfManaged"): pull on
-  // launch (cold start), on resume (visibilitychange), and on the warm-start ping.
+  // Pick up shared content (Android "Share → SelfManaged") on launch + resume + ping.
   useEffect(() => {
     let active = true;
     const pull = async () => {
@@ -55,9 +68,22 @@ export default function MobileApp() {
     const off = onShareReceived(pull);
     return () => { active = false; document.removeEventListener('visibilitychange', onVis); off(); };
   }, []);
+  // Android hardware back: go back through nav history, else leave the app.
+  const navRef = useRef(nav);
+  navRef.current = nav;
+  useEffect(() => {
+    let sub: { remove: () => void } | undefined;
+    try {
+      CapacitorApp.addListener('backButton', () => {
+        const n = navRef.current;
+        if (n.canBack) n.back();
+        else CapacitorApp.exitApp();
+      }).then((s) => { sub = s; }).catch(() => {});
+    } catch { /* not on native */ }
+    return () => { sub?.remove?.(); };
+  }, []);
 
-  // Which environment are we connected to? Derived from the server port so the
-  // user always knows whether they're touching real (Prod) or test (Dev) data.
+  // Environment indicator from the server port (prod vs dev vs none).
   const apiUrl = getBaseUrl();
   const port = apiUrl.match(/:(\d+)(?:\/|$)/)?.[1] ?? '';
   const envKind = port === '3001' ? 'prod' : port === '3002' ? 'dev' : 'other';
@@ -91,32 +117,42 @@ export default function MobileApp() {
       ) : null}
 
       <header className="m-header">
-        <span className="m-title">
-          {tab === 'projekte' && 'Projekte'}
-          {tab === 'inbox' && 'Inbox'}
-          {tab === 'nextweek' && 'Next Week'}
-          {tab === 'nextaction' && 'Next Action'}
-          {tab === 'calendar' && 'Kalender'}
-        </span>
-        <button className="m-header-gear" title="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙️</button>
+        <span className="m-title">{TAB_TITLE[tab]}</span>
+        <div className="m-header-actions">
+          <button className="m-header-gear" title="Suchen" onClick={() => nav.navigate({ overlay: 'search' })}>🔍</button>
+          <button className="m-header-gear" title="Einstellungen" onClick={() => nav.navigate({ overlay: 'settings' })}>⚙️</button>
+        </div>
       </header>
 
-      {tab !== 'calendar' && tab !== 'projekte' && <QuickAdd />}
+      {tab !== 'calendar' && tab !== 'projekte' && <QuickAdd tab={tab} />}
 
-      <main className="m-main">
-        {tab === 'projekte' && <Projects onOpenTask={setOpenTaskId} />}
-        {tab === 'inbox' && <Inbox onOpenTask={setOpenTaskId} />}
-        {tab === 'nextweek' && <NextWeek onOpenTask={setOpenTaskId} />}
-        {tab === 'nextaction' && <NextAction onOpenTask={setOpenTaskId} />}
-        {tab === 'calendar' && <Calendar onOpenTask={setOpenTaskId} />}
+      <main className="m-main" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
+        {tab === 'projekte' && (
+          <Projects
+            openProjectId={projectId}
+            onOpenProject={openProject}
+            onBack={nav.back}
+            onOpenTask={openTask}
+          />
+        )}
+        {tab === 'inbox' && <Inbox onOpenTask={openTask} />}
+        {tab === 'nextweek' && <NextWeek onOpenTask={openTask} />}
+        {tab === 'nextaction' && <NextAction onOpenTask={openTask} />}
+        {tab === 'calendar' && <Calendar onOpenTask={openTask} />}
       </main>
 
-      <Navigation tab={tab} onChange={setTab} />
+      <Navigation tab={tab} onChange={changeTab} />
 
-      {openTaskId && (
-        <TaskDetailModal taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+      {taskId && (
+        <TaskDetailModal
+          taskId={taskId}
+          onClose={nav.back}
+          onOpenTask={openTask}
+          onOpenProject={openProject}
+        />
       )}
-      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+      {overlay === 'settings' && <Settings onClose={nav.back} />}
+      {overlay === 'search' && <Search onOpenTask={openTask} onClose={nav.back} />}
       {share && <ShareCapture payload={share} onClose={() => setShare(null)} />}
     </div>
   );

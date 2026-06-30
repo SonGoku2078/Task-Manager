@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { parseQuickAdd } from '../quickParse';
+import { useSwipeDown } from '../gestures';
 import type { SharedPayload } from '../shareTarget';
 
 const URL_RE = /https?:\/\/[^\s]+/i;
@@ -28,6 +29,7 @@ export default function ShareCapture({ payload, onClose }: { payload: SharedPayl
   const [description, setDescription] = useState(initial.description);
   const [projectChoice, setProjectChoice] = useState<string>(''); // '' = Inbox / follow #tag
   const [saved, setSaved] = useState(false);
+  const swipe = useSwipeDown(onClose);
 
   const visibleProjects = projects
     .filter((p) => !p.archived)
@@ -58,7 +60,7 @@ export default function ShareCapture({ payload, onClose }: { payload: SharedPayl
 
   return (
     <div className="m-modal-backdrop" onClick={onClose}>
-      <div className="m-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="m-modal" onClick={(e) => e.stopPropagation()} style={swipe.style} {...swipe.handlers}>
         <div className="m-modal-head">
           <span className="m-title">Geteilten Inhalt erfassen</span>
           <button className="m-modal-x" onClick={onClose}>✕</button>

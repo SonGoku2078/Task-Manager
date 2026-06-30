@@ -45,6 +45,7 @@ export default function TaskRow({
             </span>
           )}
           {task.durationMin ? <span className="m-row-dur">⏱ {task.durationMin}m</span> : null}
+          {task.thisWeek && <span className="m-flag-week" title="Next Week">🗓️</span>}
           {task.recurrence !== 'none' && <span title={task.recurrence}>↻</span>}
         </div>
       </div>

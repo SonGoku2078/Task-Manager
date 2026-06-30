@@ -407,10 +407,63 @@ body {
 .m-group-done .m-group-head { color: var(--accent); }
 .m-proj-subhead { margin-top: 18px; }
 
+/* ── Task-detail extras (GTD flags, subtasks, links, comments) ── */
+.m-flag-week { font-size: 12px; }
+.m-gtd-row { display: flex; gap: 8px; }
+.m-gtd-btn {
+  flex: 1; min-height: 44px; padding: 0 10px;
+  border: 1px solid var(--border-light); border-radius: 10px;
+  background: var(--card-bg); color: var(--text-secondary);
+  font-family: inherit; font-size: 14px; cursor: pointer;
+  transition: transform 0.06s ease, background 0.12s ease;
+}
+.m-gtd-btn:active { transform: translateY(1px); }
+.m-gtd-btn.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+.m-subtask { display: flex; align-items: center; gap: 10px; padding: 6px 2px; }
+.m-subtask-title { flex: 1; min-width: 0; cursor: pointer; }
+.m-subtask.done .m-subtask-title { text-decoration: line-through; color: var(--text-secondary); }
+.m-inline-add { padding: 6px 0 0; border: none; }
+
+.m-link-chip { display: inline-flex; align-items: center; border: 1px solid var(--border-light); border-radius: 16px; overflow: hidden; }
+.m-link-open { border: none; background: var(--card-bg); color: var(--text-primary); font-family: inherit; font-size: 13px; padding: 6px 4px 6px 10px; cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-link-del { border: none; background: var(--card-bg); color: var(--text-secondary); font-size: 16px; padding: 6px 10px; cursor: pointer; }
+
+.m-comment { background: var(--hover-bg); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
+.m-comment-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+.m-comment-author { font-weight: 600; color: var(--text-primary); }
+.m-comment-date { flex: 1; }
+.m-comment-del { border: none; background: none; color: var(--text-secondary); font-size: 16px; cursor: pointer; }
+.m-comment-text { font-size: 14px; margin-top: 2px; overflow-wrap: anywhere; }
+
 /* Detail modal = elevated bottom sheet with a grab handle. */
 .m-modal { box-shadow: var(--m-elev-2); }
 .m-modal::before {
   content: ''; align-self: center; flex-shrink: 0;
   width: 40px; height: 4px; margin-bottom: 8px;
   border-radius: 2px; background: var(--border-light);
+}
+
+/* ── Header actions (search + settings) ── */
+.m-header-actions { display: flex; align-items: center; gap: 2px; }
+
+/* ── Full-screen search overlay ── */
+.m-search-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: var(--main-bg);
+  display: flex; flex-direction: column;
+  padding-top: max(env(safe-area-inset-top), 28px);
+}
+.m-search-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border-light);
+}
+.m-search-icon { font-size: 18px; }
+.m-search-input {
+  flex: 1; min-width: 0; height: 44px; border: none; background: none;
+  font-size: 16px; color: var(--text-primary); font-family: inherit; outline: none;
+}
+.m-search-results {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 8px 12px 16px; display: flex; flex-direction: column; gap: 8px;
 }

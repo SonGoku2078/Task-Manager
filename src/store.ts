@@ -934,16 +934,19 @@ export const useStore = create<AppState>()((set, get) => ({
         if (t) enqueue('task.update', { id: taskId, patch: { comments: t.comments } });
       },
 
-      deleteComment: (taskId, commentId) =>
+      deleteComment: (taskId, commentId) => {
         set((state) => ({
           tasks: state.tasks.map((t) =>
             t.id === taskId
               ? { ...t, comments: (t.comments ?? []).filter((c) => c.id !== commentId) }
               : t
           ),
-        })),
+        }));
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { comments: t.comments ?? [] } });
+      },
 
-      addTaskLink: (taskId, link) =>
+      addTaskLink: (taskId, link) => {
         set((state) => ({
           tasks: state.tasks.map((t) => {
             if (t.id !== taskId) return t;
@@ -951,9 +954,12 @@ export const useStore = create<AppState>()((set, get) => ({
             if (links.some((l) => l.type === link.type && l.id === link.id)) return t;
             return { ...t, links: [...links, link] };
           }),
-        })),
+        }));
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { links: t.links ?? [] } });
+      },
 
-      removeTaskLink: (taskId, link) =>
+      removeTaskLink: (taskId, link) => {
         set((state) => ({
           tasks: state.tasks.map((t) =>
             t.id === taskId
@@ -965,7 +971,10 @@ export const useStore = create<AppState>()((set, get) => ({
                 }
               : t
           ),
-        })),
+        }));
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { links: t.links ?? [] } });
+      },
 
       // Navigate to whatever a link points at (a task's detail, or a project view).
       openTaskLink: (link) =>
@@ -1637,7 +1646,7 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       // Add/remove a responsible member on a task (multi-assignee).
-      toggleTaskAssignee: (taskId, memberId) =>
+      toggleTaskAssignee: (taskId, memberId) => {
         set((state) => ({
           tasks: state.tasks.map((t) => {
             if (t.id !== taskId) return t;
@@ -1649,7 +1658,10 @@ export const useStore = create<AppState>()((set, get) => ({
                 : [...ids, memberId],
             };
           }),
-        })),
+        }));
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { assigneeIds: t.assigneeIds ?? [] } });
+      },
 
       setUserName: (name) => {
         set((state) => ({ settings: { ...state.settings, userName: name } }));
