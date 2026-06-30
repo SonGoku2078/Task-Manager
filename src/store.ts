@@ -34,6 +34,7 @@ import {
 } from './api';
 import { enqueue, flush as flushOutbox } from './api/outbox';
 import { saveSnapshot, loadSnapshot } from './api/cache';
+import { buildOccurrence } from './recurrence';
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -842,38 +843,11 @@ export const useStore = create<AppState>()((set, get) => ({
         if (before && completing && before.recurrence !== 'none' && before.dueDate) {
           const nextDue = nextRecurrence(before.dueDate, before);
           if (!before.recurrenceEnd || nextDue <= before.recurrenceEnd) {
-            const now = new Date();
-            const baseNum = get().nextTaskNumber;
-            const newParentId = uid('task');
-            spawned = {
-              ...before,
-              id: newParentId,
-              number: baseNum,
-              completed: false,
-              completedAt: null,
-              dueDate: nextDue,
-              createdAt: now,
-              updatedAt: now,
-              comments: [],
-              attachments: [],
-            };
-            // Clone subtasks under the new occurrence, reset to "to do", keeping
-            // their entry order. Each consumes the next task number after parent.
-            spawnedSubs = get().tasks
-              .filter((x) => x.parentId === before.id)
-              .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || +a.createdAt - +b.createdAt)
-              .map((s, i) => ({
-                ...s,
-                id: uid('task'),
-                number: baseNum + 1 + i,
-                parentId: newParentId,
-                completed: false,
-                completedAt: null,
-                createdAt: now,
-                updatedAt: now,
-                comments: [],
-                attachments: [],
-              }));
+            // Carry the subtasks into the new occurrence (fix #20).
+            const subs = get().tasks.filter((x) => x.parentId === before.id);
+            const occ = buildOccurrence(before, subs, get().nextTaskNumber, nextDue, new Date(), () => uid('task'));
+            spawned = occ.parent;
+            spawnedSubs = occ.subs;
           }
         }
 
