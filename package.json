@@ -9,11 +9,14 @@
     "build": "tsc -b && vite build && cd server && npm run build",
     "build:electron": "npm run build && cd electron && npm run build",
     "start:prod": "npm run build && cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
+    "start:prod:run": "cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
     "dev:mobile": "vite --config apps/mobile/vite.config.ts",
     "build:mobile": "vite build --config apps/mobile/vite.config.ts",
     "db:seed-dev": "node scripts/seed-dev-db.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsx scripts/recurrence.test.ts",
+    "release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
@@ -37,6 +40,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "tsx": "^4.19.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"
