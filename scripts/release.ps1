@@ -20,7 +20,7 @@
 #    npm run release              # the real thing (interactive, deploys prod)
 #    npm run release -- -DryRun   # preview only: shows the flow, touches nothing
 # ============================================================================
-param([switch]$DryRun)
+param([switch]$DryRun, [string]$Version)
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
@@ -71,22 +71,26 @@ if ($LASTEXITCODE -ne 0) { Fail "Tests fehlgeschlagen - kein Deploy." }
 Write-Host ""
 Write-Host "OK: Tests gruen." -ForegroundColor Green
 
-# 4. Version + explicit Freigabe ----------------------------------------------
-function Suggest-Version($prev) {
+# 4. Version (auto = naechster Patch, oder -Version) + EINE Freigabe-Frage ------
+function Get-SuggestedVersion($prev) {
     if (-not $prev) { return "v0.1.0" }
     $m = [regex]::Match($prev, '^v?(\d+)\.(\d+)\.(\d+)$')
     if ($m.Success) { return ("v{0}.{1}.{2}" -f $m.Groups[1].Value, $m.Groups[2].Value, ([int]$m.Groups[3].Value + 1)) }
     return $prev
 }
-$suggest = Suggest-Version $last
+$ver = if ($Version) { $Version.Trim() } else { Get-SuggestedVersion $last }
+if ($ver -notmatch '^v') { $ver = "v$ver" }
+if ($ver -notmatch '^v\d+\.\d+\.\d+$') {
+    Fail ("Ungueltige Version '{0}' (erwartet vX.Y.Z). Custom so: npm run release -- -Version v0.3.0" -f $ver)
+}
 Write-Host ""
 
 if ($DryRun) {
-    Write-Host ("[DRY-RUN] Vorgeschlagene Version: {0}  (Abfrage uebersprungen)" -f $suggest) -ForegroundColor Magenta
+    Write-Host ("[DRY-RUN] Version: {0}  (Standard = naechster Patch; aenderbar mit -Version)" -f $ver) -ForegroundColor Magenta
     Write-Host "[DRY-RUN] Freigabe-Abfrage uebersprungen." -ForegroundColor Magenta
     Write-Host ""
     Write-Host "[DRY-RUN] Ab hier wuerde deployed (im echten Lauf: 'npm run release' -> 'j'):" -ForegroundColor Magenta
-    Write-Host ("   - git tag {0}  (lokaler Record)" -f $suggest)
+    Write-Host ("   - git tag {0}  (lokaler Record)" -f $ver)
     $conn = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($conn) { Write-Host ("   - alten Prod stoppen (PID {0})" -f $conn.OwningProcess) }
     else       { Write-Host "   - kein laufender Prod auf :3001 -> frisch starten" }
@@ -97,14 +101,10 @@ if ($DryRun) {
     exit 0
 }
 
-$ver = Read-Host ("Neue Version [{0}]" -f $suggest)
-if (-not $ver) { $ver = $suggest }
-$ver = $ver.Trim()
-if ($ver -notmatch '^v') { $ver = "v$ver" }
 $exists = & git rev-parse -q --verify ("refs/tags/{0}" -f $ver) 2>$null
-if ($exists) { Fail ("Tag {0} existiert schon." -f $ver) }
+if ($exists) { Fail ("Tag {0} existiert schon - naechste Version mit  -Version vX.Y.Z  angeben." -f $ver) }
 
-Write-Host ""
+Write-Host ("Version: {0}   (custom: npm run release -- -Version vX.Y.Z)" -f $ver) -ForegroundColor Cyan
 Write-Host ("Bereit: {0} auf PROD deployen (http://localhost:3001, DB=data.db)." -f $ver) -ForegroundColor Yellow
 $ok = Read-Host "FREIGEBEN und deployen? (j/N)"
 if ($ok -notin @('j','J','y','Y')) { Write-Host "Abgebrochen - Prod bleibt unveraendert." -ForegroundColor Yellow; exit 0 }
