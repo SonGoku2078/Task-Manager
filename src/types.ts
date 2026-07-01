@@ -154,6 +154,7 @@ export interface Section {
   // view key (e.g. "view:priority", "view:today", "view:nextweek", "view:someday").
   scope: string;
   name: string;
+  sortOrder?: number; // display order within its scope (persisted; drag to change)
 }
 
 export type ProjectKind = 'project' | 'area';

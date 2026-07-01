@@ -1114,7 +1114,12 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       addSection: (scope, name) => {
-        const section: Section = { id: uid('sec'), scope, name };
+        // Append after existing siblings in this scope so new sections don't all
+        // collide at sortOrder 0 (which would make their order arbitrary).
+        const maxOrder = get().sections
+          .filter((s) => s.scope === scope)
+          .reduce((m, s) => Math.max(m, s.sortOrder ?? 0), -1);
+        const section: Section = { id: uid('sec'), scope, name, sortOrder: maxOrder + 1 };
         set((state) => ({ sections: [...state.sections, section] }));
         enqueue('section.create', { section });
         return section;
@@ -1138,7 +1143,7 @@ export const useStore = create<AppState>()((set, get) => ({
         enqueue('section.remove', { id });
       },
 
-      reorderSections: (draggedId, targetId) =>
+      reorderSections: (draggedId, targetId) => {
         set((state) => {
           if (draggedId === targetId) return {};
           const list = [...state.sections];
@@ -1148,8 +1153,15 @@ export const useStore = create<AppState>()((set, get) => ({
           const [moved] = list.splice(from, 1);
           const insertAt = list.findIndex((s) => s.id === targetId);
           list.splice(insertAt, 0, moved);
-          return { sections: list };
-        }),
+          // Renumber sortOrder to the new positions so the order both shows AND
+          // persists across reloads (mirrors reorderProjects). Previously this
+          // only changed local state and was lost on refresh.
+          const renumbered = list.map((s, i) => ({ ...s, sortOrder: i }));
+          return { sections: renumbered };
+        });
+        const ids = get().sections.map((s) => s.id);
+        enqueue('section.reorder', { ids });
+      },
 
       dropTaskOnTask: (draggedId, targetId) =>
         set((state) => {

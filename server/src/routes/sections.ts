@@ -17,6 +17,14 @@ router.post('/', (req, res) => {
   res.status(201).json(rowToSection(db.prepare('SELECT * FROM sections WHERE id=?').get(id) as Record<string, unknown>));
 });
 
+// Persist a new section order (must be before /:id so it isn't captured by it).
+router.patch('/reorder', (req, res) => {
+  const { ids } = req.body as { ids: string[] };
+  const upd = db.prepare('UPDATE sections SET sort_order = ? WHERE id = ?');
+  db.transaction(() => ids.forEach((id, i) => upd.run(i, id)))();
+  res.status(204).end();
+});
+
 router.patch('/:id', (req, res) => {
   const { id } = req.params;
   const row = db.prepare('SELECT * FROM sections WHERE id=?').get(id) as Record<string, unknown> | undefined;

@@ -129,6 +129,7 @@ const handlers: Record<string, (p: any) => Promise<unknown>> = {
   'section.create':   (p) => sectionsApi.create(p.section),
   'section.update':   (p) => sectionsApi.update(p.id, p.patch),
   'section.remove':   (p) => sectionsApi.remove(p.id),
+  'section.reorder':  (p) => sectionsApi.reorder(p.ids),
   'blocker.create':   (p) => blockersApi.create(p.blocker),
   'blocker.update':   (p) => blockersApi.update(p.id, p.patch),
   'blocker.remove':   (p) => blockersApi.remove(p.id),

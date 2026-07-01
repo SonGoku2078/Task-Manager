@@ -6,6 +6,7 @@ export const sectionsApi = {
   create: (s: Section)                        => apiFetch<Section>('/api/sections', { method: 'POST', body: JSON.stringify(s) }),
   update: (id: string, p: Partial<Section>)  => apiFetch<Section>(`/api/sections/${id}`, { method: 'PATCH', body: JSON.stringify(p) }),
   remove: (id: string)                        => apiFetch<void>(`/api/sections/${id}`, { method: 'DELETE' }),
+  reorder: (ids: string[])                    => apiFetch<void>('/api/sections/reorder', { method: 'PATCH', body: JSON.stringify({ ids }) }),
 };
 
 export const blockersApi = {
