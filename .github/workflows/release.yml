@@ -1,12 +1,14 @@
-name: Release
+name: Release (retired - prod is released locally)
 
-# "Going to production" = push a version tag (e.g. v0.1.0). The app is built,
-# then the production release WAITS for manual approval (the `production`
-# environment has a required reviewer). Nothing reaches prod without that OK.
+# RETIRED: production is now released LOCALLY via `npm run release`
+# (scripts/release.ps1) = build + Freigabe + restart of the local prod server.
+# This workflow no longer runs on `v*` tags, so pushing a version tag does NOT
+# trigger the old approval gate anymore. It stays as a MANUAL-ONLY fallback that
+# still builds the portable prod bundle (zip) + waits on the `production`
+# environment approval — handy only if you ever deploy to a DIFFERENT machine.
+# Start it from the Actions tab -> this workflow -> "Run workflow".
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write

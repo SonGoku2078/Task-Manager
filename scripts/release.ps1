@@ -16,8 +16,11 @@
 #  Data is safe: same data.db, and the server writes a timestamped backup to
 #  ~/.task-manager/backups/ on every start.
 #
-#  Run from the repo root:   npm run release
+#  Usage:
+#    npm run release              # the real thing (interactive, deploys prod)
+#    npm run release -- -DryRun   # preview only: shows the flow, touches nothing
 # ============================================================================
+param([switch]$DryRun)
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
@@ -25,7 +28,8 @@ Set-Location $root
 function Fail($msg) { Write-Host ""; Write-Host "FEHLER: $msg" -ForegroundColor Red; exit 1 }
 
 Write-Host ""
-Write-Host "==================== SelfManaged Release ====================" -ForegroundColor Cyan
+if ($DryRun) { Write-Host "============ SelfManaged Release  [ TROCKENLAUF ] ============" -ForegroundColor Magenta }
+else         { Write-Host "==================== SelfManaged Release ====================" -ForegroundColor Cyan }
 
 # 1. Working tree must be clean -----------------------------------------------
 $dirty = git status --porcelain
@@ -54,14 +58,18 @@ if ($last) {
 # 3. Build + typecheck + test (fail-fast) -------------------------------------
 Write-Host ""
 Write-Host "-------- Build + Typecheck --------" -ForegroundColor Cyan
-npm run build
-if ($LASTEXITCODE -ne 0) { Fail "Build fehlgeschlagen - kein Deploy." }
+if ($DryRun) {
+    Write-Host "[DRY-RUN] 'npm run build' uebersprungen (es schreibt server/public = der laufende Prod)." -ForegroundColor DarkGray
+} else {
+    npm run build
+    if ($LASTEXITCODE -ne 0) { Fail "Build fehlgeschlagen - kein Deploy." }
+}
 Write-Host ""
 Write-Host "-------- Tests --------" -ForegroundColor Cyan
 npm test
 if ($LASTEXITCODE -ne 0) { Fail "Tests fehlgeschlagen - kein Deploy." }
 Write-Host ""
-Write-Host "OK: Build + Tests gruen." -ForegroundColor Green
+Write-Host "OK: Tests gruen." -ForegroundColor Green
 
 # 4. Version + explicit Freigabe ----------------------------------------------
 function Suggest-Version($prev) {
@@ -72,6 +80,23 @@ function Suggest-Version($prev) {
 }
 $suggest = Suggest-Version $last
 Write-Host ""
+
+if ($DryRun) {
+    Write-Host ("[DRY-RUN] Vorgeschlagene Version: {0}  (Abfrage uebersprungen)" -f $suggest) -ForegroundColor Magenta
+    Write-Host "[DRY-RUN] Freigabe-Abfrage uebersprungen." -ForegroundColor Magenta
+    Write-Host ""
+    Write-Host "[DRY-RUN] Ab hier wuerde deployed (im echten Lauf: 'npm run release' -> 'j'):" -ForegroundColor Magenta
+    Write-Host ("   - git tag {0}  (lokaler Record)" -f $suggest)
+    $conn = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($conn) { Write-Host ("   - alten Prod stoppen (PID {0})" -f $conn.OwningProcess) }
+    else       { Write-Host "   - kein laufender Prod auf :3001 -> frisch starten" }
+    Write-Host "   - frisch gebauten Prod in eigenem Fenster starten (npm run start:prod:run)"
+    Write-Host "   - http://localhost:3001/health pollen, bis OK"
+    Write-Host ""
+    Write-Host "[DRY-RUN] Fertig - PROD wurde NICHT angefasst, kein Tag gesetzt, nichts gebaut." -ForegroundColor Green
+    exit 0
+}
+
 $ver = Read-Host ("Neue Version [{0}]" -f $suggest)
 if (-not $ver) { $ver = $suggest }
 $ver = $ver.Trim()

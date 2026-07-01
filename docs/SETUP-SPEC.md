@@ -161,6 +161,22 @@ früher taggen. Der Gate bleibt immer derselbe.
   Keystore über alle Builds** → Updates installieren **in-place** (kein Deinstallieren, wichtig auf
   GrapheneOS).
 
+### 2.5 Lokaler Release (`npm run release`) — Freigabe ohne Hoster
+Für einen **lokal laufenden Prod-Server** (`npm run start:prod`, `localhost:3001`, DB in
+`~/.task-manager/`) braucht es den GitHub-Gate nicht — „Deploy" heißt hier nur *bauen + lokalen Server
+neu starten*. Das erledigt `scripts/release.ps1` (`npm run release`), mit dir als Freigeber:
+1. bricht ab, wenn der Working-Tree nicht sauber ist (deployt exakt das Committete);
+2. zeigt die Commits seit dem letzten `v*`-Tag;
+3. `npm run build` + `npm test` (fail-fast — kein Deploy bei Rot);
+4. fragt Version + eine **explizite Freigabe** (`j/N`);
+5. setzt ein lokales Tag, stoppt den alten Prod auf `:3001`, startet den frisch gebauten in einem
+   eigenen Fenster und pollt `/health` bis „OK".
+
+Vorschau ohne irgendetwas anzufassen: `npm run release -- -DryRun`. Daten sicher (gleiche `data.db` +
+Auto-Backup beim Start; DB-Pfad `~/.task-manager/`). Deshalb ist **`release.yml` stillgelegt** (nur
+noch `workflow_dispatch`) — gepushte `v*`-Tags lösen den alten Gate nicht mehr aus. GitHub bleibt für
+Backup (`git push`), den CI-Build-Check und die **Mobile-APKs**.
+
 ---
 
 ## 3. Skill-/Agenten-Pipeline (`.claude/skills/`)
