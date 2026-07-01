@@ -152,19 +152,21 @@ export function backupDb(tag = 'startup'): void {
 backupDb('startup');
 
 // ── Self-heal a stale dotfile lock ────────────────────────────────────────────
-// node-sqlite3-wasm uses SQLite's "dotfile" locking VFS, which creates a
-// `<db>.lock` file. If a server is killed or crashes uncleanly, that file is
-// left behind and every subsequent open fails with "database is locked" until
-// it is removed by hand. This app is single-instance (one local server owns the
-// DB), so on startup we safely remove a leftover lock before opening.
+// node-sqlite3-wasm uses SQLite's "dotfile" locking VFS, which creates the lock
+// as a `<db>.lock` DIRECTORY (via mkdir). If a server is killed or crashes
+// uncleanly, that lock is left behind and every subsequent open fails with
+// "database is locked" until it is removed by hand. This app is single-instance
+// (one local server owns the DB), so on startup we remove a leftover lock before
+// opening. NOTE: use rmSync(recursive) — unlink() throws EPERM on a directory
+// (Windows), which is why a killed server used to block the next startup.
 const LOCK_PATH = `${DB_PATH}.lock`;
 try {
   if (fs.existsSync(LOCK_PATH)) {
-    fs.unlinkSync(LOCK_PATH);
-    console.warn('Removed stale DB lock file:', LOCK_PATH);
+    fs.rmSync(LOCK_PATH, { recursive: true, force: true });
+    console.warn('Removed stale DB lock:', LOCK_PATH);
   }
 } catch (e) {
-  console.warn('Could not remove stale lock file (continuing):', e);
+  console.warn('Could not remove stale lock (continuing):', e);
 }
 
 const rawDb = new SQLiteLib.Database(DB_PATH);
