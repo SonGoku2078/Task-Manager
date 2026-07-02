@@ -1,7 +1,7 @@
 import { useRef, useState, type DragEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
-import { isOverdue } from '../selectors';
+import { isOverdue, orderSections } from '../selectors';
 import { readTaskIds, writeTaskIds } from '../dnd';
 import AvatarStack from './AvatarStack';
 import { assigneesOf } from '../members';
@@ -133,16 +133,7 @@ export default function TaskList({
   // in the list views tasks come from many projects, so keep the (coloured) name.
   const hideProject = singleProject;
   const scopeSections = grouped
-    ? sections
-        .filter((s) => s.scope === scopeKey)
-        // Stable order: by persisted sortOrder, then name (numeric-aware) so
-        // number-prefixed sections (04, 05, … 18, 99) fall in naturally even
-        // before anyone has dragged them.
-        .sort(
-          (a, b) =>
-            (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
-            a.name.localeCompare(b.name, undefined, { numeric: true })
-        )
+    ? orderSections(sections.filter((s) => s.scope === scopeKey))
     : [];
 
   if (tasks.length === 0 && !grouped) {

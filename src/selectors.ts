@@ -6,6 +6,22 @@ const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 // Sections that belong to the current view's scope (a single project, or the
 // per-view bucket for the GTD list views). Mirrors TaskList's grouping logic so
 // FilterBar and TaskList agree on whether a Gruppen/Sektionen bar applies.
+// Sections of one scope in DISPLAY order. Honour an explicit manual order only
+// when it is CLEAN (every sortOrder distinct); otherwise fall back to a
+// numeric-aware NAME order. This keeps number-prefixed sections (04 … 18, 99)
+// sensible even when sortOrder is inconsistent (e.g. some 0, some set — the
+// result of older global reorders/imports), while a user's drag order — which
+// renumbers a scope to a clean 0..n — is preserved.
+export function orderSections<T extends { sortOrder?: number; name: string }>(list: T[]): T[] {
+  const orders = list.map((s) => s.sortOrder ?? 0);
+  const allDistinct = list.length > 0 && new Set(orders).size === orders.length;
+  return [...list].sort((a, b) =>
+    allDistinct
+      ? (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+      : a.name.localeCompare(b.name, undefined, { numeric: true })
+  );
+}
+
 export const selectScopeSections = (ui: UIState, sections: Section[]): Section[] => {
   const singleProject =
     (ui.currentView === 'projects' || ui.currentView === 'someday') &&
@@ -15,7 +31,7 @@ export const selectScopeSections = (ui: UIState, sections: Section[]): Section[]
   const grouped = singleProject || (VIEW_GROUPABLE.includes(ui.currentView) && !singleProject);
   if (!grouped) return [];
   const scopeKey = singleProject ? ui.selectedProjectId! : `view:${ui.currentView}`;
-  return sections.filter((s) => s.scope === scopeKey);
+  return orderSections(sections.filter((s) => s.scope === scopeKey));
 };
 
 // Views that render the FilterBar — only there do ui.filters apply (see App.tsx).

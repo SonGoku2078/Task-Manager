@@ -35,6 +35,7 @@ import {
 import { enqueue, flush as flushOutbox } from './api/outbox';
 import { saveSnapshot, loadSnapshot } from './api/cache';
 import { buildOccurrence } from './recurrence';
+import { orderSections } from './selectors';
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -1144,23 +1145,26 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       reorderSections: (draggedId, targetId) => {
-        set((state) => {
-          if (draggedId === targetId) return {};
-          const list = [...state.sections];
-          const from = list.findIndex((s) => s.id === draggedId);
-          const to = list.findIndex((s) => s.id === targetId);
-          if (from === -1 || to === -1) return {};
-          const [moved] = list.splice(from, 1);
-          const insertAt = list.findIndex((s) => s.id === targetId);
-          list.splice(insertAt, 0, moved);
-          // Renumber sortOrder to the new positions so the order both shows AND
-          // persists across reloads (mirrors reorderProjects). Previously this
-          // only changed local state and was lost on refresh.
-          const renumbered = list.map((s, i) => ({ ...s, sortOrder: i }));
-          return { sections: renumbered };
-        });
-        const ids = get().sections.map((s) => s.id);
-        enqueue('section.reorder', { ids });
+        const st = get();
+        const dragged = st.sections.find((s) => s.id === draggedId);
+        const target = st.sections.find((s) => s.id === targetId);
+        if (!dragged || !target || draggedId === targetId || dragged.scope !== target.scope) return;
+        // Reorder ONLY within the dragged section's scope, starting from what's
+        // actually displayed (orderSections), then renumber that scope 0..n so it
+        // becomes a clean explicit order (and stays honoured). Other scopes are
+        // untouched — no more global renumber that scrambled cross-scope order.
+        const ordered = orderSections(st.sections.filter((s) => s.scope === dragged.scope));
+        const from = ordered.findIndex((s) => s.id === draggedId);
+        const [moved] = ordered.splice(from, 1);
+        const at = ordered.findIndex((s) => s.id === targetId);
+        ordered.splice(at < 0 ? ordered.length : at, 0, moved);
+        const orderById = new Map(ordered.map((s, i) => [s.id, i]));
+        set((state) => ({
+          sections: state.sections.map((s) =>
+            orderById.has(s.id) ? { ...s, sortOrder: orderById.get(s.id) } : s
+          ),
+        }));
+        enqueue('section.reorder', { ids: ordered.map((s) => s.id) });
       },
 
       dropTaskOnTask: (draggedId, targetId) =>
