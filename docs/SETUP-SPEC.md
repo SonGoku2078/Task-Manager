@@ -75,12 +75,37 @@ Mobile (`apps/mobile/vite.config.ts`): eigener Port `5174`, `host: true` (Handy 
 
 ## 2. CI/CD-Pipelines (GitHub Actions)
 
+### 2.0 Zwei Welten: Cloud-Build ≠ Deploy (WICHTIG)
+Bauen und Deployen passieren an **zwei getrennten Orten**. GitHub Actions läuft in der **Cloud** und
+kann `localhost:3001` **nicht erreichen** → GitHub deployt **niemals** auf deinen Prod-Server. Das
+echte Desktop-Deployment passiert **lokal** über `npm run release` (Abschnitt 2.5).
+
+```text
+         GitHub (Cloud)                          Dein PC
+ ┌──────────────────────────────┐   ┌───────────────────────────────────┐
+ │ git push → CI: build+typecheck│   │ npm run release                   │
+ │            (nur Prüfung)      │   │  → build → server/public          │
+ │ mobile-v* → signierte APK     │   │  → stop/start Prod :3001  ◀━ DEPLOY│
+ │ release.yml: STILLGELEGT      │   │  → data.db in ~/.task-manager/    │
+ └──────────────────────────────┘   └───────────────────────────────────┘
+     Backup · Prüfung · Handy-APK        das EINZIGE echte Desktop-Deploy
+```
+
+| Frage | Antwort |
+|---|---|
+| Wo wird **deployed**? | **Lokal**, per `npm run release` (stoppt/startet `:3001`). |
+| Baut GitHub auch? | Ja — aber nur als **Prüfung** (CI) bzw. **APK** (mobile). Nie auf deinen Prod. |
+| Triggert `npm run release` eine Action? | **Nein** — rein lokal, pusht nichts. Actions laufen nur bei `git push` / Tags. |
+| „publish-production ✅" im alten Run? | Hieß nur „**GitHub-Release (ZIP) veröffentlicht**", NICHT „`:3001` aktualisiert". GitHub nennt seine Environment-Stufe intern „deployment" — hier war das aber nur die Artefakt-Datei. |
+
+**Merksatz:** GitHub = Backup + Prüfung + Handy-APK. **Dein Terminal = das echte Desktop-Deploy.**
+
 Vier Workflows unter `.github/workflows/`:
 
 | Datei | Trigger | Zweck |
 |---|---|---|
 | `ci.yml` | push/PR auf `master` | Build + Typecheck-Gate (fängt Breaking Changes) |
-| `release.yml` | Tag `v*` | Prod-Bundle bauen **+ manuelle Freigabe** → GitHub Release |
+| `release.yml` | manuell (**stillgelegt**) | war: Prod-Bundle + Freigabe → GitHub Release. **Jetzt lokal**, s. 2.5 |
 | `mobile-apk.yml` | Tag `mobile-v*` | Stabil-signiertes Android-APK → an Release anhängen |
 | `gen-keystore.yml` | manuell (1×) | Signing-Keystore erzeugen |
 
@@ -101,7 +126,11 @@ jobs:
         run: npm run build
 ```
 
-### 2.2 `release.yml` — Prod-Release MIT manueller Freigabe
+### 2.2 `release.yml` — Prod-Release mit manueller Freigabe *(historisch — jetzt stillgelegt)*
+> **Hinweis:** Dieser Workflow ist auf `workflow_dispatch` stillgelegt (s. 2.5) — Prod wird heute
+> **lokal** per `npm run release` deployt. Der Aufbau bleibt als Referenz dokumentiert und als
+> manueller Fallback, falls man je den **portablen ZIP-Bundle** für einen anderen Rechner braucht.
+
 Zwei Jobs. Job 1 baut immer das Bundle; Job 2 (`publish-production`) ist durch die **GitHub-Environment
 `production`** gated und **wartet auf manuelle Bestätigung**.
 ```yaml
@@ -192,8 +221,8 @@ req-engineer → architect → developer → test-designer → test-manager (gat
   `test-manager`, `orchestrator`.
 
 **Mapping auf das Release:** Der `cicd-engineer` bringt Code nach `main`. Das eigentliche **Prod-Deploy**
-ist davon entkoppelt und passiert über `release.yml` + manuelle Freigabe (Abschnitt 2.3) — so kann man
-mehrere gemergte Features sammeln und gemeinsam taggen/releasen.
+ist davon entkoppelt und passiert **lokal** per `npm run release` (Abschnitt 2.5) — so kann man mehrere
+gemergte Features sammeln und in einem Rutsch mit Freigabe deployen.
 
 ---
 
@@ -203,13 +232,15 @@ mehrere gemergte Features sammeln und gemeinsam taggen/releasen.
    Dev nutzt `dev.db`/`3002`, Prod `data.db`/`3001`. npm-Scripts (`dev:server`, `start:prod`) übernehmen.
 2. **Vite:** Dev-Proxy auf das Dev-Backend; `build.outDir` = dort, wo der Server das SPA serviert.
 3. **`ci.yml`** kopieren (Build/Typecheck-Gate auf push/PR).
-4. **`release.yml`** kopieren; Bundle-Schritt an dein Artefakt anpassen.
-5. **GitHub-Environment `production`** anlegen + **Required reviewer** setzen (Abschnitt 2.3) — sonst
-   greift die manuelle Freigabe nicht.
-6. **Mobile (optional):** `gen-keystore.yml` 1× laufen lassen, `ANDROID_KEYSTORE_B64` setzen,
+4. **Deploy-Weg wählen:**
+   - **Lokaler Prod** (wie hier): `scripts/release.ps1` + die npm-Scripts `release`/`start:prod:run`
+     übernehmen (Abschnitt 2.5). Kein Hoster-Gate nötig.
+   - **Remote/anderer Rechner:** `release.yml` (Bundle-Schritt anpassen) **+** GitHub-Environment
+     `production` mit **Required reviewer** (Abschnitt 2.3) — sonst greift die manuelle Freigabe nicht.
+5. **Mobile (optional):** `gen-keystore.yml` 1× laufen lassen, `ANDROID_KEYSTORE_B64` setzen,
    `build.gradle`-Signing + `mobile-apk.yml` + `update.ts` übernehmen.
-7. **Skills:** `.claude/skills/` mitkopieren und Projektname/Pfade in den `SKILL.md` anpassen.
-8. **Branch-Schutz (optional):** `main`/`master` schützen, CI als required check.
+6. **Skills:** `.claude/skills/` mitkopieren und Projektname/Pfade in den `SKILL.md` anpassen.
+7. **Branch-Schutz (optional):** `main`/`master` schützen, CI als required check.
 
 ## 5. Stolpersteine (real aufgetreten)
 - **Prod-DB anfassen:** Nie. Strikt über Ports/DB-Dateien trennen; Prod-Server beim Entwickeln in Ruhe lassen.
