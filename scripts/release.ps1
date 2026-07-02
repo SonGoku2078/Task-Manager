@@ -12,15 +12,19 @@
 #    4. Ask for a version and an explicit Freigabe.
 #    5. Tag locally, stop the old prod on :3001, start the freshly built one
 #       (in its own window), and poll /health until it is up.
+#    6. Log the deploy on GitHub for traceability: push the tag, create a
+#       Release (auto changelog), and record a `production` deployment entry.
 #
 #  Data is safe: same data.db, and the server writes a timestamped backup to
 #  ~/.task-manager/backups/ on every start.
 #
 #  Usage:
-#    npm run release              # the real thing (interactive, deploys prod)
-#    npm run release -- -DryRun   # preview only: shows the flow, touches nothing
+#    npm run release               # the real thing (interactive, deploys prod)
+#    npm run release -- -DryRun    # preview only: shows the flow, touches nothing
+#    npm run release -- -Version v0.3.0   # custom version instead of next patch
+#    npm run release -- -NoPublish        # deploy locally but don't log to GitHub
 # ============================================================================
-param([switch]$DryRun, [string]$Version)
+param([switch]$DryRun, [string]$Version, [switch]$NoPublish)
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
@@ -96,6 +100,7 @@ if ($DryRun) {
     else       { Write-Host "   - kein laufender Prod auf :3001 -> frisch starten" }
     Write-Host "   - frisch gebauten Prod in eigenem Fenster starten (npm run start:prod:run)"
     Write-Host "   - http://localhost:3001/health pollen, bis OK"
+    Write-Host "   - GitHub: Tag pushen + Release + Deployment-Eintrag (Environments->production)"
     Write-Host ""
     Write-Host "[DRY-RUN] Fertig - PROD wurde NICHT angefasst, kein Tag gesetzt, nichts gebaut." -ForegroundColor Green
     exit 0
@@ -140,10 +145,39 @@ for ($i = 0; $i -lt 30; $i++) {
     } catch { }
 }
 Write-Host ""
-if ($up) {
-    Write-Host ("OK: {0} laeuft jetzt auf http://localhost:3001" -f $ver) -ForegroundColor Green
-    Write-Host "     DB-Backup wurde beim Start unter ~/.task-manager/backups/ angelegt."
-    Write-Host ("     Optional als Backup zu GitHub:  git push origin {0}" -f $ver) -ForegroundColor DarkGray
-} else {
+if (-not $up) {
     Fail "Prod nach Timeout nicht erreichbar - bitte das neue Prod-Fenster auf Fehler pruefen."
 }
+Write-Host ("OK: {0} laeuft jetzt auf http://localhost:3001" -f $ver) -ForegroundColor Green
+Write-Host "     DB-Backup wurde beim Start unter ~/.task-manager/backups/ angelegt."
+
+# 9. Nachvollzug auf GitHub (best effort - der lokale Deploy ist bereits erfolgt;
+#    Fehler hier, z.B. offline, brechen NICHTS ab). -----------------------------
+if ($NoPublish) {
+    Write-Host ("     (-NoPublish) GitHub uebersprungen. Spaeter nachtragen: git push origin {0}" -f $ver) -ForegroundColor DarkGray
+    exit 0
+}
+Write-Host ""
+Write-Host "Nachvollzug auf GitHub (Tag + Release + Deployment-Eintrag) ..."
+git push origin $ver 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ("  Konnte Tag nicht pushen (offline?). Spaeter nachholen: git push origin {0}" -f $ver) -ForegroundColor DarkYellow
+    exit 0
+}
+# GitHub Release mit automatischem Changelog (Commits seit letztem Release).
+try { gh release create $ver --title $ver --generate-notes 2>&1 | Out-Null } catch { }
+# Nativer Deployment-Eintrag unter Settings -> Environments -> production.
+try {
+    $repo = (gh repo view --json nameWithOwner -q .nameWithOwner 2>$null | Select-Object -First 1)
+    if ($repo) {
+        $repo = $repo.Trim()
+        $depJson = '{{"ref":"{0}","environment":"production","auto_merge":false,"required_contexts":[],"description":"Local prod deploy {0}"}}' -f $ver
+        $depId = ($depJson | gh api --method POST "repos/$repo/deployments" --input - 2>$null | ConvertFrom-Json).id
+        if ($depId) {
+            '{"state":"success","environment":"production","description":"Deployed locally"}' |
+                gh api --method POST "repos/$repo/deployments/$depId/statuses" --input - 2>$null | Out-Null
+        }
+    }
+} catch { }
+Write-Host ("  GitHub aktualisiert: Release {0} + Deployment-Eintrag." -f $ver) -ForegroundColor Green
+Write-Host "  Historie: Repo -> Releases  bzw.  Settings -> Environments -> production." -ForegroundColor DarkGray
