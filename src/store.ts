@@ -1167,21 +1167,31 @@ export const useStore = create<AppState>()((set, get) => ({
         enqueue('section.reorder', { ids: ordered.map((s) => s.id) });
       },
 
-      dropTaskOnTask: (draggedId, targetId) =>
+      dropTaskOnTask: (draggedId, targetId) => {
+        if (draggedId === targetId) return;
+        let sectionId: string | null | undefined;
         set((state) => {
-          if (draggedId === targetId) return {};
           const list = [...state.tasks];
           const from = list.findIndex((t) => t.id === draggedId);
           const target = list.find((t) => t.id === targetId);
           if (from === -1 || !target) return {};
           const [moved] = list.splice(from, 1);
           moved.sectionId = target.sectionId ?? null;
+          sectionId = moved.sectionId;
           const insertAt = list.findIndex((t) => t.id === targetId);
           list.splice(insertAt, 0, moved);
           return { tasks: list, ui: { ...state.ui, sortField: 'manual' as SortField } };
-        }),
+        });
+        // Persist section membership + new order — previously local-only, so the
+        // task fell out of its section on reload (#21).
+        if (sectionId !== undefined) {
+          enqueue('task.update', { id: draggedId, patch: { sectionId } });
+          enqueue('task.reorder', { ids: get().tasks.map((t) => t.id) });
+        }
+      },
 
-      assignTaskSection: (taskId, sectionId) =>
+      assignTaskSection: (taskId, sectionId) => {
+        let ok = false;
         set((state) => {
           const list = [...state.tasks];
           const from = list.findIndex((t) => t.id === taskId);
@@ -1197,8 +1207,16 @@ export const useStore = create<AppState>()((set, get) => ({
             }
           }
           list.splice(insertAt, 0, moved);
+          ok = true;
           return { tasks: list, ui: { ...state.ui, sortField: 'manual' as SortField } };
-        }),
+        });
+        // Persist section membership + new order — previously local-only, so the
+        // task fell out of its section on reload (#21).
+        if (ok) {
+          enqueue('task.update', { id: taskId, patch: { sectionId } });
+          enqueue('task.reorder', { ids: get().tasks.map((t) => t.id) });
+        }
+      },
 
       reorderProjects: (draggedId, targetId) => {
         set((state) => {
