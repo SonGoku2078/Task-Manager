@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store';
+import { dateKey } from '../selectors';
 import type { Priority, Task } from '../types';
 import './BulkActionBar.css';
 
@@ -28,6 +29,7 @@ export default function BulkActionBar({
   const inCompleted = currentView === 'completed';
   const inNextWeek = currentView === 'nextweek';
   const inSomeday = currentView === 'someday';
+  const inToday = currentView === 'today';
 
   // Brief "✓ done" feedback so a bulk action is visibly acknowledged.
   const [flash, setFlash] = useState('');
@@ -143,6 +145,26 @@ export default function BulkActionBar({
           🗓✕ Datum entfernen
         </button>
 
+        {!inToday && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            title="Für heute vormerken (verfällt über Nacht)"
+            onClick={() => apply({ todayDate: dateKey(new Date()) }, 'Heute')}
+          >
+            ☀️ Heute
+          </button>
+        )}
+        {inToday && (
+          <button
+            className="bulk-btn"
+            disabled={disabled}
+            title="Heute-Markierung entfernen"
+            onClick={() => apply({ todayDate: null }, 'aus Heute')}
+          >
+            ✕ Heute
+          </button>
+        )}
         {!inNextWeek && (
           <button
             className="bulk-btn"

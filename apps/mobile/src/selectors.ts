@@ -5,6 +5,7 @@ import {
   selectPriorityTasks,
   isInNextWeekWindow,
   isOverdue,
+  isTodayFlagActive,
   tasksOnDate,
   addDays,
   isSameDay,
@@ -14,7 +15,7 @@ import {
   matchesSearch,
 } from '../../../src/selectors';
 
-export { selectPriorityTasks, isInNextWeekWindow, isOverdue, tasksOnDate, addDays, isSameDay, dateKey, startOfWeek, weekDays7, matchesSearch };
+export { selectPriorityTasks, isInNextWeekWindow, isOverdue, isTodayFlagActive, tasksOnDate, addDays, isSameDay, dateKey, startOfWeek, weekDays7, matchesSearch };
 
 const root = (t: Task) => !t.parentId; // hide subtasks from the flat mobile lists
 
@@ -32,6 +33,30 @@ export const mobileDoneThisWeek = (tasks: Task[]): Task[] => {
   const since = addDays(new Date(), -7);
   return tasks
     .filter((t) => root(t) && t.completed && t.completedAt != null && t.completedAt >= since)
+    .sort((a, b) => +(b.completedAt as Date) - +(a.completedAt as Date));
+};
+
+// Heute: open tasks due today OR manually pinned via the ☀️ Heute flag
+// (expires overnight), sorted by due date (undated pins last).
+export const mobileToday = (tasks: Task[]): Task[] => {
+  const now = new Date();
+  return tasks
+    .filter(
+      (t) =>
+        root(t) &&
+        !t.completed &&
+        ((t.dueDate && isSameDay(t.dueDate, now)) || isTodayFlagActive(t, now))
+    )
+    .sort(
+      (a, b) => (a.dueDate ? +a.dueDate : Infinity) - (b.dueDate ? +b.dueDate : Infinity)
+    );
+};
+
+// Completed today — shown collapsed at the bottom of the Heute tab.
+export const mobileDoneToday = (tasks: Task[]): Task[] => {
+  const now = new Date();
+  return tasks
+    .filter((t) => root(t) && t.completed && t.completedAt != null && isSameDay(t.completedAt, now))
     .sort((a, b) => +(b.completedAt as Date) - +(a.completedAt as Date));
 };
 

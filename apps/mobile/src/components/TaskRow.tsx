@@ -1,5 +1,5 @@
 import { useStore } from '../store';
-import { isOverdue } from '../selectors';
+import { isOverdue, isTodayFlagActive } from '../selectors';
 import type { Task } from '../types';
 
 export default function TaskRow({
@@ -45,6 +45,7 @@ export default function TaskRow({
             </span>
           )}
           {task.durationMin ? <span className="m-row-dur">⏱ {task.durationMin}m</span> : null}
+          {isTodayFlagActive(task) && <span className="m-flag-today" title="Heute">☀️</span>}
           {task.thisWeek && <span className="m-flag-week" title="Next Week">🗓️</span>}
           {task.recurrence !== 'none' && <span title={task.recurrence}>↻</span>}
         </div>

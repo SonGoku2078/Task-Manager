@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import { parseQuickAdd } from '../quickParse';
+import { dateKey } from '../selectors';
 import type { MobileTab } from './Navigation';
 
 // Quick-add for the flat list tabs. Mirrors the desktop: the active view seeds
-// the new task's GTD flag (Woche → thisWeek, Aktion → starred), and #Projekt /
-// @Kategorie tokens file it (matched against existing projects/categories).
+// the new task's GTD flag (Heute → todayDate, Woche → thisWeek, Aktion →
+// starred), and #Projekt / @Kategorie tokens file it (matched against existing
+// projects/categories).
 export default function QuickAdd({ tab }: { tab: MobileTab }) {
   const addTask = useStore((s) => s.addTask);
   const projects = useStore((s) => s.projects);
@@ -26,6 +28,7 @@ export default function QuickAdd({ tab }: { tab: MobileTab }) {
       title: parsed.title || raw,
       projectId,
       categoryIds,
+      todayDate: tab === 'today' ? dateKey(new Date()) : null,
       thisWeek: tab === 'nextweek',
       starred: tab === 'nextaction',
     });

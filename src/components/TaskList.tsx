@@ -1,7 +1,7 @@
 import { useRef, useState, type DragEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
-import { isOverdue, orderSections } from '../selectors';
+import { isOverdue, isTodayFlagActive, orderSections } from '../selectors';
 import { readTaskIds, writeTaskIds } from '../dnd';
 import AvatarStack from './AvatarStack';
 import { assigneesOf } from '../members';
@@ -424,6 +424,9 @@ export default function TaskList({
             )}
             {task.starred && (
               <span className="task-flag flag-na" title="Nächste Aktion">★</span>
+            )}
+            {isTodayFlagActive(task) && (
+              <span className="task-flag flag-today" title="Heute">☀️</span>
             )}
             {task.thisWeek && (
               <span className="task-flag flag-week" title="Next Week">🗓️</span>

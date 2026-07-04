@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   this_week       INTEGER NOT NULL DEFAULT 0,
   waiting         INTEGER NOT NULL DEFAULT 0,
   waiting_for     TEXT,
+  today_date      TEXT,
   recurrence      TEXT NOT NULL DEFAULT 'none',
   recurrence_end  TEXT,
   recur_interval  INTEGER,

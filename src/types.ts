@@ -137,6 +137,9 @@ export interface Task {
   thisWeek?: boolean; // GTD: committed for the current week (shown in Next Week)
   waiting?: boolean; // GTD: waiting on someone else
   waitingFor?: string | null; // free-text name of the person being waited on
+  // GTD: manually pinned to "Heute". Holds the local dateKey (YYYY-MM-DD) of the
+  // day it was set; only active while todayDate === today, expires overnight.
+  todayDate?: string | null;
   comments?: Comment[];
   links?: TaskLink[]; // references to other tasks or projects (e.g. "see project X")
   assigneeId?: string | null; // deprecated single assignee (migrated to assigneeIds)

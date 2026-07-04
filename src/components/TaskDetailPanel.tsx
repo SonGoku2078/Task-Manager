@@ -3,6 +3,7 @@ import type { ClipboardEvent } from 'react';
 import { marked } from 'marked';
 import type { Task } from '../types';
 import { useStore } from '../store';
+import { dateKey, isTodayFlagActive } from '../selectors';
 import { taskShareUrl } from '../config';
 import ClearableInput from './ClearableInput';
 import Avatar from './Avatar';
@@ -312,6 +313,17 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               title="Nächste Aktion (Stern)"
             >
               ★ Nächste Aktion
+            </button>
+            <button
+              className={`detail-flag ${isTodayFlagActive(task) ? 'on' : ''}`}
+              onClick={() =>
+                updateTask(task.id, {
+                  todayDate: isTodayFlagActive(task) ? null : dateKey(new Date()),
+                })
+              }
+              title="Für heute vormerken (verfällt über Nacht)"
+            >
+              ☀️ Heute
             </button>
             <button
               className={`detail-flag ${task.thisWeek ? 'on' : ''}`}

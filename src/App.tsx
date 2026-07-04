@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
-import { selectVisibleTasks } from './selectors';
+import { dateKey, selectVisibleTasks } from './selectors';
 import { parseQuickAdd } from './quickParse';
 import type { ViewType } from './types';
 import './App.css';
@@ -58,6 +58,15 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // Re-render when the calendar day changes so the Heute view rolls over at
+  // midnight (due-today membership + ☀️ Heute flag expiry). setState with the
+  // identical string bails out, so this only re-renders on an actual day flip.
+  const [, setDayKey] = useState(() => dateKey(new Date()));
+  useEffect(() => {
+    const id = window.setInterval(() => setDayKey(dateKey(new Date())), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Server connectivity + write-queue status. The offline banner reflects both:
   // it warns when the backend is unreachable and shows how many edits are still

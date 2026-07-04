@@ -63,6 +63,10 @@ export const dateKey = (d: Date) =>
     d.getDate()
   ).padStart(2, '0')}`;
 
+// Manual "Heute" flag: only counts on the day it was set (expires overnight).
+export const isTodayFlagActive = (task: Task, now = new Date()): boolean =>
+  task.todayDate != null && task.todayDate === dateKey(now);
+
 export const isOverdue = (task: Task) =>
   !!task.dueDate && !task.completed && task.dueDate < startOfDay(new Date());
 
@@ -71,6 +75,7 @@ const statusKeywords = (task: Task): string[] => {
   const k: string[] = [];
   if (task.starred) k.push('nächste aktion', 'next action', 'naechste aktion');
   if (task.thisWeek) k.push('next week', 'nextweek', 'diese woche');
+  if (isTodayFlagActive(task)) k.push('heute', 'today');
   if (task.someday) k.push('someday', 'irgendwann');
   if (task.waiting) k.push('warten', 'warten auf', 'waiting', 'waiting on someone else');
   if (task.completed) k.push('erledigt', 'completed', 'done');
@@ -254,8 +259,11 @@ export const selectVisibleTasks = (
     }
     case 'today': {
       const now = new Date();
-      // Today = the day's agenda (due today). Overdue lives in Priorität.
-      result = result.filter((t) => t.dueDate && isSameDay(t.dueDate, now));
+      // Today = the day's agenda: due today OR manually pinned via the ☀️ Heute
+      // flag (expires overnight). Overdue lives in Priorität.
+      result = result.filter(
+        (t) => (t.dueDate && isSameDay(t.dueDate, now)) || isTodayFlagActive(t, now)
+      );
       break;
     }
     case 'search':

@@ -204,6 +204,7 @@ ensureColumns('tasks', {
   duration_min: 'INTEGER',
   waiting: 'INTEGER NOT NULL DEFAULT 0',
   waiting_for: 'TEXT',
+  today_date: 'TEXT',
   recurrence_end: 'TEXT',
   recur_interval: 'INTEGER',
   recur_unit: 'TEXT',

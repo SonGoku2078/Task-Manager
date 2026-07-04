@@ -15,7 +15,7 @@
     "db:seed-dev": "node scripts/seed-dev-db.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "tsx scripts/recurrence.test.ts",
+    "test": "tsx scripts/recurrence.test.ts && tsx scripts/todayflag.test.ts",
     "release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1"
   },
   "dependencies": {

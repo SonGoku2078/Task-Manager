@@ -173,6 +173,11 @@ const fmtVal = (
     return { low: 'Niedrig', medium: 'Mittel', high: 'Hoch' }[value as string] ?? String(value);
   }
   if (field === 'completed') return value ? 'erledigt' : 'offen';
+  if (field === 'todayDate') {
+    return typeof value === 'string' && value
+      ? new Date(`${value}T00:00:00`).toLocaleDateString('de-DE')
+      : '—';
+  }
   if (typeof value === 'boolean') return value ? 'ja' : 'nein';
   return String(value);
 };
@@ -188,6 +193,7 @@ const TRACKED_FIELDS: { key: keyof Task; label: string }[] = [
   { key: 'starred', label: 'Markierung' },
   { key: 'someday', label: 'Someday' },
   { key: 'thisWeek', label: 'Next Week' },
+  { key: 'todayDate', label: 'Heute' },
   { key: 'waiting', label: 'Warten auf' },
   { key: 'waitingFor', label: 'Warten auf (Person)' },
   { key: 'completed', label: 'Status' },
@@ -195,23 +201,28 @@ const TRACKED_FIELDS: { key: keyof Task; label: string }[] = [
   { key: 'assigneeIds', label: 'Zuweisung' },
 ];
 
-// GTD invariants: extend a task patch so the Someday/Next-Week flow stays valid.
-// - thisWeek implies not someday (no direct Someday→Next Week state)
-// - someday implies not thisWeek
+// GTD invariants: extend a task patch so the Someday/Next-Week/Heute flow stays valid.
+// - thisWeek or an active todayDate implies not someday (no parked "today" tasks)
+// - someday implies not thisWeek and clears the Heute pin
 // - unparking a *loose* task (no project) commits it to the Single-Tasks bucket
 const gtdInvariants = (
   before: Task,
   patch: Partial<Task>
 ): Partial<Task> => {
   const next = { ...patch };
-  if (next.thisWeek === true) next.someday = false;
-  // Committing to this week also makes it a next action.
-  if (next.thisWeek === true) next.starred = true;
-  if (next.someday === true) next.thisWeek = false;
+  const settingToday = typeof next.todayDate === 'string' && next.todayDate !== '';
+  if (next.thisWeek === true || settingToday) next.someday = false;
+  // Committing to this week / today also makes it a next action.
+  if (next.thisWeek === true || settingToday) next.starred = true;
+  if (next.someday === true) {
+    next.thisWeek = false;
+    next.todayDate = null;
+  }
   const after = { ...before, ...next };
   const leavingSomeday =
     (patch.someday === false && before.someday) ||
-    (patch.thisWeek === true && before.someday);
+    (patch.thisWeek === true && before.someday) ||
+    (settingToday && before.someday);
   if (leavingSomeday && !after.projectId) {
     next.projectId = 'p-single';
   }
@@ -318,6 +329,7 @@ export interface NewTaskInput {
   sectionId?: string | null;
   someday?: boolean;
   thisWeek?: boolean;
+  todayDate?: string | null;
   assigneeId?: string | null;
   assigneeIds?: string[];
   linkedProjectId?: string | null;
@@ -595,10 +607,11 @@ export const useStore = create<AppState>()((set, get) => ({
           completed: false,
           createdAt: now,
           updatedAt: now,
-          // Next Week implies Next Action (same rule as gtdInvariants).
-          starred: input.starred ?? input.thisWeek === true,
+          // Next Week / Heute implies Next Action (same rule as gtdInvariants).
+          starred: input.starred ?? (input.thisWeek === true || !!input.todayDate),
           someday: input.someday ?? false,
           thisWeek: input.thisWeek ?? false,
+          todayDate: input.todayDate ?? null,
           // Every task gets responsible person(s); default to the current user.
           assigneeIds:
             input.assigneeIds ??
@@ -746,10 +759,13 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       updateTask: (id, rawUpdates) => {
+        // Enforce GTD invariants (Someday/Next Week/Heute + auto Single-Tasks).
+        // Computed up front so the outbox receives the same adjusted patch as
+        // local state — enqueueing rawUpdates would let the server keep stale
+        // flags (e.g. someday=1) that the next loadAll() resurrects.
+        const before = get().tasks.find((t) => t.id === id);
+        const updates = before ? gtdInvariants(before, rawUpdates) : rawUpdates;
         set((state) => {
-          const before = state.tasks.find((t) => t.id === id);
-          // Enforce GTD invariants (Someday/Next Week + auto Single-Tasks).
-          const updates = before ? gtdInvariants(before, rawUpdates) : rawUpdates;
           const tasks = state.tasks.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date() } : t
           );
@@ -774,7 +790,7 @@ export const useStore = create<AppState>()((set, get) => ({
           }
           return { tasks, activityLog };
         });
-        enqueue('task.update', { id, patch: rawUpdates });
+        enqueue('task.update', { id, patch: updates });
       },
 
       deleteTask: (id) => {

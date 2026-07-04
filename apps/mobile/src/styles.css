@@ -409,6 +409,7 @@ body {
 
 /* ── Task-detail extras (GTD flags, subtasks, links, comments) ── */
 .m-flag-week { font-size: 12px; }
+.m-flag-today { font-size: 12px; }
 .m-gtd-row { display: flex; gap: 8px; }
 .m-gtd-btn {
   flex: 1; min-height: 44px; padding: 0 10px;

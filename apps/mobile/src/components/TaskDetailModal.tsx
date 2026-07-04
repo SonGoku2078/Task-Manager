@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import { parseDuration, formatDuration } from '../duration';
+import { dateKey, isTodayFlagActive } from '../selectors';
 import { useSwipeDown } from '../gestures';
 import type { Priority, RecurrenceType, RecurUnit, RecurMonthDay, TaskLink, Task } from '../types';
 
@@ -95,6 +96,12 @@ export default function TaskDetailModal({
         {/* GTD flags relevant on mobile (Someday/Warten stay browser-only). */}
         <div className="m-gtd-row">
           <button className={`m-gtd-btn ${t.starred ? 'on' : ''}`} onClick={() => toggleStar(t.id)}>★ Nächste Aktion</button>
+          <button
+            className={`m-gtd-btn ${isTodayFlagActive(t) ? 'on' : ''}`}
+            onClick={() => updateTask(t.id, { todayDate: isTodayFlagActive(t) ? null : dateKey(new Date()) })}
+          >
+            ☀️ Heute
+          </button>
           <button className={`m-gtd-btn ${t.thisWeek ? 'on' : ''}`} onClick={() => updateTask(t.id, { thisWeek: !t.thisWeek })}>🗓️ Next Week</button>
         </div>
 

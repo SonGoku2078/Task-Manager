@@ -24,6 +24,7 @@ function rowToTask(r: Record<string, unknown>) {
     thisWeek:     !!(r.this_week as number),
     waiting:      !!(r.waiting as number),
     waitingFor:   r.waiting_for ?? null,
+    todayDate:    r.today_date ?? null,
     recurrence:   r.recurrence,
     recurrenceEnd: r.recurrence_end ? new Date(r.recurrence_end as string) : null,
     recurInterval: r.recur_interval ?? null,
@@ -74,6 +75,7 @@ function taskToRow(t: Record<string, unknown>) {
     this_week:      t.thisWeek ? 1 : 0,
     waiting:        t.waiting ? 1 : 0,
     waiting_for:    t.waitingFor ?? null,
+    today_date:     t.todayDate ?? null,
     recurrence:     t.recurrence ?? 'none',
     recurrence_end: t.recurrenceEnd ? new Date(t.recurrenceEnd as string).toISOString() : null,
     recur_interval: t.recurInterval ?? null,
@@ -110,13 +112,13 @@ router.post('/', (req, res) => {
   db.prepare(`INSERT OR REPLACE INTO tasks
     (id,number,title,description,project_id,parent_id,section_id,
      due_date,start_minutes,duration_min,priority,completed,starred,
-     someday,this_week,waiting,waiting_for,recurrence,recurrence_end,
+     someday,this_week,waiting,waiting_for,today_date,recurrence,recurrence_end,
      recur_interval,recur_unit,recur_month_day,completed_at,created_at,updated_at,
      nozbe_id,sort_order,category_ids,assignee_ids,comments,attachments,links,linked_project_id)
     VALUES (
     @id,@number,@title,@description,@project_id,@parent_id,@section_id,
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
-    @someday,@this_week,@waiting,@waiting_for,@recurrence,@recurrence_end,
+    @someday,@this_week,@waiting,@waiting_for,@today_date,@recurrence,@recurrence_end,
     @recur_interval,@recur_unit,@recur_month_day,@completed_at,@created_at,@updated_at,
     @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
   )`).run(row);
@@ -144,7 +146,7 @@ router.patch('/:id', (req, res) => {
     parent_id=@parent_id, section_id=@section_id, due_date=@due_date,
     start_minutes=@start_minutes, duration_min=@duration_min, priority=@priority,
     completed=@completed, starred=@starred, someday=@someday, this_week=@this_week,
-    waiting=@waiting, waiting_for=@waiting_for, recurrence=@recurrence,
+    waiting=@waiting, waiting_for=@waiting_for, today_date=@today_date, recurrence=@recurrence,
     recurrence_end=@recurrence_end, recur_interval=@recur_interval,
     recur_unit=@recur_unit, recur_month_day=@recur_month_day, updated_at=@updated_at,
     nozbe_id=@nozbe_id, sort_order=@sort_order, category_ids=@category_ids,

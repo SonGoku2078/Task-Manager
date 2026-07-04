@@ -9,6 +9,7 @@ import Navigation from './Navigation';
 import QuickAdd from './QuickAdd';
 import Projects from './Projects';
 import Inbox from './Inbox';
+import Today from './Today';
 import NextWeek from './NextWeek';
 import NextAction from './NextAction';
 import Calendar from './Calendar';
@@ -22,6 +23,7 @@ import { consumeSharedIntent, onShareReceived, type SharedPayload } from '../sha
 const TAB_TITLE: Record<string, string> = {
   projekte: 'Projekte',
   inbox: 'Inbox',
+  today: 'Heute',
   nextweek: 'Next Week',
   nextaction: 'Next Action',
   calendar: 'Kalender',
@@ -136,6 +138,7 @@ export default function MobileApp() {
           />
         )}
         {tab === 'inbox' && <Inbox onOpenTask={openTask} />}
+        {tab === 'today' && <Today onOpenTask={openTask} />}
         {tab === 'nextweek' && <NextWeek onOpenTask={openTask} />}
         {tab === 'nextaction' && <NextAction onOpenTask={openTask} />}
         {tab === 'calendar' && <Calendar onOpenTask={openTask} />}
