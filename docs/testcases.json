@@ -489,6 +489,54 @@
           "bemerkung": "Playwright: 2 aktiv markiert; Drag verschiebt beide zusammen"
         }
       ]
+    },
+    {
+      "id": "TC-M34",
+      "bereich": "Batch D (Attachments/Pomodoro)",
+      "titel": "#4/#25: Bild-Anhang als Thumbnail + Lightbox (ohne Download)",
+      "erwartung": "Thumbnail im Task; Klick öffnet Großansicht mit Download-Option; Escape schließt nur die Lightbox.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-d.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Thumbnail, Lightbox, Download-Link, Escape"
+        }
+      ]
+    },
+    {
+      "id": "TC-M35",
+      "bereich": "Batch D (Attachments/Pomodoro)",
+      "titel": "#5: Datei per Drag&Drop anhängen (+ Sync-Fix: Anhänge persistieren)",
+      "erwartung": "Drop aufs Detail-Panel erzeugt Anhang; serverseitig persistiert (addAttachment enqueued jetzt).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-d.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Drop → 2 Thumbnails, Server-JSON attachments=2"
+        }
+      ]
+    },
+    {
+      "id": "TC-M36",
+      "bereich": "Batch D (Attachments/Pomodoro)",
+      "titel": "#3: Pomodoro-Timer (Countdown, Skip, Reset, Einstellungen)",
+      "erwartung": "Widget im Header, Countdown driftfrei, Skip wechselt Phase, 4 Einstellungsfelder persistieren.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-d.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: 25:00→24:57, phase-break nach Skip, 4 Felder"
+        }
+      ]
     }
   ]
 }
