@@ -155,7 +155,7 @@ export default function TaskDetailModal({
 
         {t.recurrence === 'custom' && (
           <div className="m-field-row">
-            <label className="m-field">
+            <label className="m-field m-field-num">
               <span>Alle</span>
               <input
                 type="number"

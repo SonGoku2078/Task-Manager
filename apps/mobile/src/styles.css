@@ -354,8 +354,13 @@ body {
   background: var(--card-bg); color: var(--text-primary);
   font-family: inherit; width: 100%;
 }
-.m-field-row { display: flex; gap: 10px; }
-.m-field-row .m-field { flex: 1; }
+/* min-width:0 lets selects/number inputs shrink instead of overflowing the
+   row (horizontal scrolling, #7); wrap catches rows with 3+ fields. */
+.m-field-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.m-field-row .m-field { flex: 1 1 0; min-width: 0; }
+/* Custom recurrence: the interval number needs only ~2 digits — keep it
+   narrow so the unit select gets the space (#7). */
+.m-field-row .m-field-num { flex: 0 0 88px; }
 .m-cats { display: flex; flex-wrap: wrap; gap: 6px; }
 .m-cat {
   padding: 6px 12px; min-height: 36px;
