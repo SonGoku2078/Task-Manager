@@ -1,0 +1,286 @@
+{
+  "updated": "2026-07-05",
+  "hinweis": "Zentrale Testfalldatenbank. Auto-Fälle werden von scripts/run-tests.mjs aktualisiert; manuelle Läufe trägt der Test-Manager ein. Anzeige: Web-App → 🧪 Testreport.",
+  "cases": [
+    {
+      "id": "TC-A01",
+      "bereich": "Auto-Tests",
+      "titel": "Recurring: nächste Occurrence behält Subtasks (fix #20)",
+      "erwartung": "buildOccurrence überträgt alle Subtasks zurückgesetzt und neu nummeriert auf die neue Occurrence.",
+      "typ": "auto",
+      "quelle": "scripts/recurrence.test.ts",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-A02",
+      "bereich": "Auto-Tests",
+      "titel": "Heute-Flag: nur am Setz-Tag aktiv, Heute-View = fällig ∪ gepinnt (#23)",
+      "erwartung": "isTodayFlagActive nur bei heutigem Key; selectVisibleTasks('today') liefert Union; gestriger Key inert.",
+      "typ": "auto",
+      "quelle": "scripts/todayflag.test.ts",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-A03",
+      "bereich": "Auto-Tests",
+      "titel": "ICS-Generator: Ganztags/Timed, RRULE, Escaping, 75-Oktett-Folding (#24)",
+      "erwartung": "Korrekte VEVENTs, RRULE nur bei offenen Tasks, UNTIL-Formate, CRLF.",
+      "typ": "auto",
+      "quelle": "scripts/ics.test.ts",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-A04",
+      "bereich": "Auto-Tests",
+      "titel": "Build Web + Server (tsc -b, vite build, server tsc)",
+      "erwartung": "npm run build läuft fehlerfrei durch.",
+      "typ": "auto",
+      "quelle": "npm run build",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-A05",
+      "bereich": "Auto-Tests",
+      "titel": "Build Mobile (vite build, Capacitor-Bundle)",
+      "erwartung": "npm run build:mobile läuft fehlerfrei durch.",
+      "typ": "auto",
+      "quelle": "npm run build:mobile",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-M01",
+      "bereich": "Inbox & CRUD",
+      "titel": "Task per Quick-Add anlegen → erscheint in Inbox",
+      "erwartung": "Neuer Task ohne Projekt landet in der Inbox, Titel korrekt.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/01-inbox.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M02",
+      "bereich": "Inbox & CRUD",
+      "titel": "Task-Titel ändern → persistiert nach Browser-Reload",
+      "erwartung": "Änderung überlebt Hard-Reload (Outbox → SQLite Roundtrip).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/02-crud.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M03",
+      "bereich": "Inbox & CRUD",
+      "titel": "Task löschen → Subtasks werden mitgelöscht, Wiederherstellen via Aktivität möglich",
+      "erwartung": "Kaskadierendes Löschen; Aktivitätslog bietet Restore an.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/02-crud.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M04",
+      "bereich": "Projekte",
+      "titel": "Projekt anlegen, Task zuordnen → erscheint in Projektansicht",
+      "erwartung": "Projekt in Panel sichtbar, Task unter Projekt gelistet.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/03-projects.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M05",
+      "bereich": "GTD-Flags",
+      "titel": "★ Nächste Aktion → Task erscheint in Priorität-View",
+      "erwartung": "Gesternte offene Tasks (aktive Projekte) in Priorität; Someday ausgeschlossen.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/04-priority-list.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M06",
+      "bereich": "Task-Felder",
+      "titel": "Fälligkeit, Priorität, Kategorie setzen → persistiert",
+      "erwartung": "Alle Felder nach Reload korrekt; Kategorie-Chip sichtbar.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/05-task-fields.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M07",
+      "bereich": "Task-Felder",
+      "titel": "Task erledigen → durchgestrichen, sinkt ans Listenende, in Erledigt-View",
+      "erwartung": "completedAt gesetzt, Completed-View zeigt Task.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/06-completed.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M08",
+      "bereich": "Kategorien",
+      "titel": "Kategorien-View filtert nach zugewiesener Kategorie",
+      "erwartung": "Nur Tasks mit gewählter Kategorie sichtbar.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/08-categories.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M09",
+      "bereich": "Kalender",
+      "titel": "Task mit Datum erscheint im Kalender; mit Uhrzeit als Zeitblock in Woche",
+      "erwartung": "Kalender-Tag zeigt Task; WeekView positioniert nach startMinutes/durationMin.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/09-calendar.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M10",
+      "bereich": "Recurring",
+      "titel": "Wiederkehrenden Task erledigen → nächste Occurrence mit korrektem Datum",
+      "erwartung": "Neue offene Task am nächsten Termin, Subtasks zurückgesetzt, alte bleibt erledigt.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/10-recurring.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M11",
+      "bereich": "Filter & Sortierung",
+      "titel": "FilterBar filtert (Projekt/Priorität/Datum); Sortierung wechselbar",
+      "erwartung": "Ergebnisliste entspricht Filterkriterien; Sortfeld/-richtung wirken.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/11-filter-sort.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M12",
+      "bereich": "Suche",
+      "titel": "Volltextsuche findet Task nach Titel, #Nummer und Status-Keyword (z.B. 'heute')",
+      "erwartung": "Treffer inkl. Subtasks; Status-Keywords wirken.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/12-search.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M13",
+      "bereich": "Heute",
+      "titel": "Heute-View zeigt heute fällige + ☀️-gepinnte Tasks; Pin verfällt über Nacht",
+      "erwartung": "Union-Filter; gestriger todayDate-Wert inert; ☀️-Icon nur bei aktivem Flag.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/t2-01-today-view.md + issue-23",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M14",
+      "bereich": "Bulk-Operationen",
+      "titel": "Mehrfachauswahl: erledigen, Next Week, Someday, Heute via BulkActionBar",
+      "erwartung": "Alle gewählten Tasks erhalten die Änderung inkl. GTD-Invarianten.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/t2-02-bulk-operations.md",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M15",
+      "bereich": "Sektionen",
+      "titel": "Task per Drag in Sektion → bleibt nach Reload in der Sektion",
+      "erwartung": "sectionId persistiert (#21); Reihenfolge stabil (#22).",
+      "typ": "manuell",
+      "quelle": "Fixes #21/#22",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M16",
+      "bereich": "Sync/Offline",
+      "titel": "Änderung bei gestopptem Server → Outbox-Replay nach Serverstart",
+      "erwartung": "Pending-Banner erscheint; nach Reconnect ist die Änderung serverseitig.",
+      "typ": "manuell",
+      "quelle": "src/api/outbox.ts",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M17",
+      "bereich": "ICS-Feed",
+      "titel": "Feed-Info liefert persistentes Token; Feed 200/text-calendar; falsches Token 404",
+      "erwartung": "GET /api/calendar-feed & /calendar/<token>.ics korrekt; /api/lan unverändert.",
+      "typ": "manuell",
+      "quelle": "issue-24 (server/src/routes/calendar.ts)",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M18",
+      "bereich": "Uhrzeit",
+      "titel": "Uhrzeit im Task-Detail setzen (Web + Mobile) → Woche zeigt Zeitblock, ICS zeigt DTSTART mit Zeit",
+      "erwartung": "startMinutes-Roundtrip; leeres Feld = Ganztages-Event.",
+      "typ": "manuell",
+      "quelle": "issue-24/#11 (src/duration.ts)",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M19",
+      "bereich": "Mobile",
+      "titel": "Mobile-Smoke: Tabs laden (inkl. Heute), Task-Detail öffnet, QuickAdd erstellt Task",
+      "erwartung": "Alle 6 Tabs rendern, Detail-Modal-Flags funktionieren, Sync läuft.",
+      "typ": "manuell",
+      "quelle": "apps/mobile",
+      "regression": true,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M20",
+      "bereich": "Einstellungen",
+      "titel": "Theme wechseln + Benutzername ändern → persistiert; Kalender-Feed-Sektion zeigt URLs",
+      "erwartung": "Settings-Roundtrip über Server; Feed-URLs mit Token gelistet.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/t3-04-team-settings.md + issue-24",
+      "regression": true,
+      "laeufe": []
+    }
+  ]
+}

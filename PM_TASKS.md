@@ -82,9 +82,31 @@ Features gebrieft, beim Requirements Engineer in Arbeit.
 
 ## 📊 Active GitHub Issues
 
-| # | Title | Status | Label | Assignee |
-|---|-------|--------|-------|----------|
-| (none yet) | — | — | — | — |
+Durchlauf 2026-07-05: alle offenen Issues in Batches durch die Pipeline (Beschluss: direkte Commits auf master; Deploy erst nach User-Approve auf der 🧪 Testreport-Seite).
+
+| # | Title | Batch | Status |
+|---|-------|-------|--------|
+| #23 | Heute-Flag | Phase 0 | ✅ done (Commit 43db2b2) |
+| #24 | ICS-Feed | Phase 0 | ✅ done |
+| #11 | Uhrzeit erfassen | Phase 0 | ✅ done (mit #24) |
+| #13 | Bulk Next Week/Someday | Phase 0 | zu verifizieren (BulkActionBar existiert) |
+| #6 | Emails als Tasks | Phase 0 | zu verifizieren (Extension existiert) |
+| #2 | Zeilenabstand Beschreibung | A | offen |
+| #7 | Custom-Recurrence Layout | A | offen |
+| #12 | Projektfarbe ganze Zeile | A | offen |
+| #19 | Quick-Add auf Suchseite entfernen | A | offen |
+| #10 | Drop-Indikator Areas | A | offen |
+| #1 | Subtask-Meta-Zeile | A | offen |
+| #18 | Bug: Next Week zeigt Zukunfts-Task | B | offen |
+| #17 | Bug: verlinkte Projekte fallen aus Sektionen | B | offen |
+| #15 | Bug: Someday-View springt bei Archivieren | B | offen |
+| #26 | Task in Sektion erstellen | C | offen |
+| #9 | Suche im Projekt | C | offen |
+| #16 | Kommentare mehrzeilig + editierbar | C | offen |
+| #14 | Mehrere Projekte selektieren | C | offen |
+| #4/#25/#5 | Attachments-UX (Vorschau, Paste, Drag&Drop) | D | offen |
+| #3 | Pomodoro-Timer | D | offen |
+| #8 | Evernote-Integration | — | 🅿 geparkt (braucht Recherche/Klärung, bleibt offen) |
 
 ---
 

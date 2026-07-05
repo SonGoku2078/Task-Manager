@@ -17,6 +17,7 @@ import BulkActionBar from './components/BulkActionBar';
 import TemplatesGallery from './components/TemplatesGallery';
 import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
+import TestReportView from './components/TestReportView';
 import MembersView from './components/MembersView';
 import SettingsView from './components/SettingsView';
 import ClearableInput from './components/ClearableInput';
@@ -43,6 +44,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   activity: 'Aktivität',
   completed: 'Erledigt',
   reports: 'Berichte',
+  testreport: 'Testreport',
   members: 'Benutzer',
   settings: 'Einstellungen',
 };
@@ -561,6 +563,8 @@ function App() {
           <ActivityLog />
         ) : ui.currentView === 'reports' ? (
           <ReportsView />
+        ) : ui.currentView === 'testreport' ? (
+          <TestReportView />
         ) : ui.currentView === 'members' ? (
           <MembersView />
         ) : ui.currentView === 'settings' ? (

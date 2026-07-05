@@ -24,6 +24,7 @@ const bottomItems: { id: ViewType; icon: string; label: string }[] = [
   { id: 'completed', icon: '✅', label: 'Erledigt' },
   { id: 'activity', icon: '📜', label: 'Aktivität' },
   { id: 'reports', icon: '📊', label: 'Berichte' },
+  { id: 'testreport', icon: '🧪', label: 'Testreport' },
   { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
 ];
 

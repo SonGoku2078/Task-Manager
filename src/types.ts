@@ -68,6 +68,7 @@ export type ViewType =
   | 'activity'
   | 'completed'
   | 'reports'
+  | 'testreport'
   | 'members'
   | 'settings';
 
