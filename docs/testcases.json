@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-05",
+  "updated": "2026-07-06",
   "hinweis": "Zentrale Testfalldatenbank. Auto-Fälle werden von scripts/run-tests.mjs aktualisiert; manuelle Läufe trägt der Test-Manager ein. Anzeige: Web-App → 🧪 Testreport.",
   "cases": [
     {
@@ -423,6 +423,70 @@
           "datum": "2026-07-05",
           "ergebnis": "pass",
           "bemerkung": "Playwright: sectionId=v17-sec nach Drop, nach Reload inGroup=true (bereits durch #21-Fix behoben)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M30",
+      "bereich": "Batch C (Features)",
+      "titel": "#26: Task direkt in Sektion erstellen",
+      "erwartung": "+ Aufgabe in Sektion → Task mit sectionId+projectId persistiert, rendert in Sektion.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-c.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: sectionId=vc-sec, projectId=vc-proj, in section-body"
+        }
+      ]
+    },
+    {
+      "id": "TC-M31",
+      "bereich": "Batch C (Features)",
+      "titel": "#9: Titel-Filter im Projekt (FilterBar, auch eingeklappt)",
+      "erwartung": "Tippen filtert Taskliste live; Query resettet bei Ansichtswechsel.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-c.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Alpha sichtbar, Beta gefiltert"
+        }
+      ]
+    },
+    {
+      "id": "TC-M32",
+      "bereich": "Batch C (Features)",
+      "titel": "#16: Kommentare mehrzeilig (Markdown, Editor-Toolbar) + editierbar",
+      "erwartung": "Strg+Enter sendet; Markdown-Liste gerendert; Edit persistiert serverseitig.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-c.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: li=2 gerendert, Edit im Server-JSON"
+        }
+      ]
+    },
+    {
+      "id": "TC-M33",
+      "bereich": "Batch C (Features)",
+      "titel": "#14: Mehrere Projekte Ctrl-selektieren und gemeinsam verschieben",
+      "erwartung": "Selektion wird beim Drag zusammen (reihenfolgeerhaltend) verschoben.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-c.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: 2 aktiv markiert; Drag verschiebt beide zusammen"
         }
       ]
     }
