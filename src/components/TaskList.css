@@ -205,6 +205,33 @@
   color: var(--text-primary);
 }
 
+/* Inline task quick-add at the bottom of each section (#26). */
+.section-task-add-btn {
+  display: block;
+  margin: 4px 20px 10px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.section-task-add-btn:hover { color: var(--accent); }
+.section-task-add-input {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 4px 20px 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--main-bg);
+  color: var(--text-primary);
+}
+
 .task-item {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-light);

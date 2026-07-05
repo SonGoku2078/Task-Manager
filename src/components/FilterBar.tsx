@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { selectScopeSections } from '../selectors';
+import ClearableInput from './ClearableInput';
 import type { Priority, SortField } from '../types';
 import './FilterBar.css';
 
@@ -25,6 +26,8 @@ export default function FilterBar() {
   const members = useStore((s) => s.members);
   const setFilter = useStore((s) => s.setFilter);
   const resetFilters = useStore((s) => s.resetFilters);
+  const searchQuery = useStore((s) => s.ui.searchQuery);
+  const setSearchQuery = useStore((s) => s.setSearchQuery);
   const setSort = useStore((s) => s.setSort);
   const addSavedView = useStore((s) => s.addSavedView);
   const applySavedView = useStore((s) => s.applySavedView);
@@ -91,6 +94,18 @@ export default function FilterBar() {
           ▸ Filter
         </button>
         {sectionToggle}
+        {/* Title filter stays available even with collapsed filters (#9). */}
+        {currentView !== 'search' && (
+          <ClearableInput
+            wrapperClassName="filter-search-wrap"
+            className="filter-search"
+            type="text"
+            placeholder="🔍 Nach Aufgabenname filtern…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
+          />
+        )}
         {activeCount > 0 && <span className="filter-active-badge">{activeCount}</span>}
         {hasActiveFilter && (
           <button className="filter-reset" onClick={resetFilters}>
@@ -111,6 +126,20 @@ export default function FilterBar() {
         ▾ Filter
       </button>
       {sectionToggle}
+
+      {/* Title filter within the current view, e.g. inside a project (#9).
+          The query resets automatically on view change (setView). */}
+      {currentView !== 'search' && (
+        <ClearableInput
+          wrapperClassName="filter-search-wrap"
+          className="filter-search"
+          type="text"
+          placeholder="🔍 Nach Aufgabenname filtern…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onClear={() => setSearchQuery('')}
+        />
+      )}
 
       {!inSingleProject && (
         <select

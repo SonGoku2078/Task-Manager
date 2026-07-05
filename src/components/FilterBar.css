@@ -39,6 +39,20 @@
   padding: 1px 7px;
 }
 
+/* Title filter inside the current view (#9). */
+.filter-search-wrap { flex-shrink: 1; min-width: 130px; }
+.filter-search {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text-primary);
+}
+.filter-search:focus { outline: none; border-color: var(--accent); }
+
 .filter-select {
   padding: 5px 8px;
   border: 1px solid var(--border-light);

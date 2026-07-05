@@ -57,6 +57,7 @@ export default function TaskList({
   const addSection = useStore((s) => s.addSection);
   const renameSection = useStore((s) => s.renameSection);
   const deleteSection = useStore((s) => s.deleteSection);
+  const addTask = useStore((s) => s.addTask);
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -69,6 +70,9 @@ export default function TaskList({
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  // Inline quick-add per section (#26): section id currently adding + its text.
+  const [addingTaskSecId, setAddingTaskSecId] = useState<string | null>(null);
+  const [newSecTaskTitle, setNewSecTaskTitle] = useState('');
   // Refs to each rendered section, so the index bar can scroll to one.
   const sectionElRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // Which parent rows have their subtasks expanded inline (local, not persisted).
@@ -689,6 +693,51 @@ export default function TaskList({
               {secTasks.map(renderTask)}
               {secTasks.length === 0 && (
                 <p className="section-empty-hint">Aufgaben hierher ziehen…</p>
+              )}
+              {/* Create a task directly inside this section (#26). */}
+              {addingTaskSecId === sec.id ? (
+                <input
+                  autoFocus
+                  className="section-task-add-input"
+                  placeholder="Neue Aufgabe… (Enter)"
+                  value={newSecTaskTitle}
+                  onChange={(e) => setNewSecTaskTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newSecTaskTitle.trim()) {
+                      addTask({
+                        title: newSecTaskTitle.trim(),
+                        projectId: singleProject ? selectedProjectId : null,
+                        sectionId: sec.id,
+                      });
+                      setNewSecTaskTitle('');
+                    }
+                    if (e.key === 'Escape') {
+                      setAddingTaskSecId(null);
+                      setNewSecTaskTitle('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (newSecTaskTitle.trim()) {
+                      addTask({
+                        title: newSecTaskTitle.trim(),
+                        projectId: singleProject ? selectedProjectId : null,
+                        sectionId: sec.id,
+                      });
+                    }
+                    setAddingTaskSecId(null);
+                    setNewSecTaskTitle('');
+                  }}
+                />
+              ) : (
+                <button
+                  className="section-task-add-btn"
+                  onClick={() => {
+                    setAddingTaskSecId(sec.id);
+                    setNewSecTaskTitle('');
+                  }}
+                >
+                  + Aufgabe
+                </button>
               )}
             </div>
           </div>
