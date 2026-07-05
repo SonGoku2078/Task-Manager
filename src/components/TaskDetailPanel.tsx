@@ -187,6 +187,35 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
     }
   };
 
+  // Files dropped anywhere on the panel become attachments (#5). Task-row
+  // drags carry no files, so they fall through untouched.
+  const [fileDragOver, setFileDragOver] = useState(false);
+  const handleFileDrop = (e: React.DragEvent) => {
+    if (!e.dataTransfer.files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setFileDragOver(false);
+    for (const file of e.dataTransfer.files) handleFile(file);
+  };
+  // Lightbox (#4/#25): attachment id currently shown enlarged.
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const lightbox = attachments.find((a) => a.id === lightboxId);
+  useEffect(() => {
+    if (!lightboxId) return;
+    // Capture phase + stopPropagation so Escape only closes the lightbox,
+    // not also the whole detail panel underneath.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setLightboxId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [lightboxId]);
+  const isImage = (a: { type: string; dataUrl?: string; url?: string }) =>
+    a.type.startsWith('image/') && !!(a.dataUrl || a.url);
+
   const handleFile = (file: File | undefined) => {
     setAttachError('');
     if (!file) return;
@@ -227,7 +256,21 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   };
 
   return (
-    <div className="task-detail-panel" onPaste={handlePaste} style={{ width }}>
+    <div
+      className={`task-detail-panel ${fileDragOver ? 'file-drag-over' : ''}`}
+      onPaste={handlePaste}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          e.preventDefault();
+          setFileDragOver(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setFileDragOver(false);
+      }}
+      onDrop={handleFileDrop}
+      style={{ width }}
+    >
       <div
         className="detail-resize"
         title="Breite ziehen"
@@ -407,11 +450,36 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           <label className="detail-label">
             Anhänge {attachments.length > 0 && `(${attachments.length})`}
           </label>
+          {/* Image attachments show as thumbnails; click opens the lightbox
+              instead of forcing a download (#4/#25). */}
+          {attachments.some(isImage) && (
+            <div className="attach-thumbs">
+              {attachments.filter(isImage).map((a) => (
+                <button
+                  key={a.id}
+                  className="attach-thumb"
+                  title={`${a.name} — klicken für Großansicht`}
+                  onClick={() => setLightboxId(a.id)}
+                >
+                  <img src={a.dataUrl || a.url} alt={a.name} loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
           <div className="attach-list">
             {attachments.map((a) => {
               const remote = !!a.url && !a.dataUrl;
               return (
               <div key={a.id} className="attach-item">
+                {isImage(a) ? (
+                  <button
+                    className="attach-link attach-link-btn"
+                    title={`${a.name} — klicken für Großansicht`}
+                    onClick={() => setLightboxId(a.id)}
+                  >
+                    🖼 {a.name}
+                  </button>
+                ) : (
                 <a
                   href={a.url || a.dataUrl}
                   download={remote ? undefined : a.name}
@@ -422,6 +490,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                 >
                   {a.type === 'link' ? '🔗' : '📎'} {a.name}
                 </a>
+                )}
                 <span className="attach-size">
                   {remote ? '↗' : formatSize(a.size)}
                 </span>
@@ -891,6 +960,27 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         </div>
       </div>
 
+      {/* Lightbox: large image preview with download, no forced download (#4/#25). */}
+      {lightbox && (
+        <div className="attach-lightbox" onClick={() => setLightboxId(null)}>
+          <div className="attach-lightbox-inner" onClick={(e) => e.stopPropagation()}>
+            <img src={lightbox.dataUrl || lightbox.url} alt={lightbox.name} />
+            <div className="attach-lightbox-bar">
+              <span className="attach-lightbox-name">{lightbox.name}</span>
+              <a
+                className="btn"
+                href={lightbox.dataUrl || lightbox.url}
+                download={lightbox.name}
+              >
+                ⬇ Herunterladen
+              </a>
+              <button className="btn" onClick={() => setLightboxId(null)}>
+                ✕ Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

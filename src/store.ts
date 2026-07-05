@@ -314,6 +314,26 @@ const defaultSettings: Settings = {
   calendarHourHeight: 48,
 };
 
+// Pomodoro timer (#3). While running, `endsAt` (epoch ms) is authoritative —
+// the widget derives the countdown from it, so ticks never drift. While
+// paused, `remainingMs` holds the frozen rest.
+export type PomodoroPhase = 'focus' | 'break' | 'long';
+export interface PomodoroState {
+  phase: PomodoroPhase;
+  running: boolean;
+  endsAt: number | null;
+  remainingMs: number;
+  round: number; // 1-based focus round; long break after every `pomodoroRounds`
+}
+
+export const pomodoroPhaseMs = (phase: PomodoroPhase, s: Settings): number =>
+  60_000 *
+  (phase === 'focus'
+    ? s.pomodoroFocusMin ?? 25
+    : phase === 'break'
+      ? s.pomodoroBreakMin ?? 5
+      : s.pomodoroLongBreakMin ?? 15);
+
 export interface NewTaskInput {
   title: string;
   description?: string;
@@ -352,6 +372,16 @@ interface AppState {
   // the server is unreachable so the UI can avoid implying the (empty) memory
   // state is real.
   dataLoaded: boolean;
+
+  // Pomodoro timer (#3): runtime state lives in the store so the countdown
+  // survives view changes; only the interval settings persist to the server.
+  pomodoro: PomodoroState;
+  pomodoroStart: () => void;
+  pomodoroPause: () => void;
+  pomodoroReset: () => void;
+  // Move to the next phase (timer hit 0 or user skipped); keeps running state.
+  pomodoroAdvance: () => void;
+  setPomodoroSettings: (patch: Partial<Settings>) => void;
 
   loadAll: () => Promise<void>;
 
@@ -527,6 +557,61 @@ export const useStore = create<AppState>()((set, get) => ({
   nextTaskNumber: 1,
   ui: defaultUIState,
   dataLoaded: false,
+  pomodoro: { phase: 'focus', running: false, endsAt: null, remainingMs: 25 * 60_000, round: 1 },
+
+  pomodoroStart: () =>
+    set((state) => ({
+      pomodoro: {
+        ...state.pomodoro,
+        running: true,
+        endsAt: Date.now() + state.pomodoro.remainingMs,
+      },
+    })),
+
+  pomodoroPause: () =>
+    set((state) => ({
+      pomodoro: {
+        ...state.pomodoro,
+        running: false,
+        remainingMs: Math.max(0, (state.pomodoro.endsAt ?? Date.now()) - Date.now()),
+        endsAt: null,
+      },
+    })),
+
+  pomodoroReset: () =>
+    set((state) => ({
+      pomodoro: {
+        phase: 'focus',
+        running: false,
+        endsAt: null,
+        remainingMs: pomodoroPhaseMs('focus', state.settings),
+        round: 1,
+      },
+    })),
+
+  pomodoroAdvance: () =>
+    set((state) => {
+      const p = state.pomodoro;
+      const rounds = state.settings.pomodoroRounds ?? 4;
+      const nextPhase: PomodoroPhase =
+        p.phase === 'focus' ? (p.round % rounds === 0 ? 'long' : 'break') : 'focus';
+      const nextRound = p.phase === 'focus' ? p.round : p.phase === 'long' ? 1 : p.round + 1;
+      const ms = pomodoroPhaseMs(nextPhase, state.settings);
+      return {
+        pomodoro: {
+          phase: nextPhase,
+          round: nextRound,
+          running: p.running,
+          remainingMs: ms,
+          endsAt: p.running ? Date.now() + ms : null,
+        },
+      };
+    }),
+
+  setPomodoroSettings: (patch) => {
+    set((state) => ({ settings: { ...state.settings, ...patch } }));
+    enqueue('settings.patch', { patch });
+  },
 
   loadAll: async () => {
     // SQLite is the single source of truth. We NEVER fall back to the legacy
@@ -1026,7 +1111,7 @@ export const useStore = create<AppState>()((set, get) => ({
           };
         }),
 
-      addAttachment: (taskId, attachment) =>
+      addAttachment: (taskId, attachment) => {
         set((state) => {
           const target = state.tasks.find((t) => t.id === taskId);
           return {
@@ -1044,9 +1129,13 @@ export const useStore = create<AppState>()((set, get) => ({
                 )
               : state.activityLog,
           };
-        }),
+        });
+        // Persist — attachments used to be memory-only and vanished on reload.
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { attachments: t.attachments ?? [] } });
+      },
 
-      deleteAttachment: (taskId, attachmentId) =>
+      deleteAttachment: (taskId, attachmentId) => {
         set((state) => ({
           tasks: state.tasks.map((t) =>
             t.id === taskId
@@ -1058,7 +1147,10 @@ export const useStore = create<AppState>()((set, get) => ({
                 }
               : t
           ),
-        })),
+        }));
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { attachments: t.attachments ?? [] } });
+      },
 
       bulkUpdate: (ids, updates) => {
         const idSet = new Set(ids);
