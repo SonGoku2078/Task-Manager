@@ -281,6 +281,102 @@
       "quelle": "docs/pipeline/t3-04-team-settings.md + issue-24",
       "regression": true,
       "laeufe": []
+    },
+    {
+      "id": "TC-M21",
+      "bereich": "Batch A (Quick-Fixes)",
+      "titel": "#2: Beschreibung (Markdown) kompakt — keine Leerzeilen zwischen Listenpunkten",
+      "erwartung": "Nummerierte Liste in der Task-Beschreibung ohne doppelte Abstände; Zeilenumbrüche im Absatz bleiben.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-a.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: white-space normal, 4 li kompakt (Screenshot 03)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M22",
+      "bereich": "Batch A (Quick-Fixes)",
+      "titel": "#7: Mobile Custom-Wiederholung — Zahl schmal, Einheit ohne horizontales Scrollen",
+      "erwartung": "Bei 'Benutzerdefiniert…' passen Alle/Einheit/Im-Monat ohne Overflow (~360px); Zeile bricht ggf. um.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-a.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright 360px: numWidth 88px, kein Overflow, Einheit sichtbar"
+        }
+      ]
+    },
+    {
+      "id": "TC-M23",
+      "bereich": "Batch A (Quick-Fixes)",
+      "titel": "#12: Projektfarbe — Klick auf Label/Zeile wählt Farbe (nicht nur Punkt)",
+      "erwartung": "Klick irgendwo auf die Swatch-Zeile setzt die Projektfarbe und schließt den Picker.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-a.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Klick auf Zeilenrand wählt Farbe, Picker schließt"
+        }
+      ]
+    },
+    {
+      "id": "TC-M24",
+      "bereich": "Batch A (Quick-Fixes)",
+      "titel": "#19: Suchseite hat keine Quick-Add-Leiste mehr",
+      "erwartung": "In der Such-Ansicht fehlt '+ Aufgabe…'; in Inbox/Projekten weiterhin vorhanden.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-a.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: .quick-add fehlt in Suche, vorhanden in Inbox (Screenshots 01/02)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M25",
+      "bereich": "Batch A (Quick-Fixes)",
+      "titel": "#10: Drag&Drop in Areas zeigt grünen Drop-Indikator; Drop macht Projekt NICHT zur Area",
+      "erwartung": "Beim Sortieren innerhalb der Areas-Sektion erscheint die Positionslinie am Ziel-Item; Projekt-auf-Area-Item = zuordnen, nur Drop auf Sektions-Hintergrund = zur Area machen.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-a.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: dragover auf Area-Item setzt drag-over, Sektion übersteuert nicht"
+        }
+      ]
+    },
+    {
+      "id": "TC-M26",
+      "bereich": "Batch A (Quick-Fixes)",
+      "titel": "#1: Subtask-Zeilen zeigen Meta (Datum, Dauer, Flags, Kommentare, Kategorien)",
+      "erwartung": "Unteraufgaben zeigen dieselbe Meta-Zeile wie Haupttasks (ohne Projekt-Chip).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-a.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Subtask zeigt task-meta mit Datum/Dauer/Flag (Screenshot 04)"
+        }
+      ]
     }
   ]
 }
