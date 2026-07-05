@@ -15,6 +15,11 @@
           "datum": "2026-07-05",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -29,6 +34,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -47,6 +57,11 @@
           "datum": "2026-07-05",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -61,6 +76,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -79,6 +99,11 @@
           "datum": "2026-07-05",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -90,7 +115,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/01-inbox.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Quick-Add erscheint in Inbox"
+        }
+      ]
     },
     {
       "id": "TC-M02",
@@ -100,7 +131,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/02-crud.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Titel überlebt Hard-Reload (Outbox→SQLite)"
+        }
+      ]
     },
     {
       "id": "TC-M03",
@@ -110,7 +147,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/02-crud.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Task+Subtask kaskadierend gelöscht"
+        }
+      ]
     },
     {
       "id": "TC-M04",
@@ -120,7 +163,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/03-projects.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Projektansicht zeigt zugeordnete Task"
+        }
+      ]
     },
     {
       "id": "TC-M05",
@@ -130,7 +179,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/04-priority-list.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: ★-Task (via Heute-Invariante) in Priorität-View"
+        }
+      ]
     },
     {
       "id": "TC-M06",
@@ -140,7 +195,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/05-task-fields.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Priorität high + Kategorie persistiert"
+        }
+      ]
     },
     {
       "id": "TC-M07",
@@ -150,7 +211,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/06-completed.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: durchgestrichen + in Erledigt-View"
+        }
+      ]
     },
     {
       "id": "TC-M08",
@@ -160,7 +227,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/08-categories.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Kategorien-View filtert korrekt"
+        }
+      ]
     },
     {
       "id": "TC-M09",
@@ -170,7 +243,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/09-calendar.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Kalender (Liste) zeigt heute fälligen Task"
+        }
+      ]
     },
     {
       "id": "TC-M10",
@@ -180,7 +259,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/10-recurring.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Occurrence 07.07. gespawnt, alte erledigt, kein thisWeek-Erbe"
+        }
+      ]
     },
     {
       "id": "TC-M11",
@@ -190,7 +275,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/11-filter-sort.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Prioritätsfilter wirkt"
+        }
+      ]
     },
     {
       "id": "TC-M12",
@@ -200,7 +291,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/12-search.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Titel-Suche + Status-Keyword heute"
+        }
+      ]
     },
     {
       "id": "TC-M13",
@@ -210,7 +307,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/t2-01-today-view.md + issue-23",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Heute = fällig ∪ ☀️-gepinnt"
+        }
+      ]
     },
     {
       "id": "TC-M14",
@@ -220,7 +323,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/t2-02-bulk-operations.md",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Bulk Next Week serverseitig persistiert (Outbox-Fix)"
+        }
+      ]
     },
     {
       "id": "TC-M15",
@@ -230,7 +339,13 @@
       "typ": "manuell",
       "quelle": "Fixes #21/#22",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright (Batch B, 05.07.): Drag in Sektion persistiert, nach Reload in section-body"
+        }
+      ]
     },
     {
       "id": "TC-M16",
@@ -240,7 +355,13 @@
       "typ": "manuell",
       "quelle": "src/api/outbox.ts",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Offline-Änderung in Outbox gehalten, nach Reconnect repliziert"
+        }
+      ]
     },
     {
       "id": "TC-M17",
@@ -250,7 +371,13 @@
       "typ": "manuell",
       "quelle": "issue-24 (server/src/routes/calendar.ts)",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Feed 200/text-calendar, falsches Token 404"
+        }
+      ]
     },
     {
       "id": "TC-M18",
@@ -260,7 +387,13 @@
       "typ": "manuell",
       "quelle": "issue-24/#11 (src/duration.ts)",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "startMinutes=570 persistiert; ICS enthält T093000"
+        }
+      ]
     },
     {
       "id": "TC-M19",
@@ -270,7 +403,13 @@
       "typ": "manuell",
       "quelle": "apps/mobile",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright 360px: 6 Tabs, QuickAdd→Server-Sync, Detail-Modal mit Heute+Uhrzeit"
+        }
+      ]
     },
     {
       "id": "TC-M20",
@@ -280,7 +419,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/t3-04-team-settings.md + issue-24",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Name persistiert nach Reload; Feed-Sektion listet URLs"
+        }
+      ]
     },
     {
       "id": "TC-M21",

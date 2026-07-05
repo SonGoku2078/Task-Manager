@@ -82,7 +82,7 @@ Features gebrieft, beim Requirements Engineer in Arbeit.
 
 ## 📊 Active GitHub Issues
 
-Durchlauf 2026-07-05: alle offenen Issues in Batches durch die Pipeline (Beschluss: direkte Commits auf master; Deploy erst nach User-Approve auf der 🧪 Testreport-Seite).
+Durchlauf 2026-07-05/06 ABGESCHLOSSEN: 22 Issues umgesetzt + geschlossen (Batches Phase 0, A, B, C, D), nur #8 geparkt. Details: docs/pipeline/issue-*.md; Testnachweise: docs/testcases.json (🧪 Testreport). Deploy erst nach User-Approve.
 
 | # | Title | Batch | Status |
 |---|-------|-------|--------|
