@@ -136,6 +136,9 @@ export default function ProjectsPanel({
       onDragLeave={() => setOverId((cur) => (cur === p.id ? null : cur))}
       onDrop={(e) => {
         e.preventDefault();
+        // Don't bubble into the Areas-section drop handler — it would also
+        // convert the dragged project into an area (#10).
+        e.stopPropagation();
         if (dragId) {
           const dragged = projects.find((x) => x.id === dragId);
           if (p.kind === 'area' && dragged && dragged.kind !== 'area') {
@@ -182,15 +185,19 @@ export default function ProjectsPanel({
                 .map((c) => {
                 const label = colorLabels[c] ?? '';
                 return (
-                  <div key={c} className="projects-swatch-wrap">
+                  // The whole row selects the color — not just the dot (#12).
+                  <div
+                    key={c}
+                    className="projects-swatch-wrap"
+                    onClick={() => {
+                      updateProject(p.id, { color: c });
+                      setColorPickerId(null);
+                    }}
+                  >
                     <button
                       className={`projects-swatch ${(p.color ?? '').toLowerCase() === c ? 'selected' : ''}`}
                       style={{ background: c }}
                       title={label || c}
-                      onClick={() => {
-                        updateProject(p.id, { color: c });
-                        setColorPickerId(null);
-                      }}
                     />
                     {label && <span className="projects-swatch-label">{label}</span>}
                     <button
@@ -308,7 +315,14 @@ export default function ProjectsPanel({
             <div className="projects-divider" />
             <div
               className={`projects-areas-section ${overId === '__areas__' ? 'drag-over' : ''}`}
-              onDragOver={(e) => { if (dragId) { e.preventDefault(); setOverId('__areas__'); } }}
+              onDragOver={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                // Over a child item the item's own green indicator wins (#10) —
+                // the section highlight only means "drop here to become an area".
+                if ((e.target as HTMLElement).closest('.projects-item')) return;
+                setOverId('__areas__');
+              }}
               onDragLeave={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                   setOverId((cur) => cur === '__areas__' ? null : cur);
