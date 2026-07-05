@@ -371,6 +371,7 @@ interface AppState {
   toggleStar: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
   deleteComment: (taskId: string, commentId: string) => void;
+  updateComment: (taskId: string, commentId: string, text: string) => void;
   addTaskLink: (taskId: string, link: TaskLink) => void;
   removeTaskLink: (taskId: string, link: TaskLink) => void;
   openTaskLink: (link: TaskLink) => void;
@@ -946,6 +947,23 @@ export const useStore = create<AppState>()((set, get) => ({
         });
         const t = get().tasks.find(x => x.id === taskId);
         if (t) enqueue('task.update', { id: taskId, patch: { comments: t.comments } });
+      },
+
+      updateComment: (taskId, commentId, text) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  comments: (t.comments ?? []).map((c) =>
+                    c.id === commentId ? { ...c, text } : c
+                  ),
+                }
+              : t
+          ),
+        }));
+        const t = get().tasks.find((x) => x.id === taskId);
+        if (t) enqueue('task.update', { id: taskId, patch: { comments: t.comments ?? [] } });
       },
 
       deleteComment: (taskId, commentId) => {

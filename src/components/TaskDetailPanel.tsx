@@ -40,25 +40,8 @@ interface TaskDetailPanelProps {
   task: Task;
 }
 
-// Split text on URLs and render the URLs as clickable links.
-const URL_RE = /(https?:\/\/[^\s]+)/g;
-const renderWithLinks = (text: string) =>
-  text.split(URL_RE).map((part, i) =>
-    /^https?:\/\//.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="comment-url"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {part}
-      </a>
-    ) : (
-      part
-    )
-  );
+// Comments render as markdown now (#16); marked's GFM autolinking keeps
+// plain URLs clickable, so the old renderWithLinks helper is gone.
 
 // Duration parse/format live in a shared util (also used by the mobile app).
 import { parseDuration, formatDuration, minutesToTimeInput, timeInputToMinutes } from '../duration';
@@ -84,6 +67,12 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
   const members = useStore((s) => s.members);
   const addComment = useStore((s) => s.addComment);
   const deleteComment = useStore((s) => s.deleteComment);
+  const updateComment = useStore((s) => s.updateComment);
+  // Comment editing (#16): id of the comment in edit mode + its draft text.
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const commentTaRef = useRef<HTMLTextAreaElement>(null);
+  const editCommentTaRef = useRef<HTMLTextAreaElement>(null);
   const addAttachment = useStore((s) => s.addAttachment);
   const deleteAttachment = useStore((s) => s.deleteAttachment);
   const tasks = useStore((s) => s.tasks);
@@ -529,6 +518,16 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                     })}
                   </span>
                   <button
+                    className="comment-edit"
+                    title="Bearbeiten"
+                    onClick={() => {
+                      setEditingCommentId(c.id);
+                      setEditCommentText(c.text);
+                    }}
+                  >
+                    ✎
+                  </button>
+                  <button
                     className="comment-del"
                     title="Löschen"
                     onClick={() => deleteComment(task.id, c.id)}
@@ -536,26 +535,55 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                     ×
                   </button>
                 </div>
-                <div className="comment-text">{renderWithLinks(c.text)}</div>
+                {editingCommentId === c.id ? (
+                  <div className="comment-edit-wrap">
+                    <DescToolbar
+                      taRef={editCommentTaRef}
+                      onSave={() => {
+                        const text = editCommentText.trim();
+                        if (text) updateComment(task.id, c.id, text);
+                        setEditingCommentId(null);
+                      }}
+                    />
+                    <textarea
+                      ref={editCommentTaRef}
+                      autoFocus
+                      className="detail-input detail-textarea comment-editarea"
+                      rows={3}
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                          const text = editCommentText.trim();
+                          if (text) updateComment(task.id, c.id, text);
+                          setEditingCommentId(null);
+                        }
+                        if (e.key === 'Escape') setEditingCommentId(null);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="comment-text markdown-body"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(c.text) }}
+                  />
+                )}
               </div>
             ))}
           </div>
-          <div className="comment-add">
-            <ClearableInput
-              wrapperClassName="grow"
-              type="text"
-              className="detail-input"
-              placeholder="Kommentar hinzufügen…"
+          <div className="comment-add comment-add-multiline">
+            <DescToolbar taRef={commentTaRef} onSave={submitComment} saveLabel="+ Kommentar" />
+            <textarea
+              ref={commentTaRef}
+              className="detail-input detail-textarea comment-editarea"
+              rows={2}
+              placeholder="Kommentar hinzufügen… (Strg+Enter zum Senden, Markdown möglich)"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              onClear={() => setCommentText('')}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') submitComment();
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitComment();
               }}
             />
-            <button className="btn btn-primary comment-send" onClick={submitComment} title="Kommentar hinzufügen (Enter)">
-              +
-            </button>
           </div>
         </div>
 

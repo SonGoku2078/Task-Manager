@@ -604,9 +604,41 @@
   word-break: break-word;
 }
 
+/* Markdown-rendered comments must not be pre-wrap (same reason as #2). */
+.comment-text.markdown-body {
+  white-space: normal;
+  line-height: 1.45;
+}
+
 .comment-add {
   display: flex;
   gap: 6px;
+}
+
+/* Multiline comment editor (#16): toolbar above the textarea, like the note. */
+.comment-add-multiline {
+  flex-direction: column;
+  gap: 4px;
+}
+.comment-editarea {
+  min-height: 56px;
+  resize: vertical;
+}
+.comment-edit {
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.comment-edit:hover {
+  color: var(--accent);
+}
+.comment-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .comment-send {
