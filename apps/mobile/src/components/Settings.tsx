@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
 import { checkForUpdate, openApk, APP_VERSION } from '../update';
@@ -70,6 +70,28 @@ export default function Settings({ onClose }: { onClose: () => void }) {
     try { await flushOutbox(); await loadAll(); } finally { setBusy(false); }
   };
 
+  // ICS calendar feed URL (issue #24) — token-secured, for subscribing from an
+  // external calendar app on the same network.
+  const [feedUrl, setFeedUrl] = useState('');
+  const [feedCopied, setFeedCopied] = useState(false);
+  useEffect(() => {
+    const base = getBaseUrl();
+    if (!base) return;
+    fetch(`${base}/api/calendar-feed`, { signal: AbortSignal.timeout(5000) })
+      .then((r) => r.json())
+      .then((d) => { if (d?.token) setFeedUrl(`${base}/calendar/${d.token}.ics`); })
+      .catch(() => {});
+  }, []);
+  const copyFeed = async () => {
+    try {
+      await navigator.clipboard.writeText(feedUrl);
+      setFeedCopied(true);
+      setTimeout(() => setFeedCopied(false), 1500);
+    } catch {
+      /* WebView clipboard blocked — the code block stays selectable */
+    }
+  };
+
   return (
     <div className="m-modal-backdrop" onClick={onClose}>
       <div className="m-modal" onClick={(e) => e.stopPropagation()} style={swipe.style} {...swipe.handlers}>
@@ -105,6 +127,16 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           Geladene Aufgaben: <strong>{taskCount}</strong>
           {taskCount > 0 && ' — Daten sind da. Tabs sind gefiltert (Inbox = projektlos, Woche = bald fällig, Aktion = ★).'}
         </div>
+
+        {feedUrl && (
+          <div className="m-settings-info">
+            Kalender-Feed (ICS) — in Proton/Thunderbird abonnieren:<br />
+            <code style={{ wordBreak: 'break-all', userSelect: 'all' }}>{feedUrl}</code>
+            <button className="m-btn-ghost" onClick={copyFeed}>
+              {feedCopied ? '✓ kopiert' : '📋 Link kopieren'}
+            </button>
+          </div>
+        )}
 
         <button className="m-btn-ghost" onClick={syncNow} disabled={busy}>↻ Jetzt synchronisieren</button>
         <div className="m-settings-hint">

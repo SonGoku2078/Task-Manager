@@ -164,6 +164,8 @@ export default function SettingsView() {
 
       <MobileAccessSection />
 
+      <CalendarFeedSection />
+
       <section className="settings-section">
         <h3 className="settings-heading">Darstellung</h3>
         <div className="theme-toggle">
@@ -508,6 +510,57 @@ function MobileAccessSection() {
             <li key={ip}>
               <code>http://{ip}:3002</code> <span className="settings-lan-tag dev">DEV/TEST</span><br />
               <code>http://{ip}:3001</code> <span className="settings-lan-tag prod">PROD</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Subscribable ICS feed (issue #24): shows the token-secured calendar URLs so
+// an external calendar (Proton, Thunderbird — same LAN) can subscribe.
+function CalendarFeedSection() {
+  const [urls, setUrls] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  useEffect(() => {
+    let on = true;
+    fetch('/api/calendar-feed')
+      .then((r) => r.json())
+      .then((d) => { if (on) { setUrls(Array.isArray(d.urls) ? d.urls : []); setLoaded(true); } })
+      .catch(() => { if (on) setLoaded(true); });
+    return () => { on = false; };
+  }, []);
+  const copy = async (u: string) => {
+    try {
+      await navigator.clipboard.writeText(u);
+    } catch {
+      /* clipboard may be blocked on plain http — URL stays selectable */
+    }
+    setCopied(u);
+    window.setTimeout(() => setCopied(null), 1500);
+  };
+  return (
+    <section className="settings-section">
+      <h3 className="settings-heading">📆 Kalender-Feed (ICS)</h3>
+      <p className="settings-hint">
+        Diese URL in Proton Kalender / Thunderbird als Abonnement eintragen („Kalender
+        abonnieren" / „Im Netzwerk"). Das Aktualisierungs-Intervall bestimmt die Kalender-App.
+        Der Link enthält ein geheimes Token — nicht öffentlich teilen.
+      </p>
+      {!loaded ? (
+        <p className="settings-hint">…</p>
+      ) : urls.length === 0 ? (
+        <p className="settings-hint">Feed nicht verfügbar (Server offline?).</p>
+      ) : (
+        <ul className="settings-lan-list">
+          {urls.map((u) => (
+            <li key={u}>
+              <code>{u}</code>{' '}
+              <button className="theme-btn" onClick={() => copy(u)}>
+                {copied === u ? '✓ kopiert' : '📋 Kopieren'}
+              </button>
             </li>
           ))}
         </ul>

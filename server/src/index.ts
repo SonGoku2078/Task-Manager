@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
-import os from 'node:os';
 import { db } from './db';
+import { PORT, lanIPv4 } from './lan';
 import tasksRouter from './routes/tasks';
+import calendarRouter from './routes/calendar';
 import projectsRouter from './routes/projects';
 import categoriesRouter from './routes/categories';
 import membersRouter from './routes/members';
@@ -14,20 +15,6 @@ import activityLogRouter from './routes/activityLog';
 import settingsRouter from './routes/settings';
 
 const app = express();
-const PORT = Number(process.env.PORT ?? 3001);
-
-// Private LAN IPv4 addresses of this machine (for mobile access over Wi-Fi).
-function lanIPv4(): string[] {
-  const out: string[] = [];
-  for (const addrs of Object.values(os.networkInterfaces())) {
-    for (const a of addrs ?? []) {
-      if (a.family === 'IPv4' && !a.internal && /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address)) {
-        out.push(a.address);
-      }
-    }
-  }
-  return out;
-}
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -47,6 +34,21 @@ app.use('/api/blockers',     blockersRouter);
 app.use('/api/saved-views',  savedViewsRouter);
 app.use('/api/activity-log', activityLogRouter);
 app.use('/api/settings',     settingsRouter);
+// ICS feed + feed-info (registers /calendar/:token.ics and /api/calendar-feed;
+// must come before the SPA fallback below, or .ics requests get index.html).
+app.use(calendarRouter);
+
+// Test-case database for the 🧪 Testreport view (pre-deploy approval page).
+// Lives in docs/testcases.json at the repo root, updated by test runs.
+app.get('/api/testreport', async (_req, res) => {
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const file = path.join(__dirname, '..', '..', 'docs', 'testcases.json');
+    res.type('application/json').send(await readFile(file, 'utf8'));
+  } catch {
+    res.status(404).json({ error: 'docs/testcases.json nicht gefunden' });
+  }
+});
 
 // One-time localStorage → SQLite migration.
 app.post('/api/migrate', async (req, res) => {

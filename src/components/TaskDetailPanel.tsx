@@ -61,7 +61,7 @@ const renderWithLinks = (text: string) =>
   );
 
 // Duration parse/format live in a shared util (also used by the mobile app).
-import { parseDuration, formatDuration } from '../duration';
+import { parseDuration, formatDuration, minutesToTimeInput, timeInputToMinutes } from '../duration';
 export { parseDuration, formatDuration };
 
 const toDateInput = (d: Date | null) =>
@@ -604,6 +604,18 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                 updateTask(task.id, {
                   dueDate: e.target.value ? new Date(e.target.value) : null,
                 })
+              }
+            />
+          </div>
+
+          <div className="detail-field">
+            <label className="detail-label">Uhrzeit</label>
+            <input
+              type="time"
+              className="detail-input"
+              value={minutesToTimeInput(task.startMinutes)}
+              onChange={(e) =>
+                updateTask(task.id, { startMinutes: timeInputToMinutes(e.target.value) })
               }
             />
           </div>

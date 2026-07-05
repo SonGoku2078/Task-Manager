@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import { parseDuration, formatDuration } from '../duration';
+import { parseDuration, formatDuration, minutesToTimeInput, timeInputToMinutes } from '../duration';
 import { dateKey, isTodayFlagActive } from '../selectors';
 import { useSwipeDown } from '../gestures';
 import type { Priority, RecurrenceType, RecurUnit, RecurMonthDay, TaskLink, Task } from '../types';
@@ -121,6 +121,14 @@ export default function TaskDetailModal({
         </div>
 
         <div className="m-field-row">
+          <label className="m-field">
+            <span>Uhrzeit</span>
+            <input
+              type="time"
+              value={minutesToTimeInput(t.startMinutes)}
+              onChange={(e) => updateTask(t.id, { startMinutes: timeInputToMinutes(e.target.value) })}
+            />
+          </label>
           <label className="m-field">
             <span>Dauer</span>
             <input

@@ -18,6 +18,21 @@ export function parseDuration(s: string): number | null {
   return null;
 }
 
+// Map startMinutes (minutes from midnight, null = no time) to the value of an
+// <input type="time"> ("HH:MM", empty = unset) and back.
+export function minutesToTimeInput(min: number | null | undefined): string {
+  if (min == null) return '';
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export function timeInputToMinutes(value: string): number | null {
+  const m = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1]) * 60 + parseInt(m[2]);
+}
+
 export function formatDuration(min: number): string {
   if (min < 60) return `${min} Min`;
   const h = min / 60;
