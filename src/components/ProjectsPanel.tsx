@@ -140,15 +140,21 @@ export default function ProjectsPanel({
         // convert the dragged project into an area (#10).
         e.stopPropagation();
         if (dragId) {
+          // Dragging a project that is part of the Ctrl-selection moves the
+          // whole selection together (#14), keeping its current order.
+          const moveIds = (
+            selectedProjectIds.includes(dragId) ? selectedProjectIds : [dragId]
+          ).filter((id) => id !== p.id);
           const dragged = projects.find((x) => x.id === dragId);
           if (p.kind === 'area' && dragged && dragged.kind !== 'area') {
-            // Drop project onto area → assign to area (and activate if someday)
-            updateProject(dragId, {
-              parentAreaId: p.id,
-              active: true,
+            // Drop project(s) onto area → assign to area (activate if someday)
+            moveIds.forEach((id) => {
+              if (projects.find((x) => x.id === id)?.kind !== 'area') {
+                updateProject(id, { parentAreaId: p.id, active: true });
+              }
             });
           } else {
-            reorderProjects(dragId, p.id);
+            moveIds.forEach((id) => reorderProjects(id, p.id));
           }
         } else {
           // A task (or multi-selection) dropped here moves to this project.
