@@ -145,6 +145,100 @@ export default function TaskList({
     );
   }
 
+  // Meta row (due date, recurrence, duration, GTD flags, comments, categories…)
+  // shared by root tasks and subtasks, so both show the same essentials (#1).
+  const renderMeta = (task: Task, hideProjectHere: boolean) => {
+    const project = projects.find((p) => p.id === task.projectId);
+    const taskCats = categories.filter((c) => task.categoryIds.includes(c.id));
+    const kids = childrenByParent.get(task.id) ?? [];
+    const doneKids = kids.filter((k) => k.completed).length;
+    return (
+      <div className="task-meta">
+        {project && !hideProjectHere && (
+          <span
+            className="task-project task-project-link"
+            style={{ color: project.color }}
+            title={`Zu Projekt „${project.name}" springen`}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectProject(project.id);
+            }}
+          >
+            <span className="task-project-dot" style={{ background: project.color }} />
+            {project.name}
+          </span>
+        )}
+        {task.completed && task.completedAt && (
+          <span className="task-completed-at" title="Erledigt am">
+            ✓ {new Date(task.completedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        )}
+        {!task.completed && task.dueDate && (
+          <span className={`task-time ${isOverdue(task) ? 'overdue' : ''}`}>
+            📅{' '}
+            {task.dueDate.toLocaleDateString('de-DE', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+        )}
+        {task.recurrence !== 'none' && (
+          <span className="task-recurring" title={`Wiederholt: ${task.recurrence}`}>
+            ↻
+          </span>
+        )}
+        {task.durationMin != null && task.durationMin > 0 && (
+          <span className="task-duration" title="Dauer">
+            ⏱ {formatDuration(task.durationMin)}
+          </span>
+        )}
+        {task.starred && (
+          <span className="task-flag flag-na" title="Nächste Aktion">★</span>
+        )}
+        {isTodayFlagActive(task) && (
+          <span className="task-flag flag-today" title="Heute">☀️</span>
+        )}
+        {task.thisWeek && (
+          <span className="task-flag flag-week" title="Next Week">🗓️</span>
+        )}
+        {task.someday && (
+          <span className="task-flag flag-someday" title="Someday">🌥️</span>
+        )}
+        {task.waiting && (
+          <span
+            className="task-flag flag-waiting"
+            title={task.waitingFor ? `Warten auf ${task.waitingFor}` : 'Warten auf jemand anderes'}
+          >
+            ⏳{task.waitingFor ? ` ${task.waitingFor}` : ''}
+          </span>
+        )}
+        {(task.comments?.length ?? 0) > 0 && (
+          <span
+            className="task-comments"
+            title={`${task.comments!.length} Kommentar${
+              task.comments!.length === 1 ? '' : 'e'
+            }`}
+          >
+            💬 {task.comments!.length}
+          </span>
+        )}
+        {kids.length > 0 && (
+          <span
+            className="task-subcount"
+            title={`${kids.length} Unteraufgabe${kids.length === 1 ? '' : 'n'}`}
+          >
+            ⤷ {doneKids}/{kids.length}
+          </span>
+        )}
+        {taskCats.map((c) => (
+          <span key={c.id} className="task-cat" style={{ background: c.color }}>
+            {c.name}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   // Compact row for an inline subtask. Draggable: drop on a sibling to reorder,
   // drag out to the top-level area to promote to a standalone task.
   const renderChild = (child: Task) => (
@@ -189,6 +283,8 @@ export default function TaskList({
         <div className={`task-title ${child.completed ? 'completed' : ''}`}>
           {child.title}
         </div>
+        {/* Same meta as root tasks (project omitted — it's the parent's, #1). */}
+        {renderMeta(child, true)}
       </div>
       <div className="task-actions">
         <button
@@ -282,10 +378,7 @@ export default function TaskList({
       );
     }
 
-    const project = projects.find((p) => p.id === task.projectId);
-    const taskCats = categories.filter((c) => task.categoryIds.includes(c.id));
     const kids = childrenByParent.get(task.id) ?? [];
-    const doneKids = kids.filter((k) => k.completed).length;
     const expanded = expandedIds.has(task.id);
     return (
       <div key={task.id} className="task-row">
@@ -383,89 +476,7 @@ export default function TaskList({
           <div className={`task-title ${task.completed ? 'completed' : ''}`}>
             {task.title}
           </div>
-          <div className="task-meta">
-            {project && !hideProject && (
-              <span
-                className="task-project task-project-link"
-                style={{ color: project.color }}
-                title={`Zu Projekt „${project.name}" springen`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  selectProject(project.id);
-                }}
-              >
-                <span className="task-project-dot" style={{ background: project.color }} />
-                {project.name}
-              </span>
-            )}
-            {task.completed && task.completedAt && (
-              <span className="task-completed-at" title="Erledigt am">
-                ✓ {new Date(task.completedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </span>
-            )}
-            {!task.completed && task.dueDate && (
-              <span className={`task-time ${isOverdue(task) ? 'overdue' : ''}`}>
-                📅{' '}
-                {task.dueDate.toLocaleDateString('de-DE', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
-            )}
-            {task.recurrence !== 'none' && (
-              <span className="task-recurring" title={`Wiederholt: ${task.recurrence}`}>
-                ↻
-              </span>
-            )}
-            {task.durationMin != null && task.durationMin > 0 && (
-              <span className="task-duration" title="Dauer">
-                ⏱ {formatDuration(task.durationMin)}
-              </span>
-            )}
-            {task.starred && (
-              <span className="task-flag flag-na" title="Nächste Aktion">★</span>
-            )}
-            {isTodayFlagActive(task) && (
-              <span className="task-flag flag-today" title="Heute">☀️</span>
-            )}
-            {task.thisWeek && (
-              <span className="task-flag flag-week" title="Next Week">🗓️</span>
-            )}
-            {task.someday && (
-              <span className="task-flag flag-someday" title="Someday">🌥️</span>
-            )}
-            {task.waiting && (
-              <span
-                className="task-flag flag-waiting"
-                title={task.waitingFor ? `Warten auf ${task.waitingFor}` : 'Warten auf jemand anderes'}
-              >
-                ⏳{task.waitingFor ? ` ${task.waitingFor}` : ''}
-              </span>
-            )}
-            {(task.comments?.length ?? 0) > 0 && (
-              <span
-                className="task-comments"
-                title={`${task.comments!.length} Kommentar${
-                  task.comments!.length === 1 ? '' : 'e'
-                }`}
-              >
-                💬 {task.comments!.length}
-              </span>
-            )}
-            {kids.length > 0 && (
-              <span
-                className="task-subcount"
-                title={`${kids.length} Unteraufgabe${kids.length === 1 ? '' : 'n'}`}
-              >
-                ⤷ {doneKids}/{kids.length}
-              </span>
-            )}
-            {taskCats.map((c) => (
-              <span key={c.id} className="task-cat" style={{ background: c.color }}>
-                {c.name}
-              </span>
-            ))}
-          </div>
+          {renderMeta(task, hideProject)}
         </div>
         <div className="task-actions">
           <AvatarStack members={assigneesOf(task, members)} size={20} />
