@@ -318,6 +318,18 @@
   height: auto;
 }
 
+/* Rendered markdown must NOT be pre-wrap: the raw newlines between block
+   tags (<p>, <li>, …) would show as extra blank lines on top of the block
+   margins — that doubled the spacing in lists (#2). In-paragraph line
+   breaks survive as <br> (marked runs with breaks: true). */
+.detail-desc-view.markdown-body {
+  white-space: normal;
+  line-height: 1.45;
+}
+.detail-desc-view.markdown-body li {
+  line-height: 1.45;
+}
+
 .panel-actions {
   padding: 20px;
   border-top: 1px solid var(--border-light);
