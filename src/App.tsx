@@ -592,7 +592,8 @@ function App() {
           <WeekView mode={calendarMode} />
         ) : (
         <>
-        {ui.currentView !== 'completed' && (
+        {/* No quick-add on Erledigt and Suche — search is for finding, not creating (#19). */}
+        {ui.currentView !== 'completed' && ui.currentView !== 'search' && (
         <div className="quick-add">
           <button
             className="quick-add-dir"
