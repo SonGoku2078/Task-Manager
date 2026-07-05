@@ -377,6 +377,54 @@
           "bemerkung": "Playwright: Subtask zeigt task-meta mit Datum/Dauer/Flag (Screenshot 04)"
         }
       ]
+    },
+    {
+      "id": "TC-M27",
+      "bereich": "Batch B (Bugs)",
+      "titel": "#18: Recurring-Occurrence erbt thisWeek/todayDate nicht",
+      "erwartung": "Erledigen einer wiederkehrenden Next-Week-Task: neue Occurrence außerhalb der Woche erscheint NICHT in Next Week.",
+      "typ": "auto",
+      "quelle": "scripts/recurrence.test.ts (Assertion #18)",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "npm test"
+        }
+      ]
+    },
+    {
+      "id": "TC-M28",
+      "bereich": "Batch B (Bugs)",
+      "titel": "#15: Projekt aus Someday archivieren bleibt in Someday-Ansicht",
+      "erwartung": "Nach Abschliessen+Bestätigen aus Someday heraus bleibt die Someday-View aktiv.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-b.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: sidebarActive=Someday nach Archivieren"
+        }
+      ]
+    },
+    {
+      "id": "TC-M29",
+      "bereich": "Batch B (Bugs)",
+      "titel": "#17: Verlinkte (inaktive) Projekte bleiben nach Reload in ihrer Sektion",
+      "erwartung": "Projref-Task per Drag in Sektion → sectionId serverseitig persistiert, nach Reload in section-body gerendert.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-batch-b.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: sectionId=v17-sec nach Drop, nach Reload inGroup=true (bereits durch #21-Fix behoben)"
+        }
+      ]
     }
   ]
 }
