@@ -18,6 +18,7 @@ import TemplatesGallery from './components/TemplatesGallery';
 import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
 import TestReportView from './components/TestReportView';
+import PomodoroWidget from './components/PomodoroWidget';
 import MembersView from './components/MembersView';
 import SettingsView from './components/SettingsView';
 import ClearableInput from './components/ClearableInput';
@@ -470,6 +471,7 @@ function App() {
             <h2>{headerTitle}</h2>
           )}
           <div className="task-header-right">
+            <PomodoroWidget />
             <span className="task-count">{visibleTasks.length}</span>
             <button
               className="header-icon-btn"

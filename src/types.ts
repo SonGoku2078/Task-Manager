@@ -50,6 +50,11 @@ export interface Settings {
   colorLabels?: Record<string, string>; // hex → label name (e.g. '#9c27b0' → 'Lifestyle')
   filtersCollapsed?: boolean; // collapse the filter bar to save vertical space
   sectionsCollapsed?: boolean; // collapse the Gruppen/Sektionen jump-bar
+  // Pomodoro timer (#3): interval lengths in minutes + rounds until long break.
+  pomodoroFocusMin?: number;
+  pomodoroBreakMin?: number;
+  pomodoroLongBreakMin?: number;
+  pomodoroRounds?: number;
 }
 
 export type ViewType =

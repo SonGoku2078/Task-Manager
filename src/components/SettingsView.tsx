@@ -166,6 +166,8 @@ export default function SettingsView() {
 
       <CalendarFeedSection />
 
+      <PomodoroSection />
+
       <section className="settings-section">
         <h3 className="settings-heading">Darstellung</h3>
         <div className="theme-toggle">
@@ -565,6 +567,45 @@ function CalendarFeedSection() {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+// Pomodoro interval settings (#3); the timer itself lives in the header.
+function PomodoroSection() {
+  const settings = useStore((s) => s.settings);
+  const setPomodoroSettings = useStore((s) => s.setPomodoroSettings);
+  const fields: { key: 'pomodoroFocusMin' | 'pomodoroBreakMin' | 'pomodoroLongBreakMin' | 'pomodoroRounds'; label: string; def: number; min: number; max: number }[] = [
+    { key: 'pomodoroFocusMin', label: 'Fokus (Minuten)', def: 25, min: 1, max: 120 },
+    { key: 'pomodoroBreakMin', label: 'Pause (Minuten)', def: 5, min: 1, max: 60 },
+    { key: 'pomodoroLongBreakMin', label: 'Lange Pause (Minuten)', def: 15, min: 5, max: 90 },
+    { key: 'pomodoroRounds', label: 'Runden bis zur langen Pause', def: 4, min: 1, max: 12 },
+  ];
+  return (
+    <section className="settings-section">
+      <h3 className="settings-heading">🍅 Pomodoro-Timer</h3>
+      <p className="settings-hint">
+        Der Timer sitzt oben rechts im Kopfbereich (▶ startet, Benachrichtigung + Ton am
+        Phasenende). Intervalle hier anpassen:
+      </p>
+      <div className="settings-pomodoro-grid">
+        {fields.map((f) => (
+          <label key={f.key} className="settings-label settings-pomodoro-field">
+            {f.label}
+            <input
+              className="settings-input"
+              type="number"
+              min={f.min}
+              max={f.max}
+              value={settings[f.key] ?? f.def}
+              onChange={(e) => {
+                const v = Math.max(f.min, Math.min(f.max, Number(e.target.value) || f.def));
+                setPomodoroSettings({ [f.key]: v });
+              }}
+            />
+          </label>
+        ))}
+      </div>
     </section>
   );
 }

@@ -1,0 +1,30 @@
+.pomodoro-widget {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.pomodoro-widget.running.phase-focus { border-color: #e5484d; color: #e5484d; }
+.pomodoro-widget.running.phase-break,
+.pomodoro-widget.running.phase-long { border-color: var(--accent); color: var(--accent); }
+
+.pomodoro-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.pomodoro-round { font-size: 11px; opacity: 0.8; }
+.pomodoro-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+  color: inherit;
+  line-height: 1;
+}
+.pomodoro-btn:hover { color: var(--accent); }

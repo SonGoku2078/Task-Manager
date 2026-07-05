@@ -15,6 +15,10 @@ const NUMERIC_KEYS = new Set([
   'calendarHourHeight',
   'projectsPanelWidth',
   'detailPanelWidth',
+  'pomodoroFocusMin',
+  'pomodoroBreakMin',
+  'pomodoroLongBreakMin',
+  'pomodoroRounds',
 ]);
 
 function loadSettings(): Record<string, unknown> {

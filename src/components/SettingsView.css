@@ -305,3 +305,13 @@
 }
 .settings-lan-tag.dev { background: #b26a00; }
 .settings-lan-tag.prod { background: #c62828; }
+
+/* Pomodoro settings grid (#3). */
+.settings-pomodoro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  max-width: 480px;
+}
+.settings-pomodoro-field { display: flex; flex-direction: column; gap: 4px; }
+.settings-pomodoro-field .settings-input { width: 100px; }
