@@ -21,6 +21,10 @@ export function buildOccurrence(
     completed: false,
     completedAt: null,
     dueDate: nextDue,
+    // Day/week-scoped commitments don't carry over to a future occurrence:
+    // an inherited thisWeek pinned next month's instance into Next Week (#18).
+    thisWeek: false,
+    todayDate: null,
     createdAt: now,
     updatedAt: now,
     comments: [],

@@ -13,9 +13,11 @@ const base: Task = {
 const task = (p: Partial<Task>): Task => ({ ...base, ...p });
 
 // A weekly recurring parent, completed, WITH 3 subtasks (like "Osteopatie v2.0").
+// thisWeek/todayDate set to prove the next occurrence does NOT inherit them (#18).
 const parent = task({
   id: 'p1', number: 1, title: 'Osteopatie training v2.0', recurrence: 'weekly',
   dueDate: d('2026-06-30'), completed: true, completedAt: d('2026-06-30'),
+  thisWeek: true, todayDate: '2026-06-30',
   comments: [{ id: 'c1', text: 'note', author: 'me', createdAt: d('2026-06-10') }],
 });
 const subtasks: Task[] = [
@@ -36,6 +38,7 @@ assert.deepStrictEqual(subs.map((s) => s.title), ['Aufwärmen', 'Übung A', 'Deh
 assert.deepStrictEqual(subs.map((s) => s.number), [101, 102, 103], 'numbered after the parent');
 assert.ok(subs.every((s) => s.id.startsWith('new-') && s.id !== np.id), 'fresh unique ids');
 assert.ok(np.comments?.length === 0, 'parent history (comments) not duplicated');
+assert.ok(np.thisWeek === false && np.todayDate === null, 'week/day commitments not inherited (#18)');
 
 console.log(`✅ PASS — next occurrence "${np.title}" (due ${np.dueDate?.toDateString()}) keeps ${subs.length} subtasks:`);
 subs.forEach((s) => console.log(`   ↳ #${s.number} ${s.title}  (parentId=${s.parentId}, completed=${s.completed})`));
