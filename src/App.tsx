@@ -519,8 +519,12 @@ function App() {
                       message: `Projekt „${currentProject.name}" abschliessen? Alle offenen Aufgaben werden als erledigt markiert und das Projekt wandert ins Archiv.`,
                       onConfirm: () => {
                         archiveProject(currentProject.id);
-                        setSidePanel('projects');
-                        setView('projects');
+                        // Stay in Someday when archiving from there (#15) —
+                        // only jump to Projekte from other contexts.
+                        if (ui.currentView !== 'someday') {
+                          setSidePanel('projects');
+                          setView('projects');
+                        }
                         setConfirmPending(null);
                       },
                     });
