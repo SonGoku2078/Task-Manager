@@ -1044,6 +1044,13 @@ export const useStore = create<AppState>()((set, get) => ({
 
       bulkUpdate: (ids, updates) => {
         const idSet = new Set(ids);
+        // Queue each task's invariant-adjusted patch for the server — without
+        // this, bulk edits only lived in memory and vanished on the next load.
+        for (const t of get().tasks) {
+          if (idSet.has(t.id)) {
+            enqueue('task.update', { id: t.id, patch: gtdInvariants(t, updates) });
+          }
+        }
         set((state) => {
           const ctx = {
             projects: state.projects,
@@ -1082,7 +1089,10 @@ export const useStore = create<AppState>()((set, get) => ({
         }
       },
 
-      bulkDelete: (ids) =>
+      bulkDelete: (ids) => {
+        // Queue the removals for the server (cascades subtasks server-side) —
+        // without this, bulk-deleted tasks reappeared on the next load.
+        for (const id of ids) enqueue('task.remove', { id });
         set((state) => {
           const idSet = new Set(ids);
           // Log each deleted task individually so it can be restored later.
@@ -1107,7 +1117,8 @@ export const useStore = create<AppState>()((set, get) => ({
                 ? { ...state.ui, selectedTaskId: null }
                 : state.ui,
           };
-        }),
+        });
+      },
 
       // Move dragged task to the position of target (drop-before). Forces manual sort
       // so the new order is actually shown.
