@@ -2,38 +2,34 @@ import { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { parseQuickAdd } from '../quickParse';
 import { useSwipeDown } from '../gestures';
+import { deriveShareFields } from '../shareFields';
 import type { SharedPayload } from '../shareTarget';
 
-const URL_RE = /https?:\/\/[^\s]+/i;
-
 // Quick-capture sheet shown when content is shared into the app. The link goes
-// into the description; the project defaults to Inbox and is overridden by a
-// `#Projekt` token in the title or by the dropdown.
+// into the note; the project defaults to Inbox and can be searched/picked.
 export default function ShareCapture({ payload, onClose }: { payload: SharedPayload; onClose: () => void }) {
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
   const addTask = useStore((s) => s.addTask);
 
-  const initial = useMemo(() => {
-    const text = (payload.text ?? '').trim();
-    const subject = (payload.subject ?? '').trim();
-    const url = text.match(URL_RE)?.[0] ?? '';
-    const rest = url ? text.replace(url, '').trim() : text;
-    // Link → description; title prefers the page subject, else the non-link text.
-    const title = subject || rest || url || '';
-    const description = url || (subject ? text : '');
-    return { title, description };
-  }, [payload]);
+  const initial = useMemo(() => deriveShareFields(payload), [payload]);
 
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description);
   const [projectChoice, setProjectChoice] = useState<string>(''); // '' = Inbox / follow #tag
+  const [projQuery, setProjQuery] = useState('');
   const [saved, setSaved] = useState(false);
   const swipe = useSwipeDown(onClose);
 
   const visibleProjects = projects
     .filter((p) => !p.archived)
     .sort((a, b) => a.name.localeCompare(b.name));
+  const filteredProjects = projQuery.trim()
+    ? visibleProjects.filter((p) => p.name.toLowerCase().includes(projQuery.trim().toLowerCase()))
+    : visibleProjects;
+  const chosenName = projectChoice
+    ? projects.find((p) => p.id === projectChoice)?.name ?? 'Projekt'
+    : 'Inbox';
 
   const save = () => {
     const parsed = parseQuickAdd(title);
@@ -80,17 +76,35 @@ export default function ShareCapture({ payload, onClose }: { payload: SharedPayl
               />
             </label>
 
-            <label className="m-field">
-              <span>Projekt</span>
-              <select value={projectChoice} onChange={(e) => setProjectChoice(e.target.value)}>
-                <option value="">— Inbox (oder #Projekt im Titel) —</option>
-                {visibleProjects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.kind === 'area' ? '∞ ' : ''}{p.name}
-                  </option>
+            <div className="m-field">
+              <span>Projekt: <strong>{chosenName}</strong></span>
+              <input
+                className="m-share-projsearch"
+                placeholder="Projekt suchen… (leer = Inbox)"
+                value={projQuery}
+                onChange={(e) => setProjQuery(e.target.value)}
+              />
+              <div className="m-share-projlist">
+                <button
+                  className={`m-share-projitem ${projectChoice === '' ? 'on' : ''}`}
+                  onClick={() => { setProjectChoice(''); setProjQuery(''); }}
+                >
+                  📥 Inbox (kein Projekt)
+                </button>
+                {filteredProjects.map((p) => (
+                  <button
+                    key={p.id}
+                    className={`m-share-projitem ${projectChoice === p.id ? 'on' : ''}`}
+                    onClick={() => { setProjectChoice(p.id); setProjQuery(''); }}
+                  >
+                    {p.kind === 'area' ? '∞ ' : '● '}{p.name}
+                  </button>
                 ))}
-              </select>
-            </label>
+                {filteredProjects.length === 0 && (
+                  <p className="m-settings-hint">Kein Projekt gefunden.</p>
+                )}
+              </div>
+            </div>
 
             <label className="m-field">
               <span>Beschreibung</span>
