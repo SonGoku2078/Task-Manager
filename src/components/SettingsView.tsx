@@ -168,6 +168,8 @@ export default function SettingsView() {
 
       <PomodoroSection />
 
+      <ProdImportSection />
+
       <section className="settings-section">
         <h3 className="settings-heading">Darstellung</h3>
         <div className="theme-toggle">
@@ -567,6 +569,57 @@ function CalendarFeedSection() {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+// DEV only (#29): replace the dev database with a snapshot of production.
+// Renders nothing unless the backend reports the dev port; the server refuses
+// the request on prod anyway (403).
+function ProdImportSection() {
+  const [port, setPort] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    let on = true;
+    fetch('/api/lan')
+      .then((r) => r.json())
+      .then((d) => { if (on) setPort(d.port); })
+      .catch(() => {});
+    return () => { on = false; };
+  }, []);
+  if (port !== 3002) return null;
+  const run = async () => {
+    if (!window.confirm('PROD-Daten in die DEV-Datenbank importieren? ALLE DEV-Daten werden ersetzt.')) return;
+    if (!window.confirm('Wirklich sicher? Ein Backup der dev.db wird automatisch angelegt, aber der aktuelle DEV-Stand geht verloren.')) return;
+    setBusy(true);
+    setMsg('');
+    try {
+      const r = await fetch('/api/admin/import-prod', { method: 'POST' });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      await useStore.getState().loadAll();
+      setMsg(`✓ Import erfolgreich: ${d.counts.tasks} Aufgaben, ${d.counts.projects} Projekte, ${d.counts.categories} Kategorien, ${d.counts.activity_log} Aktivitäten.`);
+    } catch (e) {
+      setMsg(`✕ Fehler: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="settings-section">
+      <h3 className="settings-heading">🧪 DEV: Produktionsdaten importieren</h3>
+      <p className="settings-hint">
+        Ersetzt ALLE Daten der DEV-Datenbank (dev.db) durch eine Kopie der Produktion.
+        Die Produktion wird dabei nur gelesen; vorher wird automatisch ein Backup der
+        dev.db angelegt (~/.task-manager/backups). Hinweis: Auch Einstellungen inkl.
+        Kalender-Feed-Token werden übernommen. Am besten ausführen, wenn in PROD gerade
+        nicht gearbeitet wird.
+      </p>
+      <button className="settings-danger-btn" disabled={busy} onClick={run}>
+        {busy ? '… importiere' : '⬇ PROD → DEV importieren'}
+      </button>
+      {msg && <p className="settings-hint">{msg}</p>}
     </section>
   );
 }

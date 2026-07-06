@@ -315,3 +315,17 @@
 }
 .settings-pomodoro-field { display: flex; flex-direction: column; gap: 4px; }
 .settings-pomodoro-field .settings-input { width: 100px; }
+
+/* Danger button for the DEV prod-import (#29). */
+.settings-danger-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #c62828;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+.settings-danger-btn:disabled { opacity: 0.6; cursor: default; }
+.settings-danger-btn:hover:not(:disabled) { background: #b71c1c; }

@@ -13,6 +13,7 @@ import blockersRouter from './routes/blockers';
 import savedViewsRouter from './routes/savedViews';
 import activityLogRouter from './routes/activityLog';
 import settingsRouter from './routes/settings';
+import adminRouter from './routes/admin';
 
 const app = express();
 
@@ -34,6 +35,8 @@ app.use('/api/blockers',     blockersRouter);
 app.use('/api/saved-views',  savedViewsRouter);
 app.use('/api/activity-log', activityLogRouter);
 app.use('/api/settings',     settingsRouter);
+// DEV-only admin actions (PROD→DEV data import, #29).
+app.use('/api/admin',        adminRouter);
 // ICS feed + feed-info (registers /calendar/:token.ics and /api/calendar-feed;
 // must come before the SPA fallback below, or .ics requests get index.html).
 app.use(calendarRouter);
