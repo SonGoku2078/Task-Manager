@@ -58,16 +58,29 @@ jobs:
             -PversionName=${{ github.ref_name }} \
             -PversionCode=${{ github.run_number }}
 
+      # Put the version in the filename so a downloaded APK is identifiable.
+      # Tag build: mobile-v0.5.1 -> SelfManaged-0.5.1.apk. Manual run: uses the
+      # branch + run number. update.ts matches by ".apk" suffix, so any name works.
+      - name: Name APK with version
+        id: rename
+        run: |
+          RAW="${{ github.ref_name }}"
+          VER="${RAW#mobile-v}"
+          if [ "$VER" = "$RAW" ]; then VER="${RAW}-run${{ github.run_number }}"; fi
+          OUT="apps/mobile/android/app/build/outputs/apk/release/SelfManaged-${VER}.apk"
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "$OUT"
+          echo "apk=$OUT" >> "$GITHUB_OUTPUT"
+
       - name: Attach APK to the Release (tag builds)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          files: ${{ steps.rename.outputs.apk }}
 
       - name: Upload APK artifact (manual runs)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          path: ${{ steps.rename.outputs.apk }}
