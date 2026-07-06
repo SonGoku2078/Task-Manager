@@ -785,6 +785,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": "972 Tasks = PROD; mtime identisch; Backup 2.6MB. 403-Guard nur code-reviewt (Prod-Server hat Route noch nicht)"
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "403-Guard jetzt LIVE auf PROD verifiziert (nach Deploy); ICS-Feed-Route auf :3001 aktiv"
         }
       ]
     },
