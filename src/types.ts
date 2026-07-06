@@ -50,6 +50,8 @@ export interface Settings {
   colorLabels?: Record<string, string>; // hex → label name (e.g. '#9c27b0' → 'Lifestyle')
   filtersCollapsed?: boolean; // collapse the filter bar to save vertical space
   sectionsCollapsed?: boolean; // collapse the Gruppen/Sektionen jump-bar
+  projectCalendarShown?: number; // 1 = show the calendar dock in the project view, 0 = collapsed (#33)
+  inboxProjectPanel?: number; // 1 = show the project-assign panel in the Inbox view (#32), default 1
   // Pomodoro timer (#3): interval lengths in minutes + rounds until long break.
   pomodoroFocusMin?: number;
   pomodoroBreakMin?: number;

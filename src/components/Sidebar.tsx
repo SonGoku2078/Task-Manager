@@ -32,6 +32,7 @@ const bottomItems: { id: ViewType; icon: string; label: string; devOnly?: boolea
 export default function Sidebar() {
   const currentView = useStore((s) => s.ui.currentView);
   const sidePanel = useStore((s) => s.ui.sidePanel);
+  const inboxPanel = useStore((s) => (s.settings.inboxProjectPanel ?? 1) === 1);
   const setView = useStore((s) => s.setView);
   const setSidePanel = useStore((s) => s.setSidePanel);
   const savedViews = useStore((s) => s.savedViews);
@@ -64,7 +65,9 @@ export default function Sidebar() {
   const order = (navOrder ?? DEFAULT_NAV_ORDER).filter((id) => navMeta[id]);
   for (const id of DEFAULT_NAV_ORDER) if (!order.includes(id)) order.push(id);
 
-  const collapsed = sidePanel !== 'none';
+  // Collapse to icons when a contextual panel takes the left space — including
+  // the Inbox project-assign panel (#32).
+  const collapsed = sidePanel !== 'none' || (currentView === 'inbox' && inboxPanel);
 
   const handleNav = (id: ViewType) => {
     if (id === 'projects' || id === 'calendar' || id === 'someday') {

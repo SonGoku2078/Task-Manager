@@ -22,6 +22,8 @@ const NUMERIC_KEYS = new Set([
   'reminderLeadMin',
   'reminderSound',
   'reminderVibrate',
+  'projectCalendarShown',
+  'inboxProjectPanel',
 ]);
 
 function loadSettings(): Record<string, unknown> {

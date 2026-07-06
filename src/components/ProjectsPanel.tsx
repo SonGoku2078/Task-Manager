@@ -8,10 +8,12 @@ import './ProjectsPanel.css';
 const EMPTY_LABELS: Record<string, string> = {};
 
 interface ProjectsPanelProps {
-  mode?: 'projects' | 'someday';
+  mode?: 'projects' | 'someday' | 'all';
   calendarShown?: boolean;
   onToggleCalendar?: () => void;
   onOpenDetail?: () => void;
+  // When set, a ✕ in the header calls this (used by the Inbox assign panel, #32).
+  onClose?: () => void;
 }
 
 export default function ProjectsPanel({
@@ -19,6 +21,7 @@ export default function ProjectsPanel({
   calendarShown,
   onToggleCalendar,
   onOpenDetail,
+  onClose,
 }: ProjectsPanelProps) {
   const projects = useStore((s) => s.projects);
   const tasks = useStore((s) => s.tasks);
@@ -251,7 +254,7 @@ export default function ProjectsPanel({
     <div className="projects-panel" ref={panelRef} style={{ width }}>
       <div className="projects-panel-head">
         <span className="projects-panel-title">
-          {someday ? '🌥️ Someday' : '📂 Projekte'}
+          {mode === 'all' ? '📂 Zu Projekt zuweisen' : someday ? '🌥️ Someday' : '📂 Projekte'}
         </span>
         <div className="projects-add-group">
           <button
@@ -271,6 +274,11 @@ export default function ProjectsPanel({
               onClick={onToggleCalendar}
             >
               📅
+            </button>
+          )}
+          {onClose && (
+            <button className="projects-add-btn" title="Panel ausblenden" onClick={onClose}>
+              ✕
             </button>
           )}
         </div>
@@ -354,6 +362,18 @@ export default function ProjectsPanel({
                 <p className="projects-empty">Projekte hierher ziehen um sie zu Areas zu machen.</p>
               )}
             </div>
+
+            {/* The Inbox assign panel (#32) lists every project, so it also
+                surfaces inactive/Someday ones — you can file a task there. */}
+            {mode === 'all' && somedayProjects.length > 0 && (
+              <>
+                <div className="projects-divider" />
+                <div className="projects-group-head">
+                  <span className="projects-group-title">🌥️ Someday</span>
+                </div>
+                {pinnedFirst(somedayProjects).map(renderItem)}
+              </>
+            )}
 
             {archivedProjects.length > 0 && (
               <>

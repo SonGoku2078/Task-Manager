@@ -174,8 +174,13 @@ function App() {
   const [confirmPending, setConfirmPending] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  // Show/hide the calendar docked between the projects panel and the task list.
-  const [projCalShown, setProjCalShown] = useState(true);
+  // Calendar dock between projects panel and task list — collapsed by default
+  // and remembered across reloads (#33). Stored as a numeric setting (1/0).
+  const projCalShown = useStore((s) => s.settings.projectCalendarShown === 1);
+  const patchSettings = useStore((s) => s.patchSettings);
+  const toggleProjCal = () => patchSettings({ projectCalendarShown: projCalShown ? 0 : 1 });
+  // Inbox project-assign panel (#32): shown by default, remembered.
+  const inboxPanelShown = useStore((s) => (s.settings.inboxProjectPanel ?? 1) === 1);
 
   const toggleSelect = (id: string) => {
     selectAnchor.current = id;
@@ -392,7 +397,7 @@ function App() {
         <ErrorBoundary>
           <ProjectsPanel
             calendarShown={projCalShown}
-            onToggleCalendar={() => setProjCalShown((v) => !v)}
+            onToggleCalendar={toggleProjCal}
             onOpenDetail={() => { selectTask(null); setProjectDetailOpen(true); }}
           />
         </ErrorBoundary>
@@ -403,6 +408,13 @@ function App() {
         </ErrorBoundary>
       )}
       {ui.sidePanel === 'calendar' && <CalendarPanel />}
+      {/* Inbox: project-assign panel on the left — drag a task onto a project
+          to move it there (with its subtasks). Shows all projects incl. Someday (#32). */}
+      {ui.currentView === 'inbox' && ui.sidePanel === 'none' && inboxPanelShown && (
+        <ErrorBoundary>
+          <ProjectsPanel mode="all" onClose={() => patchSettings({ inboxProjectPanel: 0 })} />
+        </ErrorBoundary>
+      )}
       {ui.currentView === 'projects' && projCalShown && (
         <div className="calendar-mid-dock">
           <CalendarPanel />
@@ -473,6 +485,15 @@ function App() {
           <div className="task-header-right">
             <PomodoroWidget />
             <span className="task-count">{visibleTasks.length}</span>
+            {ui.currentView === 'inbox' && (
+              <button
+                className={`header-icon-btn ${inboxPanelShown ? 'on' : ''}`}
+                title={inboxPanelShown ? 'Projekt-Panel ausblenden' : 'Projekt-Panel einblenden (Task per Ziehen zuweisen)'}
+                onClick={() => patchSettings({ inboxProjectPanel: inboxPanelShown ? 0 : 1 })}
+              >
+                📂
+              </button>
+            )}
             <button
               className="header-icon-btn"
               title="Drucken / als PDF speichern"
