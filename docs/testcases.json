@@ -892,6 +892,54 @@
           "bemerkung": "Code + Build verifiziert; Gerätetest (Ton/Vorlauf/Tap) durch User nach Release"
         }
       ]
+    },
+    {
+      "id": "TC-M48",
+      "bereich": "Runde 3 (Nachbesserung 2)",
+      "titel": "#30 Mobile: Detail-Layout nicht mehr zu breit (2 Felder/Reihe)",
+      "erwartung": "Uhrzeit/Dauer und Wiederholung in getrennten Reihen; kein horizontales Scrollen.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Build ok; native Ansicht: Gerätetest"
+        }
+      ]
+    },
+    {
+      "id": "TC-M49",
+      "bereich": "Runde 3 (Nachbesserung 2)",
+      "titel": "#30 Klingelton aus Geräte-Tönen wählbar (nativer Picker)",
+      "erwartung": "RingtonePlugin öffnet System-Notification-Sound-Picker; Auswahl bespielt Reminder-Channel; Ton/Vibration getrennt.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "offen",
+          "bemerkung": "Java kompiliert im CI; Picker-Dialog + Ton = Gerätetest durch User"
+        }
+      ]
+    },
+    {
+      "id": "TC-M50",
+      "bereich": "Runde 3 (Nachbesserung 2)",
+      "titel": "#30 Update-Bereich oben in den Einstellungen (erreichbar)",
+      "erwartung": "Nach-Updates-suchen + Installieren-Button direkt unter Server-URL.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Build ok; native Ansicht: Gerätetest"
+        }
+      ]
     }
   ]
 }
