@@ -38,6 +38,8 @@ body {
   background: var(--main-bg);
   color: var(--text-primary);
   font-size: 16px;
+  /* Never scroll sideways — a too-wide field must wrap, not shift the page. */
+  overflow-x: hidden;
 }
 
 /* ── App shell ── */

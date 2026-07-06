@@ -66,7 +66,7 @@ export default function MobileApp() {
   const reminderLeadMin = useStore((s) => s.settings.reminderLeadMin ?? 0);
   const reminderSound = useStore((s) => (s.settings.reminderSound ?? 1) !== 0);
   const reminderVibrate = useStore((s) => (s.settings.reminderVibrate ?? 1) !== 0);
-  const reminderTone = useStore((s) => s.settings.reminderTone ?? 'glocke');
+  const reminderSoundUri = useStore((s) => s.settings.reminderSoundUri || null);
   useEffect(() => { ensureNotificationPermission(); }, []);
   // Tap on a reminder → open that task. Registered once.
   useEffect(() => { onReminderTap((taskId) => openTask(taskId)); }, []);
@@ -74,12 +74,12 @@ export default function MobileApp() {
     if (!dataLoaded) return;
     const id = window.setTimeout(() => {
       scheduleReminders(allTasks, {
-        leadMin: reminderLeadMin, sound: reminderSound, vibrate: reminderVibrate, tone: reminderTone,
+        leadMin: reminderLeadMin, sound: reminderSound, vibrate: reminderVibrate, soundUri: reminderSoundUri,
       });
       publishWidgetData(allTasks);
     }, 3000);
     return () => window.clearTimeout(id);
-  }, [allTasks, dataLoaded, reminderLeadMin, reminderSound, reminderVibrate, reminderTone]);
+  }, [allTasks, dataLoaded, reminderLeadMin, reminderSound, reminderVibrate, reminderSoundUri]);
   // Pick up shared content (Android "Share → SelfManaged") on launch + resume + ping.
   useEffect(() => {
     let active = true;

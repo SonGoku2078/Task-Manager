@@ -120,6 +120,8 @@ export default function TaskDetailModal({
           </label>
         </div>
 
+        {/* Zwei Felder pro Reihe — native date/time-Inputs schrumpfen nicht,
+            drei nebeneinander sprengten die Breite (#30-Feedback). */}
         <div className="m-field-row">
           <label className="m-field">
             <span>Uhrzeit</span>
@@ -140,6 +142,9 @@ export default function TaskDetailModal({
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
             />
           </label>
+        </div>
+
+        <div className="m-field-row">
           <label className="m-field">
             <span>Wiederholung</span>
             <select value={t.recurrence} onChange={(e) => updateTask(t.id, { recurrence: e.target.value as RecurrenceType })}>

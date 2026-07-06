@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
 import { checkForUpdate, openApk, APP_VERSION } from '../update';
-import { notificationStatus, sendTestNotification, REMINDER_TONES } from '../notifications';
+import { notificationStatus, sendTestNotification } from '../notifications';
+import { Ringtone } from '../ringtone';
 import { useSwipeDown } from '../gestures';
 
 export default function Settings({ onClose }: { onClose: () => void }) {
@@ -12,7 +13,8 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const reminderLeadMin = useStore((s) => s.settings.reminderLeadMin ?? 0);
   const reminderSound = useStore((s) => (s.settings.reminderSound ?? 1) !== 0);
   const reminderVibrate = useStore((s) => (s.settings.reminderVibrate ?? 1) !== 0);
-  const reminderTone = useStore((s) => s.settings.reminderTone ?? 'glocke');
+  const reminderSoundUri = useStore((s) => s.settings.reminderSoundUri || '');
+  const reminderSoundName = useStore((s) => s.settings.reminderSoundName || 'Standard-Ton');
   const patchSettings = useStore((s) => s.patchSettings);
   const taskCount = useStore((s) => s.tasks.length);
 
@@ -37,7 +39,15 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   }, []);
   const testNotif = async () => {
     setNotifMsg('… plane Test');
-    setNotifMsg(await sendTestNotification({ sound: reminderSound, vibrate: reminderVibrate, tone: reminderTone }));
+    setNotifMsg(await sendTestNotification({ sound: reminderSound, vibrate: reminderVibrate, soundUri: reminderSoundUri || null }));
+  };
+  const pickTone = async () => {
+    try {
+      const r = await Ringtone.pick({ current: reminderSoundUri || null });
+      if (r.uri) patchSettings({ reminderSoundUri: r.uri, reminderSoundName: r.title ?? 'Ton' });
+    } catch {
+      setNotifMsg('Ton-Auswahl nur in der App verfügbar.');
+    }
   };
 
   const checkUpdate = async () => {
@@ -149,6 +159,21 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           {taskCount > 0 && ' — Daten sind da. Tabs sind gefiltert (Inbox = projektlos, Woche = bald fällig, Aktion = ★).'}
         </div>
 
+        {/* Update near the top so the install button is easy to reach (#30). */}
+        <button className="m-btn-ghost" onClick={checkUpdate}>⬆ Nach Updates suchen</button>
+        {updateMsg && (
+          <div className={updateMsg.startsWith('✓') ? 'm-ok' : updateMsg.startsWith('✕') ? 'm-fail' : ''}>
+            {updateUrl ? (
+              <button className="m-update-banner" onClick={() => openApk(updateUrl)}>
+                {updateMsg} — tippen zum Installieren
+              </button>
+            ) : updateMsg}
+          </div>
+        )}
+        <div className="m-settings-info">
+          App-Version: <code>{APP_VERSION === 'dev' ? 'Entwicklungs-Build' : 'v' + APP_VERSION}</code>
+        </div>
+
         {feedUrl && (
           <div className="m-settings-info">
             Kalender-Feed (ICS) — in Proton/Thunderbird abonnieren:<br />
@@ -186,17 +211,10 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           <span>Ton bei Erinnerung</span>
         </label>
         {reminderSound && (
-          <label className="m-field">
-            <span>Klang</span>
-            <select
-              value={reminderTone}
-              onChange={(e) => patchSettings({ reminderTone: e.target.value })}
-            >
-              {REMINDER_TONES.map((t) => (
-                <option key={t.key} value={t.key}>{t.label}</option>
-              ))}
-            </select>
-          </label>
+          <div className="m-settings-info">
+            Klingelton: <strong>{reminderSoundName}</strong>
+            <button className="m-btn-ghost" onClick={pickTone}>🎵 Klingelton wählen</button>
+          </div>
         )}
         <label className="m-toggle">
           <input
@@ -225,21 +243,6 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           />
           <span>Dark Mode</span>
         </label>
-
-        <button className="m-btn-ghost" onClick={checkUpdate}>⬆ Nach Updates suchen</button>
-        {updateMsg && (
-          <div className={updateMsg.startsWith('✓') ? 'm-ok' : updateMsg.startsWith('✕') ? 'm-fail' : ''}>
-            {updateUrl ? (
-              <button className="m-update-banner" onClick={() => openApk(updateUrl)}>
-                {updateMsg} — tippen zum Installieren
-              </button>
-            ) : updateMsg}
-          </div>
-        )}
-
-        <div className="m-settings-info">
-          App-Version: <code>{APP_VERSION === 'dev' ? 'Entwicklungs-Build' : 'v' + APP_VERSION}</code>
-        </div>
 
         <div className="m-modal-foot">
           <button className="m-btn-save" onClick={onClose}>Schließen</button>

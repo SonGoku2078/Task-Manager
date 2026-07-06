@@ -61,7 +61,8 @@ export interface Settings {
   reminderLeadMin?: number; // minutes to notify BEFORE a task's start time
   reminderSound?: number; // 1 = play a sound, 0 = silent
   reminderVibrate?: number; // 1 = vibrate, 0 = no vibration (independent of sound)
-  reminderTone?: string; // 'glocke' | 'piep' | 'marimba'
+  reminderSoundUri?: string; // device notification-sound uri; empty = default
+  reminderSoundName?: string; // display name of the chosen sound
 }
 
 export type ViewType =
