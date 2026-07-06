@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
+    "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/preferences": "^8.0.1",
     "date-fns": "^4.4.0",
     "mammoth": "^1.12.0",
     "marked": "^18.0.5",

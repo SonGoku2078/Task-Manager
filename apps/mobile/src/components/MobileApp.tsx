@@ -19,6 +19,8 @@ import ShareCapture from './ShareCapture';
 import Search from './Search';
 import { checkForUpdate, openApk, type UpdateInfo } from '../update';
 import { consumeSharedIntent, onShareReceived, type SharedPayload } from '../shareTarget';
+import { ensureNotificationPermission, scheduleReminders } from '../notifications';
+import { publishWidgetData } from '../widgetBridge';
 
 const TAB_TITLE: Record<string, string> = {
   projekte: 'Projekte',
@@ -57,6 +59,19 @@ export default function MobileApp() {
   useEffect(() => {
     checkForUpdate().then((u) => { if (u?.available && u.apkUrl) setUpdate(u); });
   }, []);
+  // Reminder + Widget-Daten (#30): einmalig Berechtigung anfragen; nach jeder
+  // Task-Änderung (debounced) Erinnerungen neu planen + Widget-Snapshot
+  // veröffentlichen. Im Browser sind beide Aufrufe stille No-ops.
+  const allTasks = useStore((s) => s.tasks);
+  useEffect(() => { ensureNotificationPermission(); }, []);
+  useEffect(() => {
+    if (!dataLoaded) return;
+    const id = window.setTimeout(() => {
+      scheduleReminders(allTasks);
+      publishWidgetData(allTasks);
+    }, 3000);
+    return () => window.clearTimeout(id);
+  }, [allTasks, dataLoaded]);
   // Pick up shared content (Android "Share → SelfManaged") on launch + resume + ping.
   useEffect(() => {
     let active = true;

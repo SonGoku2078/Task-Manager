@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Register before the bridge starts so load() runs during init.
         registerPlugin(ShareTargetPlugin.class);
+        registerPlugin(WidgetRefreshPlugin.class);
         super.onCreate(savedInstanceState);
         // Cold start: the app was launched by a share intent.
         ShareTargetPlugin.handleIntent(getIntent());

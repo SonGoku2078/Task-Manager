@@ -19,6 +19,13 @@ const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+// Method-override tunnel: the Android widget's HttpURLConnection can't send
+// PATCH, so it POSTs with this header instead (#30).
+app.use((req, _res, next) => {
+  const override = req.header('x-http-method-override');
+  if (override && req.method === 'POST') req.method = override.toUpperCase();
+  next();
+});
 
 // API routes
 app.get('/health', (_req, res) => res.json({ ok: true }));
