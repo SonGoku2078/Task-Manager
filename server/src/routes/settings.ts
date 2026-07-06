@@ -19,6 +19,8 @@ const NUMERIC_KEYS = new Set([
   'pomodoroBreakMin',
   'pomodoroLongBreakMin',
   'pomodoroRounds',
+  'reminderLeadMin',
+  'reminderSound',
 ]);
 
 function loadSettings(): Record<string, unknown> {

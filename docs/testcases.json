@@ -81,6 +81,16 @@
       ]
     },
     {
+      "id": "TC-A06",
+      "bereich": "Auto-Tests",
+      "titel": "Widget-Meta-Zeile: Datum/Uhrzeit/Dauer/Flags wie Web-Zeile (#30)",
+      "erwartung": "widgetMeta baut kompakte Symbol-Zeile; leere Task = leer.",
+      "typ": "auto",
+      "quelle": "scripts/widgetmeta.test.ts",
+      "regression": true,
+      "laeufe": []
+    },
+    {
       "id": "TC-A04",
       "bereich": "Auto-Tests",
       "titel": "Build Web + Server (tsc -b, vite build, server tsc)",
@@ -844,12 +854,44 @@
     {
       "id": "TC-M45",
       "bereich": "Runde 3",
-      "titel": "#30B: APK-Build mit Widget-Klassen (CI) + Gerätetest",
+      "titel": "#30B: APK-Build mit Widget/Reminder-Klassen (CI) + Gerätetest",
       "erwartung": "Gradle kompiliert Provider/Service/Config/Plugin; Widget-Funktion auf Gerät: User-Test.",
       "typ": "manuell",
       "quelle": "GitHub Actions mobile-apk.yml",
       "regression": false,
       "laeufe": []
+    },
+    {
+      "id": "TC-M46",
+      "bereich": "Runde 3 (Nachbesserung)",
+      "titel": "#30 Widget: Meta-Zeile pro Aufgabe (Datum, Uhrzeit, Dauer, Flags)",
+      "erwartung": "Widget-Item zeigt zweite Zeile mit Symbolen; Snapshot-Feld m gefüllt.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Auto-Test TC-A06 deckt Meta-Formatierung; native Anzeige: Gerätetest"
+        }
+      ]
+    },
+    {
+      "id": "TC-M47",
+      "bereich": "Runde 3 (Nachbesserung)",
+      "titel": "#30 Reminder: Vorlaufzeit + Ton einstellbar, Tap öffnet Aufgabe, Exakt-Alarm-Permission",
+      "erwartung": "Settings: Vorlauf (0-60 min) + Ton-Toggle + Test-Button; Manifest USE_EXACT_ALARM; extra.taskId + Tap-Listener.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "offen",
+          "bemerkung": "Code + Build verifiziert; Gerätetest (Ton/Vorlauf/Tap) durch User nach Release"
+        }
+      ]
     }
   ]
 }

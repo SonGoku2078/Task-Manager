@@ -19,7 +19,7 @@ import ShareCapture from './ShareCapture';
 import Search from './Search';
 import { checkForUpdate, openApk, type UpdateInfo } from '../update';
 import { consumeSharedIntent, onShareReceived, type SharedPayload } from '../shareTarget';
-import { ensureNotificationPermission, scheduleReminders } from '../notifications';
+import { ensureNotificationPermission, scheduleReminders, onReminderTap } from '../notifications';
 import { publishWidgetData } from '../widgetBridge';
 
 const TAB_TITLE: Record<string, string> = {
@@ -63,15 +63,19 @@ export default function MobileApp() {
   // Task-Änderung (debounced) Erinnerungen neu planen + Widget-Snapshot
   // veröffentlichen. Im Browser sind beide Aufrufe stille No-ops.
   const allTasks = useStore((s) => s.tasks);
+  const reminderLeadMin = useStore((s) => s.settings.reminderLeadMin ?? 0);
+  const reminderSound = useStore((s) => (s.settings.reminderSound ?? 1) !== 0);
   useEffect(() => { ensureNotificationPermission(); }, []);
+  // Tap on a reminder → open that task. Registered once.
+  useEffect(() => { onReminderTap((taskId) => openTask(taskId)); }, []);
   useEffect(() => {
     if (!dataLoaded) return;
     const id = window.setTimeout(() => {
-      scheduleReminders(allTasks);
+      scheduleReminders(allTasks, reminderLeadMin, reminderSound);
       publishWidgetData(allTasks);
     }, 3000);
     return () => window.clearTimeout(id);
-  }, [allTasks, dataLoaded]);
+  }, [allTasks, dataLoaded, reminderLeadMin, reminderSound]);
   // Pick up shared content (Android "Share → SelfManaged") on launch + resume + ping.
   useEffect(() => {
     let active = true;

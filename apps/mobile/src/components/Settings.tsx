@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
 import { checkForUpdate, openApk, APP_VERSION } from '../update';
+import { notificationStatus, sendTestNotification } from '../notifications';
 import { useSwipeDown } from '../gestures';
 
 export default function Settings({ onClose }: { onClose: () => void }) {
   const theme = useStore((s) => s.settings.theme);
   const setTheme = useStore((s) => s.setTheme);
   const loadAll = useStore((s) => s.loadAll);
+  const reminderLeadMin = useStore((s) => s.settings.reminderLeadMin ?? 0);
+  const reminderSound = useStore((s) => (s.settings.reminderSound ?? 1) !== 0);
+  const patchSettings = useStore((s) => s.patchSettings);
   const taskCount = useStore((s) => s.tasks.length);
 
   // Pre-fill with a sensible default so nothing must be typed from scratch
@@ -18,6 +22,21 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const swipe = useSwipeDown(onClose);
   const [updateMsg, setUpdateMsg] = useState<string>('');
   const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+  const [notifMsg, setNotifMsg] = useState<string>('');
+  useEffect(() => {
+    notificationStatus().then((s) => {
+      setNotifMsg(
+        s === 'granted' ? '✓ Benachrichtigungen erlaubt'
+          : s === 'denied' ? '✕ Benachrichtigungen blockiert — in den Android-Einstellungen erlauben'
+          : s === 'unavailable' ? '(nur in der App, nicht im Browser)'
+          : 'noch nicht erlaubt — unten testen'
+      );
+    });
+  }, []);
+  const testNotif = async () => {
+    setNotifMsg('… plane Test');
+    setNotifMsg(await sendTestNotification(reminderSound));
+  };
 
   const checkUpdate = async () => {
     setUpdateMsg('… suche');
@@ -137,6 +156,38 @@ export default function Settings({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         )}
+
+        <div className="m-settings-info">
+          🔔 Erinnerungen (fällige Aufgaben mit Uhrzeit)<br />
+          <span className={notifMsg.startsWith('✓') ? 'm-ok' : notifMsg.startsWith('✕') ? 'm-fail' : ''}>{notifMsg}</span>
+        </div>
+        <label className="m-field">
+          <span>Vorlaufzeit — wie lange vorher erinnern?</span>
+          <select
+            value={reminderLeadMin}
+            onChange={(e) => patchSettings({ reminderLeadMin: Number(e.target.value) })}
+          >
+            <option value={0}>Zur Startzeit</option>
+            <option value={5}>5 Minuten vorher</option>
+            <option value={10}>10 Minuten vorher</option>
+            <option value={15}>15 Minuten vorher</option>
+            <option value={30}>30 Minuten vorher</option>
+            <option value={60}>1 Stunde vorher</option>
+          </select>
+        </label>
+        <label className="m-toggle">
+          <input
+            type="checkbox"
+            checked={reminderSound}
+            onChange={() => patchSettings({ reminderSound: reminderSound ? 0 : 1 })}
+          />
+          <span>Ton + Vibration bei Erinnerung</span>
+        </label>
+        <button className="m-btn-ghost" onClick={testNotif}>🔔 Benachrichtigung testen</button>
+        <div className="m-settings-hint">
+          Erinnerungen gibt es für Aufgaben mit gesetzter Uhrzeit; die Vorlaufzeit
+          gilt für alle. Änderungen wirken nach dem nächsten Sync (oder App-Neustart).
+        </div>
 
         <button className="m-btn-ghost" onClick={syncNow} disabled={busy}>↻ Jetzt synchronisieren</button>
         <div className="m-settings-hint">

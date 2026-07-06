@@ -69,4 +69,10 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Reminder-Benachrichtigungen (#30): POST_NOTIFICATIONS kommt vom
+         local-notifications-Plugin; für ZEITGENAUE Reminder braucht Android 12+
+         eine Exakt-Alarm-Erlaubnis, sonst werden getimte Notifications
+         verworfen. USE_EXACT_ALARM wird ohne Nutzerdialog gewährt. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 </manifest>

@@ -30,4 +30,17 @@ TC-M42–TC-M45 in `docs/testcases.json` (M45 = Gerätetest, bleibt offen bis Us
 - **GATE: GO für Code**; native Funktion (Notification-Verhalten, Widget-Bedienung) = Gerätetest durch User nach `mobile-v*`-Release.
 
 ## 6. CI/CD & Deployment
-Commits gepusht (origin/master aktualisiert — nötig für den CI-APK-Build). Web-Release + mobile-Tag nach User-Go.
+Commits gepusht (origin/master aktualisiert — nötig für den CI-APK-Build). Web-Release + mobile-Tag nach User-Go. Release mobile-v0.5.0 gebaut (APK 3.1 MB).
+
+## 7. Nachbesserung nach Gerätetest (User-Feedback zu #30)
+Rückmeldung: (a) Widget zeigte nur den Titel — Meta-Infos fehlten; (b) Reminder kamen erst zum Event, keine Vorlaufzeit/kein Ton einstellbar, kein Sprung zur Aufgabe.
+| Punkt | Fix |
+|---|---|
+| Widget-Meta | `widgetMeta()` (neu `apps/mobile/src/widgetMeta.ts`, unit-getestet TC-A06) baut pro Zeile eine Symbol-Meta (📅 Datum, 🕘 Uhrzeit, ⏱ Dauer, ↻/⭐/☀️/🗓️/🌥️/⏳/💬) wie die Web-Zeile; Snapshot-Feld `m`, zweite TextView im Item-Layout |
+| Reminder-Vorlaufzeit | Setting `reminderLeadMin` (0/5/10/15/30/60), `fireAt = Startzeit − Vorlauf` |
+| Ton | Setting `reminderSound` (1/0) → zwei Notification-Channels (Ton+Vibration / stumm) |
+| Tap → Aufgabe | `extra.taskId` an jeder Notification; `onReminderTap` → `openTask` in MobileApp |
+| Zustellung robust | `USE_EXACT_ALARM` + `SCHEDULE_EXACT_ALARM` im Manifest (targetSdk 36 blockiert sonst getimte Alarme); Diagnose-/Test-Button + Permission-Status in den Mobile-Settings |
+| Settings-Store | `setPomodoroSettings` → generisch `patchSettings` (Pomodoro + Reminder teilen es); `reminderLeadMin`/`reminderSound` als NUMERIC-Settings (kein Bool-als-String-Problem) |
+
+Verifiziert: npm test 4/4 (inkl. TC-A06), Web/Server/Mobile-Builds ✓. Native Wirkung (Ton, Vorlaufzeit, Tap-Sprung, Widget-Meta-Anzeige) = Gerätetest durch User nach dem nächsten mobile-Release (TC-M46/M47).

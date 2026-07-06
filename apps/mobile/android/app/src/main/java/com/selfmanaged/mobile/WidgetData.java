@@ -14,7 +14,8 @@ final class WidgetData {
     static final class Item {
         final String id;
         final String title;
-        Item(String id, String title) { this.id = id; this.title = title; }
+        final String meta;
+        Item(String id, String title, String meta) { this.id = id; this.title = title; this.meta = meta; }
     }
 
     private static JSONObject load(Context ctx) {
@@ -42,7 +43,7 @@ final class WidgetData {
             if (list == null) return out;
             for (int i = 0; i < list.length(); i++) {
                 JSONObject t = list.getJSONObject(i);
-                out.add(new Item(t.optString("id"), t.optString("t")));
+                out.add(new Item(t.optString("id"), t.optString("t"), t.optString("m", "")));
             }
         } catch (Exception ignored) { }
         return out;

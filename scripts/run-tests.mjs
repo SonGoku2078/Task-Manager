@@ -15,6 +15,7 @@ const AUTO_CASES = [
   { id: 'TC-A01', cmd: 'npx tsx scripts/recurrence.test.ts' },
   { id: 'TC-A02', cmd: 'npx tsx scripts/todayflag.test.ts' },
   { id: 'TC-A03', cmd: 'npx tsx scripts/ics.test.ts' },
+  { id: 'TC-A06', cmd: 'npx tsx scripts/widgetmeta.test.ts' },
   { id: 'TC-A04', cmd: 'npm run build', build: true },
   { id: 'TC-A05', cmd: 'npm run build:mobile', build: true },
 ];

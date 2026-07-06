@@ -49,6 +49,12 @@ public class TaskWidgetService extends RemoteViewsService {
             rv.setTextColor(R.id.item_check, selected ? Color.parseColor("#2e7d32") : Color.parseColor("#9e9e9e"));
             rv.setTextViewText(R.id.item_title, item.title);
             rv.setTextColor(R.id.item_title, selected ? Color.parseColor("#2e7d32") : Color.parseColor("#212121"));
+            if (item.meta != null && !item.meta.isEmpty()) {
+                rv.setTextViewText(R.id.item_meta, item.meta);
+                rv.setViewVisibility(R.id.item_meta, android.view.View.VISIBLE);
+            } else {
+                rv.setViewVisibility(R.id.item_meta, android.view.View.GONE);
+            }
             Intent fill = new Intent();
             fill.putExtra(TaskWidgetProvider.EXTRA_TASK_ID, item.id);
             fill.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);

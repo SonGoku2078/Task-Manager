@@ -381,7 +381,8 @@ interface AppState {
   pomodoroReset: () => void;
   // Move to the next phase (timer hit 0 or user skipped); keeps running state.
   pomodoroAdvance: () => void;
-  setPomodoroSettings: (patch: Partial<Settings>) => void;
+  // Merge a partial settings patch (Pomodoro, reminders, …) + sync it.
+  patchSettings: (patch: Partial<Settings>) => void;
 
   loadAll: () => Promise<void>;
 
@@ -608,7 +609,7 @@ export const useStore = create<AppState>()((set, get) => ({
       };
     }),
 
-  setPomodoroSettings: (patch) => {
+  patchSettings: (patch) => {
     set((state) => ({ settings: { ...state.settings, ...patch } }));
     enqueue('settings.patch', { patch });
   },

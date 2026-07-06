@@ -7,6 +7,7 @@ import { registerPlugin } from '@capacitor/core';
 import { getBaseUrl } from './api';
 import type { Task } from './types';
 import { mobileToday, mobileNextAction, mobileInbox, isInNextWeekWindow } from './selectors';
+import { widgetMeta } from './widgetMeta';
 
 export const WIDGET_DATA_KEY = 'widget-data';
 
@@ -20,7 +21,7 @@ export async function publishWidgetData(tasks: Task[]): Promise<void> {
       list
         .filter((t) => !t.completed)
         .slice(0, 40)
-        .map((t) => ({ id: t.id, n: t.number, t: t.title }));
+        .map((t) => ({ id: t.id, n: t.number, t: t.title, m: widgetMeta(t) }));
     const open = tasks.filter((t) => !t.parentId && !t.completed);
     const data = {
       serverUrl: getBaseUrl(),

@@ -627,7 +627,7 @@ function ProdImportSection() {
 // Pomodoro interval settings (#3); the timer itself lives in the header.
 function PomodoroSection() {
   const settings = useStore((s) => s.settings);
-  const setPomodoroSettings = useStore((s) => s.setPomodoroSettings);
+  const setPomodoroSettings = useStore((s) => s.patchSettings);
   const fields: { key: 'pomodoroFocusMin' | 'pomodoroBreakMin' | 'pomodoroLongBreakMin' | 'pomodoroRounds'; label: string; def: number; min: number; max: number }[] = [
     { key: 'pomodoroFocusMin', label: 'Fokus (Minuten)', def: 25, min: 1, max: 120 },
     { key: 'pomodoroBreakMin', label: 'Pause (Minuten)', def: 5, min: 1, max: 60 },

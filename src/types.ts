@@ -55,6 +55,10 @@ export interface Settings {
   pomodoroBreakMin?: number;
   pomodoroLongBreakMin?: number;
   pomodoroRounds?: number;
+  // Mobile reminders (#30). Numbers (not bools) so they round-trip through the
+  // server's numeric-settings coercion without string/bool pitfalls.
+  reminderLeadMin?: number; // minutes to notify BEFORE a task's start time
+  reminderSound?: number; // 1 = play sound + vibrate, 0 = silent
 }
 
 export type ViewType =
