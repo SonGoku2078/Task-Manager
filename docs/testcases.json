@@ -787,6 +787,64 @@
           "bemerkung": "972 Tasks = PROD; mtime identisch; Backup 2.6MB. 403-Guard nur code-reviewt (Prod-Server hat Route noch nicht)"
         }
       ]
+    },
+    {
+      "id": "TC-M42",
+      "bereich": "Runde 3",
+      "titel": "#31: Testreport-Menü nur auf DEV sichtbar",
+      "erwartung": "Sidebar zeigt 🧪 nur wenn Backend Port 3002 meldet; bei 3001 ausgeblendet.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: DEV sichtbar, simuliertes PROD (Route-Mock port 3001) versteckt"
+        }
+      ]
+    },
+    {
+      "id": "TC-M43",
+      "bereich": "Runde 3",
+      "titel": "#30A: Reminder-Planung (Web-No-op, native Logik)",
+      "erwartung": "scheduleReminders plant Uhrzeit-Notifications + 08:00-Übersicht; im Browser stiller No-op (0 Page-Errors).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Mobile-Web-Smoke 0 Fehler; native Wirkung: Gerätetest durch User nach mobile-Release"
+        }
+      ]
+    },
+    {
+      "id": "TC-M44",
+      "bereich": "Runde 3",
+      "titel": "#30B: Widget-Datenbrücke publiziert Snapshot nach Sync",
+      "erwartung": "CapacitorStorage widget-data enthält serverUrl + Views (today/nextweek/priority/inbox).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-3.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Snapshot mit serverUrl+today-Tasks im Web-Fallback verifiziert"
+        }
+      ]
+    },
+    {
+      "id": "TC-M45",
+      "bereich": "Runde 3",
+      "titel": "#30B: APK-Build mit Widget-Klassen (CI) + Gerätetest",
+      "erwartung": "Gradle kompiliert Provider/Service/Config/Plugin; Widget-Funktion auf Gerät: User-Test.",
+      "typ": "manuell",
+      "quelle": "GitHub Actions mobile-apk.yml",
+      "regression": false,
+      "laeufe": []
     }
   ]
 }
