@@ -122,18 +122,42 @@
   font-weight: 600;
 }
 
-.recur-custom {
+/* Hinweis bei aktiver Mehrfachauswahl: Flags wirken auf N Aufgaben (#13). */
+.detail-bulk-hint {
+  margin: 4px 20px 0;
+  padding: 4px 10px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Wiederholung + Custom-Editor auf einer Zeile (#7). Das Zahlenfeld ist hart
+   auf 64px begrenzt — die generische detail-input-Breite (100%) hatte es auf
+   volle Panelbreite gestreckt und das Einheiten-Select zerquetscht. */
+.recur-row {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   color: var(--text-secondary);
 }
-
-.recur-interval {
-  width: 64px;
-  flex: 0 0 auto;
+.recur-row .recur-kind {
+  flex: 1 1 auto;
+  min-width: 0;
 }
+.recur-alle { flex: 0 0 auto; }
+.recur-row .detail-input.recur-interval {
+  width: 64px;
+  min-width: 64px;
+  flex: 0 0 64px;
+  padding: 6px 8px;
+}
+.recur-row .recur-unit {
+  flex: 1 1 auto;
+  min-width: 88px;
+}
+.recur-custom-extra { margin-top: -6px; }
 
 .recur-monthday {
   margin-top: 8px;
@@ -688,6 +712,36 @@
 .task-detail-panel.file-drag-over {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
+}
+
+/* Typed previews inside the lightbox (#27). */
+.attach-preview-frame,
+.attach-preview-text {
+  width: min(90vw, 960px);
+  height: 75vh;
+  overflow: auto;
+  background: #fff;
+  border: 0;
+  border-radius: 8px;
+}
+.attach-preview-text {
+  margin: 0;
+  padding: 16px;
+  font-size: 13px;
+  color: #111;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.attach-preview-doc { display: flex; flex-direction: column; gap: 6px; }
+.attach-preview-note { color: #fff; font-size: 12px; text-align: center; }
+.attach-preview-fallback {
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Multiline comment editor (#16): toolbar above the textarea, like the note. */

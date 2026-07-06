@@ -773,7 +773,18 @@ function App() {
       {projectDetailOpen && currentProject ? (
         <ProjectDetailPanel project={currentProject} onClose={() => setProjectDetailOpen(false)} />
       ) : (
-        selectedTask && <TaskDetailPanel task={selectedTask} />
+        selectedTask && (
+          <TaskDetailPanel
+            task={selectedTask}
+            // Flags im Panel wirken auf die ganze Auswahl, wenn die offene
+            // Task Teil der aktiven Mehrfachauswahl ist (#13).
+            bulkSelectedIds={
+              bulkMode && selectedIds.has(selectedTask.id) && selectedIds.size > 1
+                ? [...selectedIds]
+                : undefined
+            }
+          />
+        )
       )}
 
       {bulkAddOpen && currentProject && (

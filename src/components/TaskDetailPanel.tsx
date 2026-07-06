@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ClipboardEvent } from 'react';
 import { marked } from 'marked';
-import type { Task } from '../types';
+import type { Task, Attachment } from '../types';
 import { useStore } from '../store';
 import { dateKey, isTodayFlagActive } from '../selectors';
 import { taskShareUrl } from '../config';
@@ -12,6 +12,7 @@ import { assigneesOf } from '../members';
 import SearchSelect from './SearchSelect';
 import type { SearchOption } from './SearchSelect';
 import { DescToolbar } from './DescToolbar';
+import AttachmentPreview, { previewKind } from './AttachmentPreview';
 import './TaskDetailPanel.css';
 import './ProjectDetailPanel.css';
 
@@ -38,6 +39,9 @@ function renderTaskDesc(text: string): string {
 
 interface TaskDetailPanelProps {
   task: Task;
+  // Set when the open task is part of an active multi-selection: GTD flag
+  // buttons then apply to all of these ids (#13).
+  bulkSelectedIds?: string[];
 }
 
 // Comments render as markdown now (#16); marked's GFM autolinking keeps
@@ -57,11 +61,18 @@ const formatSize = (bytes: number) =>
       ? `${(bytes / 1024).toFixed(0)} KB`
       : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
-export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
+export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPanelProps) {
   const updateTask = useStore((s) => s.updateTask);
+  const bulkUpdate = useStore((s) => s.bulkUpdate);
   const deleteTask = useStore((s) => s.deleteTask);
   const selectTask = useStore((s) => s.selectTask);
   const toggleStar = useStore((s) => s.toggleStar);
+  // GTD flag clicks apply to the whole multi-selection when the open task is
+  // part of it (#13) — otherwise they only touch this task.
+  const applyFlag = (patch: Partial<Task>) => {
+    if (bulkSelectedIds?.length) bulkUpdate(bulkSelectedIds, patch);
+    else updateTask(task.id, patch);
+  };
   const projects = useStore((s) => s.projects);
   const categories = useStore((s) => s.categories);
   const members = useStore((s) => s.members);
@@ -213,8 +224,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [lightboxId]);
-  const isImage = (a: { type: string; dataUrl?: string; url?: string }) =>
-    a.type.startsWith('image/') && !!(a.dataUrl || a.url);
+  const isImage = (a: Attachment) => previewKind(a) === 'image';
+  const hasPreview = (a: Attachment) => previewKind(a) !== 'none';
 
   const handleFile = (file: File | undefined) => {
     setAttachError('');
@@ -335,13 +346,13 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           </button>
         )}
 
-        {/* GTD quick flags for this single task */}
+        {/* GTD quick flags — apply to the whole selection in bulk mode (#13). */}
         <div className="detail-flags">
           {assignees.length > 0 && <AvatarStack members={assignees} size={64} />}
           <div className="detail-flag-buttons">
             <button
               className={`detail-flag ${task.starred ? 'on' : ''}`}
-              onClick={() => toggleStar(task.id)}
+              onClick={() => applyFlag({ starred: !task.starred })}
               title="Nächste Aktion (Stern)"
             >
               ★ Nächste Aktion
@@ -349,7 +360,7 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             <button
               className={`detail-flag ${isTodayFlagActive(task) ? 'on' : ''}`}
               onClick={() =>
-                updateTask(task.id, {
+                applyFlag({
                   todayDate: isTodayFlagActive(task) ? null : dateKey(new Date()),
                 })
               }
@@ -359,27 +370,32 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
             </button>
             <button
               className={`detail-flag ${task.thisWeek ? 'on' : ''}`}
-              onClick={() => updateTask(task.id, { thisWeek: !task.thisWeek })}
+              onClick={() => applyFlag({ thisWeek: !task.thisWeek })}
               title="Für diese Woche (Next Week)"
             >
               🗓️ Next Week
             </button>
             <button
               className={`detail-flag ${task.someday ? 'on' : ''}`}
-              onClick={() => updateTask(task.id, { someday: !task.someday })}
+              onClick={() => applyFlag({ someday: !task.someday })}
               title="Nach Someday parken"
             >
               🌥️ Someday
             </button>
             <button
               className={`detail-flag ${task.waiting ? 'on' : ''}`}
-              onClick={() => updateTask(task.id, { waiting: !task.waiting })}
+              onClick={() => applyFlag({ waiting: !task.waiting })}
               title="Warten auf jemand anderes"
             >
               ⏳ Warten auf
             </button>
           </div>
         </div>
+        {bulkSelectedIds && bulkSelectedIds.length > 1 && (
+          <p className="detail-bulk-hint">
+            ⚡ Mehrfachauswahl aktiv — Flags wirken auf {bulkSelectedIds.length} Aufgaben.
+          </p>
+        )}
 
 
         {task.waiting && (
@@ -471,13 +487,15 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               const remote = !!a.url && !a.dataUrl;
               return (
               <div key={a.id} className="attach-item">
-                {isImage(a) ? (
+                {/* Supported types open the in-app preview (#27); links and
+                    remote urls keep their old behavior. */}
+                {!remote && a.type !== 'link' && hasPreview(a) ? (
                   <button
                     className="attach-link attach-link-btn"
-                    title={`${a.name} — klicken für Großansicht`}
+                    title={`${a.name} — klicken für Vorschau`}
                     onClick={() => setLightboxId(a.id)}
                   >
-                    🖼 {a.name}
+                    {isImage(a) ? '🖼' : '📄'} {a.name}
                   </button>
                 ) : (
                 <a
@@ -756,11 +774,13 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
           </div>
         </div>
 
-        <div className="detail-row">
-          <div className="detail-field">
-            <label className="detail-label">Wiederholung</label>
+        {/* Wiederholung + Custom-Editor auf EINER Zeile (#7): Select, „alle",
+            schmales Zahlenfeld und Einheit teilen sich die Breite. */}
+        <div className="detail-field">
+          <label className="detail-label">Wiederholung</label>
+          <div className="recur-row">
             <select
-              className="detail-select"
+              className="detail-select recur-kind"
               value={task.recurrence}
               onChange={(e) =>
                 updateTask(task.id, {
@@ -775,37 +795,38 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
               <option value="yearly">Jährlich</option>
               <option value="custom">Benutzerdefiniert…</option>
             </select>
+            {task.recurrence === 'custom' && (
+              <>
+                <span className="recur-alle">alle</span>
+                <input
+                  type="number"
+                  min={1}
+                  className="detail-input recur-interval"
+                  value={task.recurInterval ?? 1}
+                  onChange={(e) =>
+                    updateTask(task.id, { recurInterval: Math.max(1, Number(e.target.value)) })
+                  }
+                />
+                <select
+                  className="detail-select recur-unit"
+                  value={task.recurUnit ?? 'day'}
+                  onChange={(e) =>
+                    updateTask(task.id, { recurUnit: e.target.value as Task['recurUnit'] })
+                  }
+                >
+                  <option value="day">Tage</option>
+                  <option value="week">Wochen</option>
+                  <option value="month">Monate</option>
+                  <option value="year">Jahre</option>
+                </select>
+              </>
+            )}
           </div>
         </div>
 
         {task.recurrence === 'custom' && (
-          <div className="detail-field">
-            <label className="detail-label">Benutzerdefinierte Wiederholung</label>
-            <div className="recur-custom">
-              <span>Alle</span>
-              <input
-                type="number"
-                min={1}
-                className="detail-input recur-interval"
-                value={task.recurInterval ?? 1}
-                onChange={(e) =>
-                  updateTask(task.id, { recurInterval: Math.max(1, Number(e.target.value)) })
-                }
-              />
-              <select
-                className="detail-select"
-                value={task.recurUnit ?? 'day'}
-                onChange={(e) =>
-                  updateTask(task.id, { recurUnit: e.target.value as Task['recurUnit'] })
-                }
-              >
-                <option value="day">Tage</option>
-                <option value="week">Wochen</option>
-                <option value="month">Monate</option>
-                <option value="year">Jahre</option>
-              </select>
-            </div>
-            {(task.recurUnit ?? 'day') === 'month' && (
+          (task.recurUnit ?? 'day') === 'month' && (
+            <div className="detail-field recur-custom-extra">
               <select
                 className="detail-select recur-monthday"
                 value={task.recurMonthDay ?? 'date'}
@@ -819,8 +840,8 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
                 <option value="first">am 1. des Monats</option>
                 <option value="last">am letzten Tag des Monats</option>
               </select>
-            )}
-          </div>
+            </div>
+          )
         )}
 
         {task.recurrence !== 'none' && (
@@ -960,11 +981,11 @@ export default function TaskDetailPanel({ task }: TaskDetailPanelProps) {
         </div>
       </div>
 
-      {/* Lightbox: large image preview with download, no forced download (#4/#25). */}
+      {/* Lightbox: typed in-app preview with download option (#4/#25/#27). */}
       {lightbox && (
         <div className="attach-lightbox" onClick={() => setLightboxId(null)}>
           <div className="attach-lightbox-inner" onClick={(e) => e.stopPropagation()}>
-            <img src={lightbox.dataUrl || lightbox.url} alt={lightbox.name} />
+            <AttachmentPreview attachment={lightbox} />
             <div className="attach-lightbox-bar">
               <span className="attach-lightbox-name">{lightbox.name}</span>
               <a
