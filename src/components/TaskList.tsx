@@ -267,7 +267,7 @@ export default function TaskList({
         setDragId(null);
         setOverChildId(null);
       }}
-      onDragEnd={() => { setDragId(null); setOverId(null); setNestId(null); setOverChildId(null); }}
+      onDragEnd={() => { setDragId(null); setOverId(null); setNestId(null); setOverChildId(null); setOverSectionId(null); }}
       title="Ziehen: auf eine andere Unteraufgabe = sortieren · in den Hauptbereich = eigenständige Aufgabe"
       onClick={() => selectTask(selectedTaskId === child.id ? null : child.id)}
     >
@@ -328,7 +328,7 @@ export default function TaskList({
             onDragOver={(e) => { if (!dragEnabled || !dragId) return; e.preventDefault(); setOverId(task.id); }}
             onDragLeave={() => setOverId((cur) => (cur === task.id ? null : cur))}
             onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const ids = readTaskIds(e).filter((id) => id !== task.id); if (dragEnabled && ids.length) { if (grouped) ids.forEach((id) => dropTaskOnTask(id, task.id)); else ids.forEach((id) => reorderTasks(id, task.id)); } setDragId(null); setOverId(null); }}
-            onDragEnd={() => { setDragId(null); setOverId(null); }}
+            onDragEnd={() => { setDragId(null); setOverId(null); setOverSectionId(null); }}
           >
             <span className="task-subtoggle-spacer" />
             <input
@@ -442,6 +442,9 @@ export default function TaskList({
           setDragId(null);
           setOverId(null);
           setNestId(null);
+          // Also clear the section highlight — a drop on a task row stops
+          // propagation, so the section's own handlers never reset it (#28).
+          setOverSectionId(null);
         }}
         onClick={(e) => {
           if (e.shiftKey) onShiftSelect?.(task.id);
@@ -680,6 +683,12 @@ export default function TaskList({
                 if (dragId) {
                   e.preventDefault();
                   setOverSectionId(sec.id);
+                }
+              }}
+              onDragLeave={(e) => {
+                // Only clear when really leaving the body (not moving between rows).
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setOverSectionId((c) => (c === sec.id ? null : c));
                 }
               }}
               onDrop={(e) => {
