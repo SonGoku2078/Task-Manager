@@ -25,6 +25,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -39,6 +44,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -77,6 +87,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -88,7 +103,29 @@
       "typ": "auto",
       "quelle": "scripts/widgetmeta.test.ts",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-A07",
+      "bereich": "Auto-Tests",
+      "titel": "Share-Felder: URL immer in Notiz, Titel nie die nackte URL (#34)",
+      "erwartung": "deriveShareFields: nur-URL → Titel leer + URL in Notiz; Textzeile → erste Zeile Titel; Subject vorhanden → Subject als Titel.",
+      "typ": "auto",
+      "quelle": "scripts/sharefields.test.ts",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
     },
     {
       "id": "TC-A04",
@@ -101,6 +138,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -127,6 +169,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -938,6 +985,70 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": "Build ok; native Ansicht: Gerätetest"
+        }
+      ]
+    },
+    {
+      "id": "TC-M51",
+      "bereich": "Runde 4",
+      "titel": "#33 Kalender-Panel in Projektsicht standardmäßig eingeklappt + persistiert",
+      "erwartung": "Projektsicht öffnen: .calendar-mid-dock ist initial nicht vorhanden; 📅-Toggle blendet es ein; nach Reload bleibt der Zustand erhalten (projectCalendarShown 1/0).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-4.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: initial 0, Toggle→1, Reload bleibt 1"
+        }
+      ]
+    },
+    {
+      "id": "TC-M52",
+      "bereich": "Runde 4",
+      "titel": "#32 Inbox: Projekt-Zuweis-Panel links (alle Projekte inkl. Someday)",
+      "erwartung": "In der Inbox erscheint links das ProjectsPanel 'Zu Projekt zuweisen' inkl. aktiver Projekte, Areas und Someday-Projekten; 📂-Toggle blendet es aus/ein (inboxProjectPanel).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-4.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Panel + Someday-Sektion sichtbar, Toggle blendet aus"
+        }
+      ]
+    },
+    {
+      "id": "TC-M53",
+      "bereich": "Runde 4",
+      "titel": "#32/#35 Task per Drag ins Projekt → Haupttask UND Subtask wandern mit",
+      "erwartung": "Task aus der Inbox auf ein Projekt ziehen setzt serverseitig projectId; die Subtasks des Haupttasks bekommen dieselbe projectId (bleiben nicht in der Inbox).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-4.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright DnD: r4-parent + r4-sub beide projectId=r4-proj"
+        }
+      ]
+    },
+    {
+      "id": "TC-M54",
+      "bereich": "Runde 4",
+      "titel": "#34 Mobile Share→Task: URL in Notiz, Titel editierbar, Projekt-Suche",
+      "erwartung": "Instagram/X-Share (nur URL) → Titel leer + Fokus im Feld, URL in der Notiz; Titel per erster Textzeile/Subject vorbelegt; Projektauswahl per Suchfeld statt Dropdown.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-4.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Logik per TC-A07 grün; Build:mobile ok; Share-UI: Gerätetest (mobile-v0.5.7)"
         }
       ]
     }
