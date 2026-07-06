@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore, DEFAULT_NAV_ORDER } from '../store';
 import type { ViewType } from '../types';
 import { readTaskIds } from '../dnd';
@@ -19,12 +19,13 @@ const navMeta: Record<string, { icon: string; label: string }> = {
   members: { icon: '👤', label: 'Benutzer' },
 };
 
-const bottomItems: { id: ViewType; icon: string; label: string }[] = [
+const bottomItems: { id: ViewType; icon: string; label: string; devOnly?: boolean }[] = [
   { id: 'search', icon: '🔍', label: 'Suchen' },
   { id: 'completed', icon: '✅', label: 'Erledigt' },
   { id: 'activity', icon: '📜', label: 'Aktivität' },
   { id: 'reports', icon: '📊', label: 'Berichte' },
-  { id: 'testreport', icon: '🧪', label: 'Testreport' },
+  // Pre-deploy approval page — a DEV tool, hidden in production (#31).
+  { id: 'testreport', icon: '🧪', label: 'Testreport', devOnly: true },
   { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
 ];
 
@@ -47,6 +48,17 @@ export default function Sidebar() {
 
   const [dragId, setDragId] = useState<ViewType | null>(null);
   const [overId, setOverId] = useState<ViewType | null>(null);
+
+  // DEV detection for devOnly menu items (#31): the backend reports its port.
+  const [isDev, setIsDev] = useState(false);
+  useEffect(() => {
+    let on = true;
+    fetch('/api/lan')
+      .then((r) => r.json())
+      .then((d) => { if (on) setIsDev(d.port === 3002); })
+      .catch(() => {});
+    return () => { on = false; };
+  }, []);
 
   // Stored order, but tolerate added/removed menu ids across versions.
   const order = (navOrder ?? DEFAULT_NAV_ORDER).filter((id) => navMeta[id]);
@@ -159,7 +171,7 @@ export default function Sidebar() {
       <div className="sidebar-separator" />
 
       <div className="sidebar-items">
-        {bottomItems.map((item) => (
+        {bottomItems.filter((item) => !item.devOnly || isDev).map((item) => (
           <button
             key={item.id}
             className={`sidebar-item ${currentView === item.id ? 'active' : ''}`}
