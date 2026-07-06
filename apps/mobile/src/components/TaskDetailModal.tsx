@@ -72,6 +72,12 @@ export default function TaskDetailModal({
         <div className="m-modal-head">
           <span className="m-modal-num">#{t.number}</span>
           <div className="m-modal-head-actions">
+            <button
+              className={`m-complete ${t.completed ? 'done' : ''}`}
+              onClick={() => toggleTask(t.id)}
+            >
+              {t.completed ? '↺ Öffnen' : '✓ Erledigen'}
+            </button>
             <button className={`m-star ${t.starred ? 'on' : ''}`} onClick={() => toggleStar(t.id)}>
               {t.starred ? '★' : '☆'}
             </button>

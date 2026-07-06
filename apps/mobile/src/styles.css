@@ -343,7 +343,17 @@ body {
 }
 .m-modal-head { display: flex; align-items: center; justify-content: space-between; }
 .m-modal-num { color: var(--text-secondary); font-size: 13px; }
-.m-modal-head-actions { display: flex; align-items: center; gap: 4px; }
+.m-modal-head-actions { display: flex; align-items: center; gap: 6px; }
+/* Complete/reopen the task from its detail view (#30 feedback). */
+.m-complete {
+  min-height: 40px; padding: 0 14px;
+  border: 1px solid var(--accent); border-radius: 20px;
+  background: var(--accent); color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.m-complete.done {
+  background: transparent; color: var(--accent);
+}
 .m-modal-x {
   width: 40px; height: 40px; border: none; background: none;
   font-size: 20px; cursor: pointer; color: var(--text-secondary);
