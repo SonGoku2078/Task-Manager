@@ -20,6 +20,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -34,6 +39,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -62,6 +72,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -83,6 +98,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -97,6 +117,11 @@
       "laeufe": [
         {
           "datum": "2026-07-05",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -680,6 +705,86 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": "Playwright: 25:00→24:57, phase-break nach Skip, 4 Felder"
+        }
+      ]
+    },
+    {
+      "id": "TC-M37",
+      "bereich": "Runde 2",
+      "titel": "#28: Kein hängender Sektions-Highlight nach Drop; Reorder in Sektion ok",
+      "erwartung": "drop-over verschwindet nach Drop auf Zeile/dragend; sectionId bleibt.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-2.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: duringDrag=true, stuckAfter=false"
+        }
+      ]
+    },
+    {
+      "id": "TC-M38",
+      "bereich": "Runde 2",
+      "titel": "#7R: Wiederholung Web-Panel einzeilig, Zahl 64px, Einheit sichtbar",
+      "erwartung": "Select+Zahl+Einheit eine Zeile, kein Overflow.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-2.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: sameLine, numWidth=64, kein Overflow"
+        }
+      ]
+    },
+    {
+      "id": "TC-M39",
+      "bereich": "Runde 2",
+      "titel": "#13R: Detail-Panel-Flags wirken auf Mehrfachauswahl",
+      "erwartung": "Bei aktiver Auswahl setzt ☀️ im Panel todayDate auf ALLE; Hinweis sichtbar; persistiert.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-2.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: 4/4 Tasks todayDate serverseitig"
+        }
+      ]
+    },
+    {
+      "id": "TC-M40",
+      "bereich": "Runde 2",
+      "titel": "#27: Vorschau TXT/HTML/PDF/XLSX/DOCX + Fallback",
+      "erwartung": "UTF-8-Text, sandboxed HTML (kein Script), PDF als Blob-iframe, XLSX-Tabelle, DOCX-HTML; zip bleibt Download.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-2.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: alle 6 Checks (inkl. XSS-Probe title unverändert)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M41",
+      "bereich": "Runde 2",
+      "titel": "#29: PROD→DEV-Import (nur DEV, PROD read-only, Backup)",
+      "erwartung": "Import kopiert alle Tabellen; PROD-mtime unverändert; pre-prod-import-Backup existiert; Zähler = PROD.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-2.md",
+      "regression": false,
+      "laeufe": [
+        {
+          "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": "972 Tasks = PROD; mtime identisch; Backup 2.6MB. 403-Guard nur code-reviewt (Prod-Server hat Route noch nicht)"
         }
       ]
     }
