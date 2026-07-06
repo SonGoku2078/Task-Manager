@@ -878,6 +878,23 @@ export const useStore = create<AppState>()((set, get) => ({
           return { tasks, activityLog };
         });
         enqueue('task.update', { id, patch: updates });
+
+        // Subtasks belong to their parent's project — when a root task is moved
+        // to another project, its subtasks must move with it (#35). They were
+        // being left behind (e.g. in the Inbox) after a project change.
+        if ('projectId' in updates && !before?.parentId) {
+          const childIds = get().tasks
+            .filter((t) => t.parentId === id && t.projectId !== updates.projectId)
+            .map((t) => t.id);
+          for (const cid of childIds) {
+            set((state) => ({
+              tasks: state.tasks.map((t) =>
+                t.id === cid ? { ...t, projectId: updates.projectId ?? null, updatedAt: new Date() } : t
+              ),
+            }));
+            enqueue('task.update', { id: cid, patch: { projectId: updates.projectId ?? null } });
+          }
+        }
       },
 
       deleteTask: (id) => {
