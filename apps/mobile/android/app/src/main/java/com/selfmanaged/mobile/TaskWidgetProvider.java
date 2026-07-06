@@ -59,6 +59,13 @@ public class TaskWidgetProvider extends AppWidgetProvider {
         String viewKey = getViewKey(ctx, widgetId);
         rv.setTextViewText(R.id.widget_title, viewLabel(viewKey));
 
+        // "aktualisiert HH:mm" next to the title — the later of the app's last
+        // publish and the last manual refresh tap, so a tap is always visible.
+        long clicked = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong("refresh_click_at", 0L);
+        long shown = Math.max(clicked, WidgetData.updatedAt(ctx));
+        rv.setTextViewText(R.id.widget_updated,
+            shown > 0 ? "· aktualisiert " + android.text.format.DateFormat.format("HH:mm", shown) : "");
+
         // List content comes from the RemoteViewsService factory.
         Intent svc = new Intent(ctx, TaskWidgetService.class);
         svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
@@ -127,6 +134,10 @@ public class TaskWidgetProvider extends AppWidgetProvider {
         } else if (ACTION_CONFIRM.equals(action) && widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             completeSelected(ctx, widgetId);
         } else if (ACTION_REFRESH.equals(action)) {
+            // Stamp the tap time so the header time visibly jumps to "now",
+            // then redraw + reload the list from the latest snapshot.
+            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().putLong("refresh_click_at", System.currentTimeMillis()).apply();
             updateAll(ctx);
         }
     }

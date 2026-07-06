@@ -228,7 +228,7 @@ body {
   background: var(--nav-bg);
 }
 .m-nav-btn {
-  flex: 1;
+  flex: 1; min-width: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px; min-height: 56px;
   border: none; background: none; cursor: pointer;
@@ -240,9 +240,11 @@ body {
 .m-nav-icon {
   font-size: 20px; line-height: 1;
   display: flex; align-items: center; justify-content: center;
-  width: 64px; height: 32px; border-radius: 16px;
+  /* Shrinkable so 6 tabs fit narrow screens (was a fixed 64px → overflow). */
+  width: 100%; max-width: 64px; height: 32px; border-radius: 16px;
   transition: background 0.15s, transform 0.06s;
 }
+.m-nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .m-nav-btn:active .m-nav-icon { transform: scale(0.88); background: var(--press-bg); }
 .m-nav-btn.active { color: var(--accent); }
 .m-nav-btn.active .m-nav-icon { background: var(--accent-soft); }
@@ -336,11 +338,15 @@ body {
 .m-modal {
   width: 100%; max-width: 768px;
   max-height: 92dvh; overflow-y: auto;
+  /* Never scroll sideways inside the sheet — content must fit the width. */
+  overflow-x: hidden;
   background: var(--main-bg);
   border-radius: 16px 16px 0 0;
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 12px;
 }
+/* Inputs/selects/textarea can't exceed the sheet width. */
+.m-modal input, .m-modal select, .m-modal textarea { max-width: 100%; }
 .m-modal-head { display: flex; align-items: center; justify-content: space-between; }
 .m-modal-num { color: var(--text-secondary); font-size: 13px; }
 .m-modal-head-actions { display: flex; align-items: center; gap: 6px; }
@@ -372,7 +378,7 @@ body {
 .m-field-row .m-field { flex: 1 1 0; min-width: 0; }
 /* Custom recurrence: the interval number needs only ~2 digits — keep it
    narrow so the unit select gets the space (#7). */
-.m-field-row .m-field-num { flex: 0 0 88px; }
+.m-field-row .m-field-num { flex: 0 0 88px; min-width: 0; }
 .m-cats { display: flex; flex-wrap: wrap; gap: 6px; }
 .m-cat {
   padding: 6px 12px; min-height: 36px;
@@ -427,9 +433,11 @@ body {
 /* ── Task-detail extras (GTD flags, subtasks, links, comments) ── */
 .m-flag-week { font-size: 12px; }
 .m-flag-today { font-size: 12px; }
-.m-gtd-row { display: flex; gap: 8px; }
+/* Wrap + min-width:0 so the three flag buttons reflow to fit any width
+   instead of forcing the modal wider than the screen (#30). */
+.m-gtd-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .m-gtd-btn {
-  flex: 1; min-height: 44px; padding: 0 10px;
+  flex: 1 1 28%; min-width: 0; min-height: 44px; padding: 0 10px;
   border: 1px solid var(--border-light); border-radius: 10px;
   background: var(--card-bg); color: var(--text-secondary);
   font-family: inherit; font-size: 14px; cursor: pointer;
@@ -443,14 +451,14 @@ body {
 .m-subtask.done .m-subtask-title { text-decoration: line-through; color: var(--text-secondary); }
 .m-inline-add { padding: 6px 0 0; border: none; }
 
-.m-link-chip { display: inline-flex; align-items: center; border: 1px solid var(--border-light); border-radius: 16px; overflow: hidden; }
-.m-link-open { border: none; background: var(--card-bg); color: var(--text-primary); font-family: inherit; font-size: 13px; padding: 6px 4px 6px 10px; cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-link-chip { display: inline-flex; align-items: center; border: 1px solid var(--border-light); border-radius: 16px; overflow: hidden; min-width: 0; max-width: 100%; }
+.m-link-open { border: none; background: var(--card-bg); color: var(--text-primary); font-family: inherit; font-size: 13px; padding: 6px 4px 6px 10px; cursor: pointer; min-width: 0; max-width: calc(100% - 48px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .m-link-del { border: none; background: var(--card-bg); color: var(--text-secondary); font-size: 16px; padding: 6px 10px; cursor: pointer; }
 
 .m-comment { background: var(--hover-bg); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
-.m-comment-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
-.m-comment-author { font-weight: 600; color: var(--text-primary); }
-.m-comment-date { flex: 1; }
+.m-comment-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); min-width: 0; }
+.m-comment-author { font-weight: 600; color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-comment-date { flex: 1; min-width: 0; }
 .m-comment-del { border: none; background: none; color: var(--text-secondary); font-size: 16px; cursor: pointer; }
 .m-comment-text { font-size: 14px; margin-top: 2px; overflow-wrap: anywhere; }
 

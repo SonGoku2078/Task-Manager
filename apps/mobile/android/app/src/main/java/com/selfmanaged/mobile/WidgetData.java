@@ -34,6 +34,12 @@ final class WidgetData {
         return (url == null || url.isEmpty()) ? null : url;
     }
 
+    /** Epoch-ms when the app last published data (0 if none). */
+    static long updatedAt(Context ctx) {
+        JSONObject data = load(ctx);
+        return data == null ? 0L : data.optLong("updatedAt", 0L);
+    }
+
     static List<Item> tasks(Context ctx, String viewKey) {
         List<Item> out = new ArrayList<>();
         JSONObject data = load(ctx);
