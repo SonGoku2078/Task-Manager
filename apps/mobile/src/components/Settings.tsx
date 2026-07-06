@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
 import { checkForUpdate, openApk, APP_VERSION } from '../update';
-import { notificationStatus, sendTestNotification } from '../notifications';
+import { notificationStatus, sendTestNotification, REMINDER_TONES } from '../notifications';
 import { useSwipeDown } from '../gestures';
 
 export default function Settings({ onClose }: { onClose: () => void }) {
@@ -11,6 +11,8 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const loadAll = useStore((s) => s.loadAll);
   const reminderLeadMin = useStore((s) => s.settings.reminderLeadMin ?? 0);
   const reminderSound = useStore((s) => (s.settings.reminderSound ?? 1) !== 0);
+  const reminderVibrate = useStore((s) => (s.settings.reminderVibrate ?? 1) !== 0);
+  const reminderTone = useStore((s) => s.settings.reminderTone ?? 'glocke');
   const patchSettings = useStore((s) => s.patchSettings);
   const taskCount = useStore((s) => s.tasks.length);
 
@@ -35,7 +37,7 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   }, []);
   const testNotif = async () => {
     setNotifMsg('… plane Test');
-    setNotifMsg(await sendTestNotification(reminderSound));
+    setNotifMsg(await sendTestNotification({ sound: reminderSound, vibrate: reminderVibrate, tone: reminderTone }));
   };
 
   const checkUpdate = async () => {
@@ -181,9 +183,30 @@ export default function Settings({ onClose }: { onClose: () => void }) {
             checked={reminderSound}
             onChange={() => patchSettings({ reminderSound: reminderSound ? 0 : 1 })}
           />
-          <span>Ton + Vibration bei Erinnerung</span>
+          <span>Ton bei Erinnerung</span>
         </label>
-        <button className="m-btn-ghost" onClick={testNotif}>🔔 Benachrichtigung testen</button>
+        {reminderSound && (
+          <label className="m-field">
+            <span>Klang</span>
+            <select
+              value={reminderTone}
+              onChange={(e) => patchSettings({ reminderTone: e.target.value })}
+            >
+              {REMINDER_TONES.map((t) => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className="m-toggle">
+          <input
+            type="checkbox"
+            checked={reminderVibrate}
+            onChange={() => patchSettings({ reminderVibrate: reminderVibrate ? 0 : 1 })}
+          />
+          <span>Vibration bei Erinnerung</span>
+        </label>
+        <button className="m-btn-ghost" onClick={testNotif}>🔔 Benachrichtigung testen (mit aktuellem Klang)</button>
         <div className="m-settings-hint">
           Erinnerungen gibt es für Aufgaben mit gesetzter Uhrzeit; die Vorlaufzeit
           gilt für alle. Änderungen wirken nach dem nächsten Sync (oder App-Neustart).

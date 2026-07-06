@@ -20,7 +20,7 @@
             android:layout_weight="1"
             android:text="Heute"
             android:textStyle="bold"
-            android:textSize="15sp"
+            android:textSize="18sp"
             android:textColor="#212121" />
 
         <TextView

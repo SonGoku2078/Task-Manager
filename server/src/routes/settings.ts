@@ -21,6 +21,7 @@ const NUMERIC_KEYS = new Set([
   'pomodoroRounds',
   'reminderLeadMin',
   'reminderSound',
+  'reminderVibrate',
 ]);
 
 function loadSettings(): Record<string, unknown> {
