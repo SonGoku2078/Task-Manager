@@ -78,7 +78,11 @@ router.patch('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
   db.transaction(() => {
-    db.prepare("UPDATE tasks SET project_id = NULL WHERE project_id = ?").run(id);
+    // Deleting a project deletes its tasks too — they must NOT be orphaned to
+    // the Inbox (#36). Matches the client's deleteProject. Subtasks share their
+    // parent's project_id, so filtering by project_id covers them as well.
+    db.prepare('DELETE FROM tasks WHERE project_id = ?').run(id);
+    db.prepare('DELETE FROM sections WHERE scope = ?').run(id);
     db.prepare('DELETE FROM projects WHERE id = ?').run(id);
   })();
   res.status(204).end();
