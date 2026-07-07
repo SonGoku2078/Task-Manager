@@ -137,7 +137,11 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [attachError, setAttachError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
-  const comments = task.comments ?? [];
+  // Newest comments first (#37). createdAt may be a string after a server
+  // roundtrip, so normalise via new Date() before comparing.
+  const comments = [...(task.comments ?? [])].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   const attachments = task.attachments ?? [];
   const subtasks = tasks.filter((t) => t.parentId === task.id);
   const doneSubtasks = subtasks.filter((s) => s.completed).length;
