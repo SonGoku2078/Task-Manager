@@ -107,6 +107,17 @@ export default function WeekView({ mode }: WeekViewProps) {
   const [blkDays, setBlkDays] = useState<number[]>([0, 1, 2]);
   const [blkFrom, setBlkFrom] = useState(8);
   const [blkTo, setBlkTo] = useState(12);
+  // Drag-to-create a blocker directly on the grid (#40): while dragging we track
+  // the day + start/current y (px from the column top); on release a small
+  // project picker pops up and creates the blocker for that weekday only.
+  const [blkDrag, setBlkDrag] = useState<{ day: Date; colTop: number; startY: number; curY: number } | null>(null);
+  const [blkPop, setBlkPop] = useState<{ day: Date; startMinutes: number; durationMin: number; x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!blkPop) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setBlkPop(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [blkPop]);
 
   const projectById = (id: string) => projects.find((p) => p.id === id);
   // A project's Next Week tasks (open, flagged this week or dated this week),
@@ -225,6 +236,41 @@ export default function WeekView({ mode }: WeekViewProps) {
       window.setTimeout(() => {
         suppressClick.current = false;
       }, 0);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  // A grid drag (start/current y in px from the column top) → snapped range.
+  const dragToRange = (d: { startY: number; curY: number }) => {
+    const a = yToMinutes(Math.min(d.startY, d.curY));
+    const b = yToMinutes(Math.max(d.startY, d.curY));
+    return { startMinutes: Math.min(a, b), durationMin: Math.max(snap, Math.abs(b - a)) };
+  };
+
+  // Click-drag on empty grid space draws a blocker range (#40); on release a
+  // project picker pops up (only projects with tasks this week) and the blocker
+  // is created for the dragged weekday.
+  const startBlockerDrag = (day: Date, e: React.MouseEvent) => {
+    if (e.button !== 0 || e.target !== e.currentTarget) return; // empty column bg only
+    e.preventDefault();
+    const colTop = (e.currentTarget as HTMLElement).getBoundingClientRect().top;
+    const y0 = e.clientY - colTop;
+    const cur = { startY: y0, curY: y0 };
+    setBlkPop(null);
+    setBlkDrag({ day, colTop, startY: y0, curY: y0 });
+    const onMove = (ev: MouseEvent) => {
+      cur.curY = ev.clientY - colTop;
+      setBlkDrag({ day, colTop, startY: y0, curY: cur.curY });
+    };
+    const onUp = (ev: MouseEvent) => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      setBlkDrag(null);
+      if (Math.abs(cur.curY - cur.startY) > 4) {
+        const { startMinutes, durationMin } = dragToRange(cur);
+        setBlkPop({ day, startMinutes, durationMin, x: ev.clientX, y: ev.clientY });
+      }
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -572,6 +618,7 @@ export default function WeekView({ mode }: WeekViewProps) {
                 ref={(el) => {
                   colRef.current = el;
                 }}
+                onMouseDown={(e) => startBlockerDrag(d, e)}
                 onDragOver={(e) => {
                   if (e.dataTransfer.types.includes('text/plain')) e.preventDefault();
                 }}
@@ -581,6 +628,25 @@ export default function WeekView({ mode }: WeekViewProps) {
                   createAt(d, yToMinutes(y));
                 }}
               >
+                {/* Drag-to-create blocker preview (#40) */}
+                {blkDrag && isSameDay(blkDrag.day, d) && (() => {
+                  const { startMinutes, durationMin } = dragToRange(blkDrag);
+                  return (
+                    <div
+                      className="week-blocker-preview"
+                      style={{
+                        top: ((startMinutes - startHour * 60) / 60) * hourHeight,
+                        height: Math.max(4, (durationMin / 60) * hourHeight),
+                      }}
+                    >
+                      {String(Math.floor(startMinutes / 60)).padStart(2, '0')}:
+                      {String(startMinutes % 60).padStart(2, '0')}–
+                      {String(Math.floor((startMinutes + durationMin) / 60)).padStart(2, '0')}:
+                      {String((startMinutes + durationMin) % 60).padStart(2, '0')}
+                    </div>
+                  );
+                })()}
+
                 {/* Current-time indicator (red line) on today's column */}
                 {isSameDay(d, today) &&
                   nowMinutes >= startHour * 60 &&
@@ -686,6 +752,57 @@ export default function WeekView({ mode }: WeekViewProps) {
           })}
         </div>
       </div>
+
+      {/* Project picker after drawing a blocker on the grid (#40). */}
+      {blkPop && (
+        <>
+          <div className="week-blkpop-backdrop" onMouseDown={() => setBlkPop(null)} />
+          <div
+            className="week-blkpop"
+            style={{
+              left: Math.min(blkPop.x, window.innerWidth - 240),
+              top: Math.min(blkPop.y, window.innerHeight - 280),
+            }}
+          >
+            <div className="week-blkpop-head">
+              <span>
+                Blocker {String(Math.floor(blkPop.startMinutes / 60)).padStart(2, '0')}:
+                {String(blkPop.startMinutes % 60).padStart(2, '0')}–
+                {String(Math.floor((blkPop.startMinutes + blkPop.durationMin) / 60)).padStart(2, '0')}:
+                {String((blkPop.startMinutes + blkPop.durationMin) % 60).padStart(2, '0')}
+              </span>
+              <span className="week-blkpop-day">{weekDayLabels[weekdayIndex(blkPop.day)]}</span>
+            </div>
+            {blockerProjects.length === 0 ? (
+              <p className="week-blkpop-empty">Keine Projekte mit Aufgaben in dieser Woche.</p>
+            ) : (
+              <div className="week-blkpop-list">
+                {blockerProjects.map((p) => (
+                  <button
+                    key={p.id}
+                    className="week-blkpop-item"
+                    onClick={() => {
+                      addBlocker({
+                        projectId: p.id,
+                        weekdays: [weekdayIndex(blkPop.day)],
+                        startMinutes: blkPop.startMinutes,
+                        durationMin: blkPop.durationMin,
+                      });
+                      setBlkPop(null);
+                    }}
+                  >
+                    <span className="week-blkpop-dot" style={{ background: p.color }} />
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button className="week-blkpop-cancel" onClick={() => setBlkPop(null)}>
+              Abbrechen
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

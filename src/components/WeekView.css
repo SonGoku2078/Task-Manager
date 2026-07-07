@@ -565,3 +565,102 @@
   background: var(--accent);
   opacity: 0.4;
 }
+
+/* Live preview while dragging a new blocker onto the grid (#40). */
+.week-blocker-preview {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  z-index: 6;
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+  background: var(--accent-soft, rgba(76, 175, 80, 0.18));
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Project picker shown after drawing a blocker (#40). */
+.week-blkpop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.week-blkpop {
+  position: fixed;
+  z-index: 61;
+  width: 220px;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  background: var(--main-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 8px;
+}
+.week-blkpop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 2px 2px 6px;
+}
+.week-blkpop-day {
+  color: var(--accent);
+}
+.week-blkpop-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.week-blkpop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.week-blkpop-item:hover {
+  background: var(--hover-bg);
+}
+.week-blkpop-dot {
+  width: 11px;
+  height: 11px;
+  min-width: 11px;
+  border-radius: 50%;
+}
+.week-blkpop-empty {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 4px;
+}
+.week-blkpop-cancel {
+  margin-top: 6px;
+  padding: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.week-blkpop-cancel:hover {
+  background: var(--hover-bg);
+}
