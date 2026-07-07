@@ -57,6 +57,11 @@ export interface Settings {
   pomodoroBreakMin?: number;
   pomodoroLongBreakMin?: number;
   pomodoroRounds?: number;
+  // Pomodoro behaviour (#39) — numeric 1/0 flags (server-coerced, no bool pitfalls).
+  pomodoroAutoStartBreaks?: number; // 1 = start a break automatically after focus
+  pomodoroAutoStartPomodoros?: number; // 1 = start the next focus automatically after a break
+  pomodoroAlarm?: number; // 1 = play the phase-end alarm, 0 = silent (default 1)
+  pomodoroTicking?: number; // 1 = soft ticking while focusing (default 0)
   // Mobile reminders (#30). Numeric flags round-trip through the server's
   // numeric-settings coercion without string/bool pitfalls; the tone name is a
   // plain string.
@@ -97,7 +102,7 @@ export type SortField =
 export type SortDir = 'asc' | 'desc';
 
 // Which contextual secondary panel is open. When not 'none', the sidebar collapses to icons.
-export type SidePanel = 'none' | 'projects' | 'calendar' | 'someday';
+export type SidePanel = 'none' | 'projects' | 'calendar' | 'someday' | 'pomodoro';
 
 export interface Comment {
   id: string;

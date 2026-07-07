@@ -52,6 +52,11 @@ export default function TaskList({
   const deleteTask = useStore((s) => s.deleteTask);
   const sectionsCollapsed = useStore((s) => s.settings.sectionsCollapsed ?? false);
   const setSectionsCollapsed = useStore((s) => s.setSectionsCollapsed);
+  const pomodoroStartForTask = useStore((s) => s.pomodoroStartForTask);
+  const setSidePanel = useStore((s) => s.setSidePanel);
+  const activePomodoroTaskId = useStore((s) => (s.pomodoro.running ? s.pomodoro.currentTaskId : null));
+  // Show a per-task Pomodoro start only in the planning views (#39).
+  const showPomodoroBtn = currentView === 'today' || currentView === 'nextweek';
   const assignTaskSection = useStore((s) => s.assignTaskSection);
   const reorderSections = useStore((s) => s.reorderSections);
   const addSection = useStore((s) => s.addSection);
@@ -487,6 +492,19 @@ export default function TaskList({
         </div>
         <div className="task-actions">
           <AvatarStack members={assigneesOf(task, members)} size={20} />
+          {showPomodoroBtn && !task.completed && (
+            <button
+              className={`task-pomodoro ${activePomodoroTaskId === task.id ? 'active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                pomodoroStartForTask(task.id);
+                setSidePanel('pomodoro');
+              }}
+              title="Pomodoro für diese Aufgabe starten"
+            >
+              🍅
+            </button>
+          )}
           <button
             className={`task-star ${task.starred ? 'starred' : ''}`}
             onClick={(e) => {
@@ -553,12 +571,24 @@ export default function TaskList({
               <button
                 key={sec.id}
                 className={`section-index-chip ${overSectionId === sec.id ? 'drop-over' : ''}`}
-                onClick={() =>
-                  sectionElRefs.current[sec.id]?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start',
-                  })
-                }
+                onClick={() => {
+                  // Scroll the section just BELOW the sticky jump bar / toggle
+                  // instead of to the very top, otherwise those sticky headers
+                  // (top:0) cover the section header + its first tasks (#38).
+                  const el = sectionElRefs.current[sec.id];
+                  const container = el?.closest('.task-list') as HTMLElement | null;
+                  if (!el || !container) return;
+                  const stickyH = Array.from(
+                    container.querySelectorAll(':scope > .section-index-head, :scope > .section-index')
+                  ).reduce((sum, e) => sum + (e as HTMLElement).getBoundingClientRect().height, 0);
+                  const top =
+                    container.scrollTop +
+                    el.getBoundingClientRect().top -
+                    container.getBoundingClientRect().top -
+                    stickyH -
+                    8;
+                  container.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                }}
                 onDragOver={(e) => {
                   if (dragId) {
                     e.preventDefault();

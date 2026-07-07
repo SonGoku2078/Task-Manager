@@ -24,6 +24,10 @@ const NUMERIC_KEYS = new Set([
   'reminderVibrate',
   'projectCalendarShown',
   'inboxProjectPanel',
+  'pomodoroAutoStartBreaks',
+  'pomodoroAutoStartPomodoros',
+  'pomodoroAlarm',
+  'pomodoroTicking',
 ]);
 
 function loadSettings(): Record<string, unknown> {

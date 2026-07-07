@@ -634,12 +634,18 @@ function PomodoroSection() {
     { key: 'pomodoroLongBreakMin', label: 'Lange Pause (Minuten)', def: 15, min: 5, max: 90 },
     { key: 'pomodoroRounds', label: 'Runden bis zur langen Pause', def: 4, min: 1, max: 12 },
   ];
+  const toggles: { key: 'pomodoroAlarm' | 'pomodoroTicking' | 'pomodoroAutoStartBreaks' | 'pomodoroAutoStartPomodoros'; label: string; def: number }[] = [
+    { key: 'pomodoroAlarm', label: 'Ton am Phasenende', def: 1 },
+    { key: 'pomodoroTicking', label: 'Ticken während des Fokus', def: 0 },
+    { key: 'pomodoroAutoStartBreaks', label: 'Pausen automatisch starten', def: 0 },
+    { key: 'pomodoroAutoStartPomodoros', label: 'Nächsten Fokus automatisch starten', def: 0 },
+  ];
   return (
     <section className="settings-section">
       <h3 className="settings-heading">🍅 Pomodoro-Timer</h3>
       <p className="settings-hint">
-        Der Timer sitzt oben rechts im Kopfbereich (▶ startet, Benachrichtigung + Ton am
-        Phasenende). Intervalle hier anpassen:
+        Der Mini-Timer sitzt oben rechts (▶ startet); ein Klick auf die Zeit öffnet das
+        Pomodoro-Fenster. In „Heute"/„Next Week" startet 🍅 an einer Aufgabe den Timer dafür.
       </p>
       <div className="settings-pomodoro-grid">
         {fields.map((f) => (
@@ -656,6 +662,18 @@ function PomodoroSection() {
                 setPomodoroSettings({ [f.key]: v });
               }}
             />
+          </label>
+        ))}
+      </div>
+      <div className="settings-pomodoro-toggles">
+        {toggles.map((t) => (
+          <label key={t.key} className="settings-check">
+            <input
+              type="checkbox"
+              checked={(settings[t.key] ?? t.def) === 1}
+              onChange={(e) => setPomodoroSettings({ [t.key]: e.target.checked ? 1 : 0 })}
+            />
+            {t.label}
           </label>
         ))}
       </div>

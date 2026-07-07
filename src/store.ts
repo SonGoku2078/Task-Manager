@@ -36,6 +36,7 @@ import { enqueue, flush as flushOutbox } from './api/outbox';
 import { saveSnapshot, loadSnapshot } from './api/cache';
 import { buildOccurrence } from './recurrence';
 import { orderSections } from './selectors';
+import { nextPomodoroPhase, pomodoroDayKey } from './pomodoro';
 
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -324,7 +325,36 @@ export interface PomodoroState {
   endsAt: number | null;
   remainingMs: number;
   round: number; // 1-based focus round; long break after every `pomodoroRounds`
+  currentTaskId?: string | null; // the task this Pomodoro is focused on (#39)
 }
+
+// Persist the live timer + the daily rounds tally per device (#39). localStorage
+// (not the server) — a running timer is device-local, and endsAt (epoch) lets a
+// reload resume drift-free. Log keyed by local day → focus rounds completed.
+const POMO_KEY = 'pomodoro:v1';
+interface PomoPersist { state: PomodoroState; log: Record<string, number> }
+
+function savePomodoro(state: PomodoroState, log: Record<string, number>): void {
+  try { localStorage.setItem(POMO_KEY, JSON.stringify({ state, log })); } catch { /* ignore */ }
+}
+
+function loadPomodoro(): PomoPersist | null {
+  try {
+    const raw = localStorage.getItem(POMO_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as PomoPersist;
+    const p = d.state;
+    // Finished while the tab was closed → come back paused at 0 (no surprise
+    // alarm, since the phase-end sound only fires while running).
+    if (p && p.running && typeof p.endsAt === 'number' && p.endsAt <= Date.now()) {
+      p.running = false; p.remainingMs = 0; p.endsAt = null;
+    }
+    return { state: p, log: d.log ?? {} };
+  } catch { return null; }
+}
+
+// Read the persisted timer once at startup so a reload resumes it (#39).
+const pomoInit = loadPomodoro();
 
 export const pomodoroPhaseMs = (phase: PomodoroPhase, s: Settings): number =>
   60_000 *
@@ -374,13 +404,22 @@ interface AppState {
   dataLoaded: boolean;
 
   // Pomodoro timer (#3): runtime state lives in the store so the countdown
-  // survives view changes; only the interval settings persist to the server.
+  // survives view changes; it also persists to localStorage so a page reload
+  // resumes it (#39). Interval settings persist to the server.
   pomodoro: PomodoroState;
+  pomodoroLog: Record<string, number>; // local day → focus rounds completed (#39)
   pomodoroStart: () => void;
   pomodoroPause: () => void;
   pomodoroReset: () => void;
-  // Move to the next phase (timer hit 0 or user skipped); keeps running state.
+  // Move to the next phase (timer hit 0 or user skipped). Honors auto-start
+  // settings and tallies a completed focus into pomodoroLog.
   pomodoroAdvance: () => void;
+  // Jump straight to a phase (the pomofocus-style tabs); stops the timer.
+  pomodoroSetPhase: (phase: PomodoroPhase) => void;
+  // Focus the timer on a specific task and start it (from Heute/Next Week, #39).
+  pomodoroStartForTask: (taskId: string) => void;
+  // Set/clear the current task without touching the running timer.
+  pomodoroSetTask: (taskId: string | null) => void;
   // Merge a partial settings patch (Pomodoro, reminders, …) + sync it.
   patchSettings: (patch: Partial<Settings>) => void;
 
@@ -558,55 +597,104 @@ export const useStore = create<AppState>()((set, get) => ({
   nextTaskNumber: 1,
   ui: defaultUIState,
   dataLoaded: false,
-  pomodoro: { phase: 'focus', running: false, endsAt: null, remainingMs: 25 * 60_000, round: 1 },
+  pomodoro: pomoInit?.state ?? { phase: 'focus', running: false, endsAt: null, remainingMs: 25 * 60_000, round: 1, currentTaskId: null },
+  pomodoroLog: pomoInit?.log ?? {},
 
   pomodoroStart: () =>
-    set((state) => ({
-      pomodoro: {
-        ...state.pomodoro,
-        running: true,
-        endsAt: Date.now() + state.pomodoro.remainingMs,
-      },
-    })),
+    set((state) => {
+      const pomodoro = { ...state.pomodoro, running: true, endsAt: Date.now() + state.pomodoro.remainingMs };
+      savePomodoro(pomodoro, state.pomodoroLog);
+      return { pomodoro };
+    }),
 
   pomodoroPause: () =>
-    set((state) => ({
-      pomodoro: {
+    set((state) => {
+      const pomodoro = {
         ...state.pomodoro,
         running: false,
         remainingMs: Math.max(0, (state.pomodoro.endsAt ?? Date.now()) - Date.now()),
         endsAt: null,
-      },
-    })),
+      };
+      savePomodoro(pomodoro, state.pomodoroLog);
+      return { pomodoro };
+    }),
 
   pomodoroReset: () =>
-    set((state) => ({
-      pomodoro: {
+    set((state) => {
+      const pomodoro: PomodoroState = {
         phase: 'focus',
         running: false,
         endsAt: null,
         remainingMs: pomodoroPhaseMs('focus', state.settings),
         round: 1,
-      },
-    })),
+        currentTaskId: state.pomodoro.currentTaskId ?? null,
+      };
+      savePomodoro(pomodoro, state.pomodoroLog);
+      return { pomodoro };
+    }),
+
+  pomodoroSetPhase: (phase) =>
+    set((state) => {
+      const pomodoro: PomodoroState = {
+        ...state.pomodoro,
+        phase,
+        running: false,
+        endsAt: null,
+        remainingMs: pomodoroPhaseMs(phase, state.settings),
+      };
+      savePomodoro(pomodoro, state.pomodoroLog);
+      return { pomodoro };
+    }),
+
+  pomodoroStartForTask: (taskId) =>
+    set((state) => {
+      const ms = pomodoroPhaseMs('focus', state.settings);
+      const pomodoro: PomodoroState = {
+        phase: 'focus',
+        running: true,
+        endsAt: Date.now() + ms,
+        remainingMs: ms,
+        round: state.pomodoro.round,
+        currentTaskId: taskId,
+      };
+      savePomodoro(pomodoro, state.pomodoroLog);
+      return { pomodoro };
+    }),
+
+  pomodoroSetTask: (taskId) =>
+    set((state) => {
+      const pomodoro = { ...state.pomodoro, currentTaskId: taskId };
+      savePomodoro(pomodoro, state.pomodoroLog);
+      return { pomodoro };
+    }),
 
   pomodoroAdvance: () =>
     set((state) => {
       const p = state.pomodoro;
       const rounds = state.settings.pomodoroRounds ?? 4;
-      const nextPhase: PomodoroPhase =
-        p.phase === 'focus' ? (p.round % rounds === 0 ? 'long' : 'break') : 'focus';
-      const nextRound = p.phase === 'focus' ? p.round : p.phase === 'long' ? 1 : p.round + 1;
+      const { phase: nextPhase, round: nextRound, focusCompleted } = nextPomodoroPhase(p.phase, p.round, rounds);
       const ms = pomodoroPhaseMs(nextPhase, state.settings);
-      return {
-        pomodoro: {
-          phase: nextPhase,
-          round: nextRound,
-          running: p.running,
-          remainingMs: ms,
-          endsAt: p.running ? Date.now() + ms : null,
-        },
+      // Auto-start the next phase only if enabled (pomofocus-style, default off).
+      const autoStart = p.phase === 'focus'
+        ? (state.settings.pomodoroAutoStartBreaks ?? 0) === 1
+        : (state.settings.pomodoroAutoStartPomodoros ?? 0) === 1;
+      const running = p.running && autoStart;
+      // Tally a completed focus into today's rounds (#39 daily summary).
+      let log = state.pomodoroLog;
+      if (focusCompleted) {
+        const key = pomodoroDayKey(new Date());
+        log = { ...log, [key]: (log[key] ?? 0) + 1 };
+      }
+      const pomodoro: PomodoroState = {
+        phase: nextPhase,
+        round: nextRound,
+        running,
+        remainingMs: ms,
+        endsAt: running ? Date.now() + ms : null,
+        currentTaskId: p.currentTaskId ?? null,
       };
+      savePomodoro(pomodoro, log);
+      return { pomodoro, pomodoroLog: log };
     }),
 
   patchSettings: (patch) => {

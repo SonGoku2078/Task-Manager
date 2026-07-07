@@ -315,6 +315,22 @@
 }
 .settings-pomodoro-field { display: flex; flex-direction: column; gap: 4px; }
 .settings-pomodoro-field .settings-input { width: 100px; }
+.settings-pomodoro-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 480px;
+}
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.settings-check input { cursor: pointer; }
 
 /* Danger button for the DEV prod-import (#29). */
 .settings-danger-btn {

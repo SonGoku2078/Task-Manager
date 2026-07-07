@@ -1,44 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useStore, pomodoroPhaseMs } from '../store';
+import { playAlarm, startTicking, stopTicking, unlockAudio } from '../pomodoroSound';
 import './PomodoroWidget.css';
 
-// Pomodoro countdown in the main header (#3). The store holds phase/endsAt;
-// this widget only ticks for display and fires the phase-end notification.
+// Pomodoro countdown in the main header (#3/#39). The store holds phase/endsAt
+// and persists it; this always-mounted widget ticks for display, fires the
+// phase-end alarm, drives the optional ticking, and opens the side panel.
 
 const PHASE_META = {
   focus: { icon: '🍅', label: 'Fokus' },
   break: { icon: '☕', label: 'Pause' },
   long: { icon: '🌴', label: 'Lange Pause' },
 } as const;
-
-// Short beep via WebAudio — no asset file needed.
-function beep() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.6);
-  } catch {
-    /* audio may be blocked */
-  }
-}
-
-function notify(title: string, body: string) {
-  beep();
-  try {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body });
-    }
-  } catch {
-    /* notifications unavailable */
-  }
-}
 
 export default function PomodoroWidget() {
   const pomodoro = useStore((s) => s.pomodoro);
@@ -47,6 +20,8 @@ export default function PomodoroWidget() {
   const pause = useStore((s) => s.pomodoroPause);
   const reset = useStore((s) => s.pomodoroReset);
   const advance = useStore((s) => s.pomodoroAdvance);
+  const sidePanel = useStore((s) => s.ui.sidePanel);
+  const setSidePanel = useStore((s) => s.setSidePanel);
 
   // Display tick (1s). The remaining time derives from endsAt — drift-free.
   const [, setTick] = useState(0);
@@ -60,13 +35,27 @@ export default function PomodoroWidget() {
     ? Math.max(0, (pomodoro.endsAt ?? 0) - Date.now())
     : pomodoro.remainingMs;
 
-  // Phase finished → notify + advance (runs at most once per zero-crossing).
+  // Optional ticking while focusing.
+  useEffect(() => {
+    const tick = (settings.pomodoroTicking ?? 0) === 1;
+    if (pomodoro.running && pomodoro.phase === 'focus' && tick) startTicking();
+    else stopTicking();
+    return () => stopTicking();
+  }, [pomodoro.running, pomodoro.phase, settings.pomodoroTicking]);
+
+  // Phase finished → alarm + notify + advance (runs at most once per zero-crossing).
   useEffect(() => {
     if (!pomodoro.running || remaining > 0) return;
+    stopTicking();
+    if ((settings.pomodoroAlarm ?? 1) === 1) playAlarm();
     const next = pomodoro.phase === 'focus' ? 'Pause' : 'Weiterarbeiten';
-    notify('🍅 Pomodoro', `${PHASE_META[pomodoro.phase].label} vorbei — jetzt: ${next}!`);
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('🍅 Pomodoro', { body: `${PHASE_META[pomodoro.phase].label} vorbei — jetzt: ${next}!` });
+      }
+    } catch { /* notifications unavailable */ }
     advance();
-  }, [remaining, pomodoro.running, pomodoro.phase, advance]);
+  }, [remaining, pomodoro.running, pomodoro.phase, advance, settings.pomodoroAlarm]);
 
   const mm = String(Math.floor(remaining / 60_000)).padStart(2, '0');
   const ss = String(Math.floor((remaining % 60_000) / 1000)).padStart(2, '0');
@@ -79,24 +68,27 @@ export default function PomodoroWidget() {
     pomodoro.remainingMs === pomodoroPhaseMs('focus', settings);
 
   const onStart = () => {
+    unlockAudio(); // allow audio later (user gesture)
     try {
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     start();
   };
 
   return (
     <div
       className={`pomodoro-widget ${pomodoro.running ? 'running' : ''} phase-${pomodoro.phase}`}
-      title={`Pomodoro: ${meta.label} — Runde ${pomodoro.round}/${rounds}`}
+      title={`Pomodoro: ${meta.label} — Runde ${pomodoro.round}/${rounds} · klicken für Details`}
     >
-      <span className="pomodoro-time">
+      <button
+        className="pomodoro-time"
+        onClick={() => setSidePanel(sidePanel === 'pomodoro' ? 'none' : 'pomodoro')}
+        title="Pomodoro-Fenster öffnen"
+      >
         {meta.icon} {mm}:{ss}
-      </span>
+      </button>
       {!idle && <span className="pomodoro-round">{pomodoro.round}/{rounds}</span>}
       {pomodoro.running ? (
         <button className="pomodoro-btn" title="Pausieren" onClick={pause}>⏸</button>

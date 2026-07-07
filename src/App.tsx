@@ -19,6 +19,7 @@ import ActivityLog from './components/ActivityLog';
 import ReportsView from './components/ReportsView';
 import TestReportView from './components/TestReportView';
 import PomodoroWidget from './components/PomodoroWidget';
+import PomodoroPanel from './components/PomodoroPanel';
 import MembersView from './components/MembersView';
 import SettingsView from './components/SettingsView';
 import ClearableInput from './components/ClearableInput';
@@ -408,6 +409,11 @@ function App() {
         </ErrorBoundary>
       )}
       {ui.sidePanel === 'calendar' && <CalendarPanel />}
+      {ui.sidePanel === 'pomodoro' && (
+        <ErrorBoundary>
+          <PomodoroPanel />
+        </ErrorBoundary>
+      )}
       {/* Inbox: project-assign panel on the left — drag a task onto a project
           to move it there (with its subtasks). Shows all projects incl. Someday (#32). */}
       {ui.currentView === 'inbox' && ui.sidePanel === 'none' && inboxPanelShown && (
