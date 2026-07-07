@@ -142,6 +142,14 @@
   gap: 2px;
 }
 
+/* Keep every list child at its natural height so a tall list scrolls instead
+   of the flex column shrinking a section below its content. The Areas section
+   has an explicit min-height, so without this it collapsed and its items
+   spilled over the following Someday group in the Inbox panel (#32). */
+.projects-list > * {
+  flex-shrink: 0;
+}
+
 .projects-group-label {
   padding: 8px 8px 2px;
   font-size: 10px;
