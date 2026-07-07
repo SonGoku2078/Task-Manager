@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-06",
+  "updated": "2026-07-08",
   "hinweis": "Zentrale Testfalldatenbank. Auto-Fälle werden von scripts/run-tests.mjs aktualisiert; manuelle Läufe trägt der Test-Manager ein. Anzeige: Web-App → 🧪 Testreport.",
   "cases": [
     {
@@ -28,6 +28,11 @@
         },
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -61,6 +66,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -92,6 +102,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -108,6 +123,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -122,6 +142,27 @@
       "laeufe": [
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        }
+      ]
+    },
+    {
+      "id": "TC-A08",
+      "bereich": "Auto-Tests",
+      "titel": "Pomodoro-Phasenlogik: Fokus→Pause→Fokus, lange Pause nach N Runden (#39)",
+      "erwartung": "nextPomodoroPhase: Fokus→Pause (Runde bleibt), N-te Runde→lange Pause, Pause→nächste Runde, lange Pause→Fokus/Runde1; focusCompleted korrekt.",
+      "typ": "auto",
+      "quelle": "scripts/pomodoro.test.ts",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -155,6 +196,11 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -184,6 +230,11 @@
         },
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -1049,6 +1100,86 @@
           "datum": "2026-07-06",
           "ergebnis": "pass",
           "bemerkung": "Logik per TC-A07 grün; Build:mobile ok; Share-UI: Gerätetest (mobile-v0.5.7)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M55",
+      "bereich": "Runde 5",
+      "titel": "#36 Projekt löschen entfernt seine Aufgaben (nicht in die Inbox)",
+      "erwartung": "DELETE eines Projekts löscht serverseitig alle Tasks + Subtasks + Sektionen dieses Projekts; sie landen nicht in der Inbox. Archivieren markiert Tasks nur als erledigt.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "API-Test: Haupttask + Subtask nach Projekt-Delete weg, Projekt weg"
+        }
+      ]
+    },
+    {
+      "id": "TC-M56",
+      "bereich": "Runde 5",
+      "titel": "#37 Kommentare absteigend (neueste zuerst)",
+      "erwartung": "Im Task-Detail werden Kommentare nach createdAt absteigend sortiert; der neueste steht oben.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: zwei Kommentare, neuester oben"
+        }
+      ]
+    },
+    {
+      "id": "TC-M57",
+      "bereich": "Runde 5",
+      "titel": "#38 Sprung zu Sektion verdeckt Tasks nicht (sticky-Offset)",
+      "erwartung": "Klick auf einen Sektions-Chip scrollt die Sektion UNTER die sticky Sprungleiste; Sektionskopf + erste Task bleiben sichtbar (nicht verdeckt).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Beta-Kopf (354) unter Leisten-Unterkante (261)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M58",
+      "bereich": "Runde 5",
+      "titel": "#40 Kalender-Blocker per Maus aufziehen + Projekt wählen",
+      "erwartung": "Im Wochenraster Bereich aufziehen → Vorschau → Popover mit Wochen-Projekten → Auswahl legt Blocker mit korrektem Wochentag/Start/Dauer an.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: DnD 9–11 Uhr, Blocker weekdays=1 dur=120 start=540"
+        }
+      ]
+    },
+    {
+      "id": "TC-M59",
+      "bereich": "Runde 5",
+      "titel": "#39 Pomodoro: Persistenz, Panel, pro-Task, Tages-Zusammenfassung",
+      "erwartung": "Timer übersteht Reload (localStorage/endsAt); Klick auf Mini-Timer öffnet Seitenpanel mit Tabs/Uhr; 🍅 an einer Task in Heute/Next-Week setzt die aktuelle Aufgabe; abgeschlossener Fokus erhöht die Tagesrunden; Ton/Ticken/Auto-Start als Settings.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Persistenz, Panel, Phasen-Tab, pro-Task, Tagessumme=1 (Ton = Gerätetest)"
         }
       ]
     }
