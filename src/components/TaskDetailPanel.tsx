@@ -49,6 +49,7 @@ interface TaskDetailPanelProps {
 
 // Duration parse/format live in a shared util (also used by the mobile app).
 import { parseDuration, formatDuration, minutesToTimeInput, timeInputToMinutes } from '../duration';
+import { fmtFocus } from '../pomodoro';
 export { parseDuration, formatDuration };
 
 const toDateInput = (d: Date | null) =>
@@ -777,6 +778,15 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
             )}
           </div>
         </div>
+
+        {(task.focusSeconds ?? 0) > 0 && (
+          <div className="detail-field">
+            <label className="detail-label">🍅 Fokuszeit gesamt</label>
+            <span className="detail-input detail-duration-display" title="Gesamte mit dem Pomodoro-Timer auf dieser Aufgabe erfasste Zeit">
+              {fmtFocus(task.focusSeconds ?? 0)}
+            </span>
+          </div>
+        )}
 
         {/* Wiederholung + Custom-Editor auf EINER Zeile (#7): Select, „alle",
             schmales Zahlenfeld und Einheit teilen sich die Breite. */}

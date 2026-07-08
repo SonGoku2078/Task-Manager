@@ -145,6 +145,55 @@
   line-height: 1.4;
 }
 
+.pomodoro-worked {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+}
+.pomodoro-worked-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+}
+.pomodoro-worked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.pomodoro-worked-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pomodoro-worked-item:hover { background: rgba(0, 0, 0, 0.14); }
+.pomodoro-worked-item.active { background: rgba(0, 0, 0, 0.22); font-weight: 600; }
+.pomodoro-worked-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pomodoro-worked-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
 .pomodoro-summary {
   display: flex;
   align-items: baseline;

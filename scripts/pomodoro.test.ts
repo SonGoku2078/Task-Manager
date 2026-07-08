@@ -2,7 +2,7 @@
 // round counter, and the focusCompleted flag that drives the daily tally.
 // Run: npx tsx scripts/pomodoro.test.ts
 import assert from 'node:assert';
-import { nextPomodoroPhase, pomodoroDayKey } from '../src/pomodoro';
+import { nextPomodoroPhase, pomodoroDayKey, fmtFocus } from '../src/pomodoro';
 
 const rounds = 4;
 
@@ -29,4 +29,11 @@ assert.strictEqual(r.phase, 'long');
 // Day key is a stable local YYYY-MM-DD.
 assert.strictEqual(pomodoroDayKey(new Date(2026, 6, 8)), '2026-07-08');
 
-console.log('✅ PASS — pomodoro: phase transitions, long-break interval, daily flag.');
+// Focus-time formatting: seconds → minutes → hours (#39 per-task time).
+assert.strictEqual(fmtFocus(45), '45s');
+assert.strictEqual(fmtFocus(90), '1 Min');
+assert.strictEqual(fmtFocus(25 * 60), '25 Min');
+assert.strictEqual(fmtFocus(3900), '1h 5m');
+assert.strictEqual(fmtFocus(-3), '0s');
+
+console.log('✅ PASS — pomodoro: phase transitions, long-break interval, daily flag, fmtFocus.');

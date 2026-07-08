@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { unlockAudio } from '../pomodoroSound';
-import { pomodoroDayKey, type PomodoroPhase } from '../pomodoro';
+import { pomodoroDayKey, fmtFocus, type PomodoroPhase } from '../pomodoro';
 import './PomodoroPanel.css';
 
 // pomofocus.io-style Pomodoro window, opened from the header mini-timer (#39).
@@ -15,6 +15,7 @@ export default function PomodoroPanel() {
   const pomodoro = useStore((s) => s.pomodoro);
   const settings = useStore((s) => s.settings);
   const log = useStore((s) => s.pomodoroLog);
+  const taskLog = useStore((s) => s.pomodoroTaskLog);
   const tasks = useStore((s) => s.tasks);
   const start = useStore((s) => s.pomodoroStart);
   const pause = useStore((s) => s.pomodoroPause);
@@ -39,10 +40,16 @@ export default function PomodoroPanel() {
   const mm = String(Math.floor(remaining / 60_000)).padStart(2, '0');
   const ss = String(Math.floor((remaining % 60_000) / 1000)).padStart(2, '0');
   const rounds = settings.pomodoroRounds ?? 4;
-  const doneToday = log[pomodoroDayKey(new Date())] ?? 0;
+  const todayKey = pomodoroDayKey(new Date());
+  const doneToday = log[todayKey] ?? 0;
   const currentTask = pomodoro.currentTaskId
     ? tasks.find((t) => t.id === pomodoro.currentTaskId)
     : null;
+  // Tasks worked on today (focus time), most time first (#39).
+  const workedToday = Object.entries(taskLog[todayKey] ?? {})
+    .map(([id, sec]) => ({ task: tasks.find((t) => t.id === id), sec }))
+    .filter((e): e is { task: NonNullable<typeof e.task>; sec: number } => !!e.task && e.sec > 0)
+    .sort((a, b) => b.sec - a.sec);
 
   const onStart = () => { unlockAudio(); start(); };
 
@@ -101,6 +108,25 @@ export default function PomodoroPanel() {
           </p>
         )}
       </div>
+
+      {workedToday.length > 0 && (
+        <div className="pomodoro-worked">
+          <span className="pomodoro-worked-label">Heute bearbeitet</span>
+          <div className="pomodoro-worked-list">
+            {workedToday.map(({ task, sec }) => (
+              <button
+                key={task.id}
+                className={`pomodoro-worked-item ${pomodoro.currentTaskId === task.id ? 'active' : ''}`}
+                title="Als aktuelle Aufgabe übernehmen"
+                onClick={() => setTask(task.id)}
+              >
+                <span className="pomodoro-worked-name">{task.title}</span>
+                <span className="pomodoro-worked-time">{fmtFocus(sec)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="pomodoro-summary">
         <span className="pomodoro-summary-count">{doneToday}</span>

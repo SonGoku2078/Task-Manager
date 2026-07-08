@@ -40,5 +40,13 @@
 ## 6. CI/CD & Deployment
 Reine Web-Änderungen (+ Server). Kein Mobile-Tag nötig. Ein Commit pro Issue auf master; Web-Deploy durch den User via `npm run release` nach Freigabe auf der 🧪 Testreport-Seite.
 
+## 6b. Nachtrag #39 — Zeiterfassung pro Aufgabe (2026-07-08)
+Erweiterung des Pomodoro auf User-Wunsch:
+- **Fokus-Zeit pro Aufgabe**: Segment-basierte Zurechnung (`focusSegmentStart` in `PomodoroState`), nur während laufender Fokus-Phase; Verrechnung an jedem Übergang (Pause/Phasenwechsel/Task-Wechsel/Reset).
+- **Task-Wechsel im laufenden Slot ohne Reset**: `pomodoroStartForTask` wechselt bei laufendem Fokus nur die Aufgabe (Timer/`endsAt` unverändert), verbucht die bisherige Zeit auf die alte Aufgabe.
+- **„Heute bearbeitet"-Liste** im Panel (`pomodoroTaskLog` = Tag→{taskId→Sek.}, localStorage); Klick übernimmt die Aufgabe als aktuelle (Wechsel bei laufendem Timer).
+- **Gesamt-Fokuszeit (Lebensdauer)** dauerhaft als `tasks.focus_seconds` (Server, via `ensureColumns`-Migration) + Anzeige „🍅 Fokuszeit gesamt" im TaskDetail. Gilt in **Heute UND Next Week** (🍅 pro Task).
+- Verifiziert: `npm test` (TC-A08 inkl. `fmtFocus`), Build Web/Server/Mobile, Playwright 13/13 (TC-M60). Ton-Auswahl (pomofocus) bleibt parkiert.
+
 ## 7. Nebenbefund (nicht gefixt)
 `sectionsCollapsed`/`filtersCollapsed` werden als String ("true"/"false") vom Server zurückgegeben; `?? false` fängt nur null/undefined ab, sodass "false" truthy ist → die Sektionsleiste kann nach einem Reload fälschlich eingeklappt wirken. Kein Teil dieser Runde; als eigener Bool-als-String-Fix vorzumerken (analog zu den numerischen 1/0-Settings).

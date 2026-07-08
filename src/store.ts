@@ -326,19 +326,29 @@ export interface PomodoroState {
   remainingMs: number;
   round: number; // 1-based focus round; long break after every `pomodoroRounds`
   currentTaskId?: string | null; // the task this Pomodoro is focused on (#39)
+  // Epoch when the current focus-attribution segment began; only set while a
+  // FOCUS phase is running. Elapsed since then is billed to currentTaskId (#39).
+  focusSegmentStart?: number | null;
 }
 
-// Persist the live timer + the daily rounds tally per device (#39). localStorage
-// (not the server) — a running timer is device-local, and endsAt (epoch) lets a
-// reload resume drift-free. Log keyed by local day → focus rounds completed.
+// Per-day, per-task focus seconds — feeds the panel's "worked today" list (#39).
+export type PomodoroTaskLog = Record<string, Record<string, number>>;
+
+// Persist the live timer + the daily rounds tally + the per-task time log per
+// device (#39). localStorage (not the server) — a running timer is device-local,
+// and endsAt (epoch) lets a reload resume drift-free.
 const POMO_KEY = 'pomodoro:v1';
-interface PomoPersist { state: PomodoroState; log: Record<string, number> }
-
-function savePomodoro(state: PomodoroState, log: Record<string, number>): void {
-  try { localStorage.setItem(POMO_KEY, JSON.stringify({ state, log })); } catch { /* ignore */ }
+interface PomoPersist {
+  state: PomodoroState;
+  log: Record<string, number>; // day → focus rounds completed
+  taskLog?: PomodoroTaskLog;   // day → { taskId → seconds }
 }
 
-function loadPomodoro(): PomoPersist | null {
+function savePomodoro(state: PomodoroState, log: Record<string, number>, taskLog: PomodoroTaskLog): void {
+  try { localStorage.setItem(POMO_KEY, JSON.stringify({ state, log, taskLog })); } catch { /* ignore */ }
+}
+
+function loadPomodoro(): Required<PomoPersist> | null {
   try {
     const raw = localStorage.getItem(POMO_KEY);
     if (!raw) return null;
@@ -349,12 +359,33 @@ function loadPomodoro(): PomoPersist | null {
     if (p && p.running && typeof p.endsAt === 'number' && p.endsAt <= Date.now()) {
       p.running = false; p.remainingMs = 0; p.endsAt = null;
     }
-    return { state: p, log: d.log ?? {} };
+    // A resumed segment can't be trusted after a reload gap; re-anchor if running.
+    if (p) p.focusSegmentStart = p.running && p.phase === 'focus' ? Date.now() : null;
+    return { state: p, log: d.log ?? {}, taskLog: d.taskLog ?? {} };
   } catch { return null; }
 }
 
 // Read the persisted timer once at startup so a reload resumes it (#39).
 const pomoInit = loadPomodoro();
+
+// Focus seconds owed to the current task at `now`, if an attribution segment is
+// open (only during a running focus phase). Rounded to whole seconds.
+function pendingFocus(p: PomodoroState, now: number): { taskId: string; delta: number } | null {
+  if (p.focusSegmentStart != null && p.currentTaskId) {
+    const delta = Math.round((now - p.focusSegmentStart) / 1000);
+    if (delta > 0) return { taskId: p.currentTaskId, delta };
+  }
+  return null;
+}
+
+// Add owed focus seconds to today's per-task log (immutably).
+function withAccrual(taskLog: PomodoroTaskLog, acc: { taskId: string; delta: number } | null): PomodoroTaskLog {
+  if (!acc) return taskLog;
+  const key = pomodoroDayKey(new Date());
+  const day = { ...(taskLog[key] ?? {}) };
+  day[acc.taskId] = (day[acc.taskId] ?? 0) + acc.delta;
+  return { ...taskLog, [key]: day };
+}
 
 export const pomodoroPhaseMs = (phase: PomodoroPhase, s: Settings): number =>
   60_000 *
@@ -408,6 +439,7 @@ interface AppState {
   // resumes it (#39). Interval settings persist to the server.
   pomodoro: PomodoroState;
   pomodoroLog: Record<string, number>; // local day → focus rounds completed (#39)
+  pomodoroTaskLog: PomodoroTaskLog; // local day → { taskId → focus seconds } (#39)
   pomodoroStart: () => void;
   pomodoroPause: () => void;
   pomodoroReset: () => void;
@@ -416,10 +448,14 @@ interface AppState {
   pomodoroAdvance: () => void;
   // Jump straight to a phase (the pomofocus-style tabs); stops the timer.
   pomodoroSetPhase: (phase: PomodoroPhase) => void;
-  // Focus the timer on a specific task and start it (from Heute/Next Week, #39).
+  // Focus the timer on a specific task. When a focus is already running this
+  // SWITCHES the current task without resetting the timer; otherwise it starts a
+  // fresh focus for the task (from Heute/Next Week, #39).
   pomodoroStartForTask: (taskId: string) => void;
-  // Set/clear the current task without touching the running timer.
+  // Set/clear the current task; switches attribution mid-slot if focus runs.
   pomodoroSetTask: (taskId: string | null) => void;
+  // Add focus seconds to a task's lifetime total (persisted to the server).
+  addTaskFocusTime: (taskId: string, seconds: number) => void;
   // Merge a partial settings patch (Pomodoro, reminders, …) + sync it.
   patchSettings: (patch: Partial<Settings>) => void;
 
@@ -597,30 +633,57 @@ export const useStore = create<AppState>()((set, get) => ({
   nextTaskNumber: 1,
   ui: defaultUIState,
   dataLoaded: false,
-  pomodoro: pomoInit?.state ?? { phase: 'focus', running: false, endsAt: null, remainingMs: 25 * 60_000, round: 1, currentTaskId: null },
+  pomodoro: pomoInit?.state ?? { phase: 'focus', running: false, endsAt: null, remainingMs: 25 * 60_000, round: 1, currentTaskId: null, focusSegmentStart: null },
   pomodoroLog: pomoInit?.log ?? {},
+  pomodoroTaskLog: pomoInit?.taskLog ?? {},
+
+  addTaskFocusTime: (taskId, seconds) => {
+    if (!seconds || seconds <= 0) return;
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId ? { ...t, focusSeconds: (t.focusSeconds ?? 0) + seconds, updatedAt: new Date() } : t
+      ),
+    }));
+    const t = get().tasks.find((x) => x.id === taskId);
+    if (t) enqueue('task.update', { id: taskId, patch: { focusSeconds: t.focusSeconds } });
+  },
 
   pomodoroStart: () =>
     set((state) => {
-      const pomodoro = { ...state.pomodoro, running: true, endsAt: Date.now() + state.pomodoro.remainingMs };
-      savePomodoro(pomodoro, state.pomodoroLog);
+      const now = Date.now();
+      const pomodoro: PomodoroState = {
+        ...state.pomodoro,
+        running: true,
+        endsAt: now + state.pomodoro.remainingMs,
+        focusSegmentStart: state.pomodoro.phase === 'focus' ? now : null,
+      };
+      savePomodoro(pomodoro, state.pomodoroLog, state.pomodoroTaskLog);
       return { pomodoro };
     }),
 
-  pomodoroPause: () =>
+  pomodoroPause: () => {
+    const now = Date.now();
+    const acc = pendingFocus(get().pomodoro, now);
     set((state) => {
-      const pomodoro = {
+      const taskLog = withAccrual(state.pomodoroTaskLog, acc);
+      const pomodoro: PomodoroState = {
         ...state.pomodoro,
         running: false,
-        remainingMs: Math.max(0, (state.pomodoro.endsAt ?? Date.now()) - Date.now()),
+        remainingMs: Math.max(0, (state.pomodoro.endsAt ?? now) - now),
         endsAt: null,
+        focusSegmentStart: null,
       };
-      savePomodoro(pomodoro, state.pomodoroLog);
-      return { pomodoro };
-    }),
+      savePomodoro(pomodoro, state.pomodoroLog, taskLog);
+      return { pomodoro, pomodoroTaskLog: taskLog };
+    });
+    if (acc) get().addTaskFocusTime(acc.taskId, acc.delta);
+  },
 
-  pomodoroReset: () =>
+  pomodoroReset: () => {
+    const now = Date.now();
+    const acc = pendingFocus(get().pomodoro, now);
     set((state) => {
+      const taskLog = withAccrual(state.pomodoroTaskLog, acc);
       const pomodoro: PomodoroState = {
         phase: 'focus',
         running: false,
@@ -628,47 +691,82 @@ export const useStore = create<AppState>()((set, get) => ({
         remainingMs: pomodoroPhaseMs('focus', state.settings),
         round: 1,
         currentTaskId: state.pomodoro.currentTaskId ?? null,
+        focusSegmentStart: null,
       };
-      savePomodoro(pomodoro, state.pomodoroLog);
-      return { pomodoro };
-    }),
+      savePomodoro(pomodoro, state.pomodoroLog, taskLog);
+      return { pomodoro, pomodoroTaskLog: taskLog };
+    });
+    if (acc) get().addTaskFocusTime(acc.taskId, acc.delta);
+  },
 
-  pomodoroSetPhase: (phase) =>
+  pomodoroSetPhase: (phase) => {
+    const now = Date.now();
+    const acc = pendingFocus(get().pomodoro, now);
     set((state) => {
+      const taskLog = withAccrual(state.pomodoroTaskLog, acc);
       const pomodoro: PomodoroState = {
         ...state.pomodoro,
         phase,
         running: false,
         endsAt: null,
         remainingMs: pomodoroPhaseMs(phase, state.settings),
+        focusSegmentStart: null,
       };
-      savePomodoro(pomodoro, state.pomodoroLog);
-      return { pomodoro };
-    }),
+      savePomodoro(pomodoro, state.pomodoroLog, taskLog);
+      return { pomodoro, pomodoroTaskLog: taskLog };
+    });
+    if (acc) get().addTaskFocusTime(acc.taskId, acc.delta);
+  },
 
-  pomodoroStartForTask: (taskId) =>
+  pomodoroStartForTask: (taskId) => {
+    const now = Date.now();
+    const cur = get().pomodoro;
+    // A running focus → SWITCH the task, keep the slot. Otherwise start fresh.
+    const switching = cur.running && cur.phase === 'focus';
+    const acc = switching ? pendingFocus(cur, now) : null;
     set((state) => {
-      const ms = pomodoroPhaseMs('focus', state.settings);
+      const taskLog = withAccrual(state.pomodoroTaskLog, acc);
+      const pomodoro: PomodoroState = switching
+        ? { ...state.pomodoro, currentTaskId: taskId, focusSegmentStart: now }
+        : (() => {
+            const ms = pomodoroPhaseMs('focus', state.settings);
+            return {
+              phase: 'focus' as const,
+              running: true,
+              endsAt: now + ms,
+              remainingMs: ms,
+              round: state.pomodoro.round,
+              currentTaskId: taskId,
+              focusSegmentStart: now,
+            };
+          })();
+      savePomodoro(pomodoro, state.pomodoroLog, taskLog);
+      return { pomodoro, pomodoroTaskLog: taskLog };
+    });
+    if (acc) get().addTaskFocusTime(acc.taskId, acc.delta);
+  },
+
+  pomodoroSetTask: (taskId) => {
+    const now = Date.now();
+    const cur = get().pomodoro;
+    const active = cur.running && cur.phase === 'focus';
+    const acc = active ? pendingFocus(cur, now) : null;
+    set((state) => {
+      const taskLog = withAccrual(state.pomodoroTaskLog, acc);
       const pomodoro: PomodoroState = {
-        phase: 'focus',
-        running: true,
-        endsAt: Date.now() + ms,
-        remainingMs: ms,
-        round: state.pomodoro.round,
+        ...state.pomodoro,
         currentTaskId: taskId,
+        focusSegmentStart: active ? now : state.pomodoro.focusSegmentStart ?? null,
       };
-      savePomodoro(pomodoro, state.pomodoroLog);
-      return { pomodoro };
-    }),
+      savePomodoro(pomodoro, state.pomodoroLog, taskLog);
+      return { pomodoro, pomodoroTaskLog: taskLog };
+    });
+    if (acc) get().addTaskFocusTime(acc.taskId, acc.delta);
+  },
 
-  pomodoroSetTask: (taskId) =>
-    set((state) => {
-      const pomodoro = { ...state.pomodoro, currentTaskId: taskId };
-      savePomodoro(pomodoro, state.pomodoroLog);
-      return { pomodoro };
-    }),
-
-  pomodoroAdvance: () =>
+  pomodoroAdvance: () => {
+    const now = Date.now();
+    const acc = pendingFocus(get().pomodoro, now); // open only during a focus phase
     set((state) => {
       const p = state.pomodoro;
       const rounds = state.settings.pomodoroRounds ?? 4;
@@ -685,17 +783,21 @@ export const useStore = create<AppState>()((set, get) => ({
         const key = pomodoroDayKey(new Date());
         log = { ...log, [key]: (log[key] ?? 0) + 1 };
       }
+      const taskLog = withAccrual(state.pomodoroTaskLog, acc);
       const pomodoro: PomodoroState = {
         phase: nextPhase,
         round: nextRound,
         running,
         remainingMs: ms,
-        endsAt: running ? Date.now() + ms : null,
+        endsAt: running ? now + ms : null,
         currentTaskId: p.currentTaskId ?? null,
+        focusSegmentStart: running && nextPhase === 'focus' ? now : null,
       };
-      savePomodoro(pomodoro, log);
-      return { pomodoro, pomodoroLog: log };
-    }),
+      savePomodoro(pomodoro, log, taskLog);
+      return { pomodoro, pomodoroLog: log, pomodoroTaskLog: taskLog };
+    });
+    if (acc) get().addTaskFocusTime(acc.taskId, acc.delta);
+  },
 
   patchSettings: (patch) => {
     set((state) => ({ settings: { ...state.settings, ...patch } }));

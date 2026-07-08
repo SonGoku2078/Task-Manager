@@ -218,6 +218,7 @@ ensureColumns('tasks', {
   attachments: "TEXT NOT NULL DEFAULT '[]'",
   links: "TEXT NOT NULL DEFAULT '[]'",
   linked_project_id: 'TEXT',
+  focus_seconds: 'INTEGER NOT NULL DEFAULT 0',
 });
 ensureColumns('projects', {
   label: 'TEXT',

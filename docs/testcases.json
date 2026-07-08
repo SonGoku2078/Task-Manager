@@ -35,6 +35,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -64,6 +69,11 @@
         },
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -107,6 +117,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -121,6 +136,11 @@
       "laeufe": [
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -149,6 +169,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -161,6 +186,11 @@
       "quelle": "scripts/pomodoro.test.ts",
       "regression": true,
       "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
         {
           "datum": "2026-07-08",
           "ergebnis": "pass",
@@ -201,6 +231,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -230,6 +265,11 @@
         },
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -1180,6 +1220,22 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": "Playwright: Persistenz, Panel, Phasen-Tab, pro-Task, Tagessumme=1 (Ton = Gerätetest)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M60",
+      "bereich": "Runde 5",
+      "titel": "#39 Pomodoro-Zeiterfassung pro Aufgabe (Wechsel ohne Reset, Gesamtzeit)",
+      "erwartung": "Fokus-Zeit wird pro Aufgabe summiert; Task-Wechsel während laufendem Slot behält den Timer (endsAt unverändert); Panel zeigt 'Heute bearbeitet' (Klick = aktuelle Aufgabe); Gesamt-Fokuszeit serverseitig (task.focusSeconds) + im TaskDetail; gilt in Heute UND Next Week.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright 13/13: Wechsel ohne Reset (endsAt gleich), A=4s/B=4s summiert, Heute-Liste+Klick, focusSeconds server-persistiert, beide Ansichten"
         }
       ]
     }

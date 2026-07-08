@@ -41,6 +41,7 @@ function rowToTask(r: Record<string, unknown>) {
     attachments:  JSON.parse(r.attachments as string ?? '[]'),
     links:             JSON.parse(r.links as string ?? '[]'),
     linkedProjectId:   r.linked_project_id ?? null,
+    focusSeconds:      r.focus_seconds ?? 0,
   };
 }
 
@@ -92,6 +93,7 @@ function taskToRow(t: Record<string, unknown>) {
     attachments:    JSON.stringify(t.attachments ?? []),
     links:              JSON.stringify(t.links ?? []),
     linked_project_id:  t.linkedProjectId ?? null,
+    focus_seconds:      Math.max(0, Math.round(Number(t.focusSeconds ?? 0)) || 0),
   };
 }
 
@@ -114,13 +116,13 @@ router.post('/', (req, res) => {
      due_date,start_minutes,duration_min,priority,completed,starred,
      someday,this_week,waiting,waiting_for,today_date,recurrence,recurrence_end,
      recur_interval,recur_unit,recur_month_day,completed_at,created_at,updated_at,
-     nozbe_id,sort_order,category_ids,assignee_ids,comments,attachments,links,linked_project_id)
+     nozbe_id,sort_order,category_ids,assignee_ids,comments,attachments,links,linked_project_id,focus_seconds)
     VALUES (
     @id,@number,@title,@description,@project_id,@parent_id,@section_id,
     @due_date,@start_minutes,@duration_min,@priority,@completed,@starred,
     @someday,@this_week,@waiting,@waiting_for,@today_date,@recurrence,@recurrence_end,
     @recur_interval,@recur_unit,@recur_month_day,@completed_at,@created_at,@updated_at,
-    @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id
+    @nozbe_id,@sort_order,@category_ids,@assignee_ids,@comments,@attachments,@links,@linked_project_id,@focus_seconds
   )`).run(row);
   const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(row.id as string);
   res.status(201).json(rowToTask(created as Record<string, unknown>));
@@ -151,7 +153,7 @@ router.patch('/:id', (req, res) => {
     recur_unit=@recur_unit, recur_month_day=@recur_month_day, updated_at=@updated_at,
     nozbe_id=@nozbe_id, sort_order=@sort_order, category_ids=@category_ids,
     assignee_ids=@assignee_ids, comments=@comments, attachments=@attachments, links=@links,
-    linked_project_id=@linked_project_id, completed_at=@completed_at
+    linked_project_id=@linked_project_id, completed_at=@completed_at, focus_seconds=@focus_seconds
     WHERE id=@id`).run(merged);
 
   const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);

@@ -23,3 +23,12 @@ export function pomodoroDayKey(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+// Compact focus-time label: "45s" / "12 Min" / "1h 5m" (#39).
+export function fmtFocus(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} Min`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}

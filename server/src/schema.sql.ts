@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   comments        TEXT NOT NULL DEFAULT '[]',
   attachments     TEXT NOT NULL DEFAULT '[]',
   links               TEXT NOT NULL DEFAULT '[]',
-  linked_project_id   TEXT
+  linked_project_id   TEXT,
+  focus_seconds       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS projects (
