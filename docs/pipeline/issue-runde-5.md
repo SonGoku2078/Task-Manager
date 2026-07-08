@@ -48,5 +48,12 @@ Erweiterung des Pomodoro auf User-Wunsch:
 - **Gesamt-Fokuszeit (Lebensdauer)** dauerhaft als `tasks.focus_seconds` (Server, via `ensureColumns`-Migration) + Anzeige „🍅 Fokuszeit gesamt" im TaskDetail. Gilt in **Heute UND Next Week** (🍅 pro Task).
 - Verifiziert: `npm test` (TC-A08 inkl. `fmtFocus`), Build Web/Server/Mobile, Playwright 13/13 (TC-M60). Ton-Auswahl (pomofocus) bleibt parkiert.
 
-## 7. Nebenbefund (nicht gefixt)
+## 6c. Nachtrag #39 — Sound-Auswahl + Bool-Fix (2026-07-08)
+- **Sound-Auswahl (pomofocus-Stil):** Einstellungen bekommen einen 🔊-Sound-Block: **Alarm-Ton** (Glocke/Küchenwecker/Digital/Chime/Holzblock) + Lautstärke + Wiederholungen, **Fokus-Sound** (Keiner/Ticken langsam/schnell/Weißes/Braunes Rauschen) + Lautstärke, je ▶ Test. Focus-Sound läuft nur in der Fokus-Phase.
+- **Assets:** 9 kurze WAV-Dateien in `src/sounds/`, per `scripts/gen-sounds.mjs` generiert (original, CC0/lizenzfrei — keine Fremd-Samples; `CREDITS.md`). Als Modul-Import gebündelt → Web-Build legt sie unter `server/public/assets/` ab (`src/assets.d.ts` tippt die Imports). `pomodoroSound.ts` von Oszillatoren auf dekodierte Datei-Buffer (WebAudio) umgebaut.
+- **Settings:** `pomodoroAlarmSound`/`pomodoroFocusSound` (String) + `pomodoroAlarmVolume`/`pomodoroAlarmRepeat`/`pomodoroFocusVolume` (numerisch, in `NUMERIC_KEYS`); alte `pomodoroAlarm`/`pomodoroTicking` entfallen.
+- **Bool-als-String-Fix:** `BOOL_KEYS`-Coercion in `settings.ts` (`"false"` → echtes `false`) für `sectionsCollapsed`/`filtersCollapsed`/`addToTop`.
+- Verifiziert: `npm test` 6/6, Build Web/Server/Mobile, Playwright 11/11 (TC-M61: Dropdowns/Optionen, Persistenz, Test lädt `kitchen.wav` 200, Reload) + TC-M62 (Bool-Round-Trip). Tatsächliche **Hörbarkeit** = Gerätetest. Eigene Sounds können in `src/sounds/` getauscht werden.
+
+## 7. Nebenbefund (jetzt gefixt in 6c)
 `sectionsCollapsed`/`filtersCollapsed` werden als String ("true"/"false") vom Server zurückgegeben; `?? false` fängt nur null/undefined ab, sodass "false" truthy ist → die Sektionsleiste kann nach einem Reload fälschlich eingeklappt wirken. Kein Teil dieser Runde; als eigener Bool-als-String-Fix vorzumerken (analog zu den numerischen 1/0-Settings).

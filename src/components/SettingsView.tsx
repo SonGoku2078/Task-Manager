@@ -2,7 +2,23 @@ import { useState, useEffect } from 'react';
 import { useStore, DEFAULT_PALETTE } from '../store';
 import type { MemberRole } from '../types';
 import { importFromNozbeApi, mapNozbe, loginNozbe, type NozbeExport } from '../nozbe';
+import { playAlarm, startFocusSound, stopFocusSound, unlockAudio } from '../pomodoroSound';
 import './SettingsView.css';
+
+const POMO_ALARM_OPTIONS = [
+  { value: 'bell', label: 'Glocke' },
+  { value: 'kitchen', label: 'Küchenwecker' },
+  { value: 'digital', label: 'Digital' },
+  { value: 'chime', label: 'Chime' },
+  { value: 'wood', label: 'Holzblock' },
+];
+const POMO_FOCUS_OPTIONS = [
+  { value: 'none', label: 'Keiner' },
+  { value: 'ticking-slow', label: 'Ticken langsam' },
+  { value: 'ticking-fast', label: 'Ticken schnell' },
+  { value: 'white-noise', label: 'Weißes Rauschen' },
+  { value: 'brown-noise', label: 'Braunes Rauschen' },
+];
 
 const ROLE_LABELS: Record<MemberRole, string> = {
   admin: 'Admin (alle Rechte)',
@@ -634,12 +650,21 @@ function PomodoroSection() {
     { key: 'pomodoroLongBreakMin', label: 'Lange Pause (Minuten)', def: 15, min: 5, max: 90 },
     { key: 'pomodoroRounds', label: 'Runden bis zur langen Pause', def: 4, min: 1, max: 12 },
   ];
-  const toggles: { key: 'pomodoroAlarm' | 'pomodoroTicking' | 'pomodoroAutoStartBreaks' | 'pomodoroAutoStartPomodoros'; label: string; def: number }[] = [
-    { key: 'pomodoroAlarm', label: 'Ton am Phasenende', def: 1 },
-    { key: 'pomodoroTicking', label: 'Ticken während des Fokus', def: 0 },
+  const toggles: { key: 'pomodoroAutoStartBreaks' | 'pomodoroAutoStartPomodoros'; label: string; def: number }[] = [
     { key: 'pomodoroAutoStartBreaks', label: 'Pausen automatisch starten', def: 0 },
     { key: 'pomodoroAutoStartPomodoros', label: 'Nächsten Fokus automatisch starten', def: 0 },
   ];
+  const alarmSound = settings.pomodoroAlarmSound ?? 'bell';
+  const alarmVolume = settings.pomodoroAlarmVolume ?? 50;
+  const alarmRepeat = settings.pomodoroAlarmRepeat ?? 1;
+  const focusSound = settings.pomodoroFocusSound ?? 'none';
+  const focusVolume = settings.pomodoroFocusVolume ?? 50;
+  const testFocus = () => {
+    unlockAudio();
+    if (focusSound === 'none') return;
+    startFocusSound(focusSound, focusVolume);
+    window.setTimeout(stopFocusSound, 2500);
+  };
   return (
     <section className="settings-section">
       <h3 className="settings-heading">🍅 Pomodoro-Timer</h3>
@@ -665,6 +690,59 @@ function PomodoroSection() {
           </label>
         ))}
       </div>
+
+      <h4 className="settings-subheading">🔊 Sound</h4>
+      <div className="settings-sound">
+        <div className="settings-sound-row">
+          <span className="settings-sound-label">Alarm-Ton</span>
+          <select
+            className="settings-input settings-sound-select"
+            value={alarmSound}
+            onChange={(e) => setPomodoroSettings({ pomodoroAlarmSound: e.target.value })}
+          >
+            {POMO_ALARM_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <input
+            className="settings-sound-vol"
+            type="range" min={0} max={100}
+            value={alarmVolume}
+            title={`Lautstärke ${alarmVolume}`}
+            onChange={(e) => setPomodoroSettings({ pomodoroAlarmVolume: Number(e.target.value) })}
+          />
+          <label className="settings-sound-repeat">
+            Wdh.
+            <input
+              type="number" min={1} max={5}
+              value={alarmRepeat}
+              onChange={(e) => setPomodoroSettings({ pomodoroAlarmRepeat: Math.max(1, Math.min(5, Number(e.target.value) || 1)) })}
+            />
+          </label>
+          <button
+            className="settings-sound-test"
+            type="button"
+            onClick={() => { unlockAudio(); playAlarm(alarmSound, alarmVolume, alarmRepeat); }}
+          >▶ Test</button>
+        </div>
+        <div className="settings-sound-row">
+          <span className="settings-sound-label">Fokus-Sound</span>
+          <select
+            className="settings-input settings-sound-select"
+            value={focusSound}
+            onChange={(e) => setPomodoroSettings({ pomodoroFocusSound: e.target.value })}
+          >
+            {POMO_FOCUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <input
+            className="settings-sound-vol"
+            type="range" min={0} max={100}
+            value={focusVolume}
+            title={`Lautstärke ${focusVolume}`}
+            onChange={(e) => setPomodoroSettings({ pomodoroFocusVolume: Number(e.target.value) })}
+          />
+          <button className="settings-sound-test" type="button" onClick={testFocus} disabled={focusSound === 'none'}>▶ Test</button>
+        </div>
+      </div>
+
       <div className="settings-pomodoro-toggles">
         {toggles.map((t) => (
           <label key={t.key} className="settings-check">

@@ -1,9 +1,29 @@
-// WebAudio for the Pomodoro (#39): a phase-end alarm and an optional ticking.
-// One shared AudioContext, unlocked on the first user gesture (Start) so the
-// browser autoplay policy doesn't swallow the sound. All calls are best-effort.
+// WebAudio playback for the Pomodoro (#39): a phase-end alarm and an optional
+// looping focus sound, from bundled audio files. One shared AudioContext,
+// unlocked on the first user gesture (Start/Test) so autoplay policy doesn't
+// swallow it. Files are decoded lazily into cached AudioBuffers. Best-effort.
+import bell from './sounds/bell.wav';
+import kitchen from './sounds/kitchen.wav';
+import digital from './sounds/digital.wav';
+import chime from './sounds/chime.wav';
+import wood from './sounds/wood.wav';
+import tickingSlow from './sounds/ticking-slow.wav';
+import tickingFast from './sounds/ticking-fast.wav';
+import whiteNoise from './sounds/white-noise.wav';
+import brownNoise from './sounds/brown-noise.wav';
+
+export const ALARM_SOUNDS: Record<string, string> = { bell, kitchen, digital, chime, wood };
+export const FOCUS_SOUNDS: Record<string, string> = {
+  'ticking-slow': tickingSlow,
+  'ticking-fast': tickingFast,
+  'white-noise': whiteNoise,
+  'brown-noise': brownNoise,
+};
 
 let ctx: AudioContext | null = null;
-let tickTimer: number | null = null;
+const buffers = new Map<string, AudioBuffer>();
+let focusSrc: AudioBufferSourceNode | null = null;
+let focusGen = 0; // invalidates in-flight startFocusSound() calls
 
 function getCtx(): AudioContext | null {
   try {
@@ -17,51 +37,71 @@ function getCtx(): AudioContext | null {
   }
 }
 
-// Call from a user gesture (e.g. the Start button) so audio is allowed later.
+// Call from a user gesture (Start / Test) so audio is allowed later.
 export function unlockAudio(): void {
   const c = getCtx();
   if (c && c.state === 'suspended') c.resume().catch(() => {});
 }
 
-function tone(freq: number, durationSec: number, volume: number, when = 0): void {
+async function load(url: string): Promise<AudioBuffer | null> {
   const c = getCtx();
-  if (!c) return;
+  if (!c) return null;
+  const cached = buffers.get(url);
+  if (cached) return cached;
   try {
-    const t0 = c.currentTime + when;
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.connect(gain);
-    gain.connect(c.destination);
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(Math.max(0.0001, volume), t0);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + durationSec);
-    osc.start(t0);
-    osc.stop(t0 + durationSec);
+    const arr = await (await fetch(url)).arrayBuffer();
+    const buf = await c.decodeAudioData(arr);
+    buffers.set(url, buf);
+    return buf;
   } catch {
-    /* audio blocked */
+    return null;
   }
 }
 
-// Three rising beeps so the end of a phase is clearly audible.
-export function playAlarm(volume = 1): void {
-  const v = 0.25 * Math.max(0, Math.min(1, volume));
-  tone(880, 0.35, v, 0);
-  tone(1046, 0.35, v, 0.4);
-  tone(1318, 0.5, v, 0.8);
+const clampVol = (v: number) => Math.max(0, Math.min(1, v / 100));
+
+// Play the phase-end alarm `repeat` times at the chosen volume.
+export async function playAlarm(sound: string, volume = 50, repeat = 1): Promise<void> {
+  const url = ALARM_SOUNDS[sound] ?? ALARM_SOUNDS.bell;
+  const c = getCtx();
+  const buf = await load(url);
+  if (!c || !buf) return;
+  const gain = c.createGain();
+  gain.gain.value = clampVol(volume);
+  gain.connect(c.destination);
+  const n = Math.max(1, Math.min(10, Math.round(repeat)));
+  for (let k = 0; k < n; k++) {
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.connect(gain);
+    src.start(c.currentTime + k * (buf.duration + 0.15));
+  }
 }
 
-// A soft, quiet tick once per second while focusing.
-export function startTicking(volume = 0.5): void {
-  stopTicking();
-  const v = 0.06 * Math.max(0, Math.min(1, volume));
-  const doTick = () => tone(600, 0.05, v, 0);
-  doTick();
-  tickTimer = window.setInterval(doTick, 1000);
+// Start (or restart) the looping focus sound. 'none' → silence.
+export async function startFocusSound(sound: string, volume = 50): Promise<void> {
+  stopFocusSound();
+  const gen = ++focusGen;
+  const url = FOCUS_SOUNDS[sound];
+  if (!url) return; // 'none' or unknown
+  const c = getCtx();
+  const buf = await load(url);
+  if (gen !== focusGen || !c || !buf) return; // superseded while decoding
+  const gain = c.createGain();
+  gain.gain.value = clampVol(volume);
+  gain.connect(c.destination);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.connect(gain);
+  src.start();
+  focusSrc = src;
 }
 
-export function stopTicking(): void {
-  if (tickTimer != null) {
-    window.clearInterval(tickTimer);
-    tickTimer = null;
+export function stopFocusSound(): void {
+  focusGen++; // cancel any in-flight start
+  if (focusSrc) {
+    try { focusSrc.stop(); } catch { /* already stopped */ }
+    focusSrc = null;
   }
 }

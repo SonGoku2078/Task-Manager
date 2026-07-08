@@ -4,6 +4,10 @@ import { db } from '../db';
 const router = Router();
 
 const JSON_KEYS = new Set(['nozbe', 'colorPalette', 'colorLabels', 'navOrder']);
+// Boolean settings stored as TEXT come back as "true"/"false" — and a non-empty
+// string is truthy in JS, so "false" would read as true and the flag sticks on
+// after a reload. Coerce them back to real booleans on read.
+const BOOL_KEYS = new Set(['addToTop', 'filtersCollapsed', 'sectionsCollapsed']);
 // Settings stored as TEXT that must be returned as numbers (the SQLite value
 // column is TEXT, so without this they come back as strings and break numeric
 // math in the UI, e.g. WeekView hour labels and zoom).
@@ -26,8 +30,9 @@ const NUMERIC_KEYS = new Set([
   'inboxProjectPanel',
   'pomodoroAutoStartBreaks',
   'pomodoroAutoStartPomodoros',
-  'pomodoroAlarm',
-  'pomodoroTicking',
+  'pomodoroAlarmVolume',
+  'pomodoroAlarmRepeat',
+  'pomodoroFocusVolume',
 ]);
 
 function loadSettings(): Record<string, unknown> {
@@ -35,6 +40,7 @@ function loadSettings(): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const { key, value } of rows) {
     if (NUMERIC_KEYS.has(key)) { out[key] = Number(value); continue; }
+    if (BOOL_KEYS.has(key)) { out[key] = value === 'true' || value === '1'; continue; }
     if (JSON_KEYS.has(key)) {
       try { out[key] = JSON.parse(value); } catch { out[key] = value; }
     } else {

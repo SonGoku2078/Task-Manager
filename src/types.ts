@@ -60,8 +60,12 @@ export interface Settings {
   // Pomodoro behaviour (#39) — numeric 1/0 flags (server-coerced, no bool pitfalls).
   pomodoroAutoStartBreaks?: number; // 1 = start a break automatically after focus
   pomodoroAutoStartPomodoros?: number; // 1 = start the next focus automatically after a break
-  pomodoroAlarm?: number; // 1 = play the phase-end alarm, 0 = silent (default 1)
-  pomodoroTicking?: number; // 1 = soft ticking while focusing (default 0)
+  // Pomodoro sound selection (#39): keys map to bundled files in src/sounds/.
+  pomodoroAlarmSound?: string; // phase-end alarm sound key (default 'bell')
+  pomodoroAlarmVolume?: number; // 0–100 (default 50)
+  pomodoroAlarmRepeat?: number; // repeat the alarm 1–5× (default 1)
+  pomodoroFocusSound?: string; // looping focus sound key or 'none' (default 'none')
+  pomodoroFocusVolume?: number; // 0–100 (default 50)
   // Mobile reminders (#30). Numeric flags round-trip through the server's
   // numeric-settings coercion without string/bool pitfalls; the tone name is a
   // plain string.

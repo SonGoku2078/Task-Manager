@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore, pomodoroPhaseMs } from '../store';
-import { playAlarm, startTicking, stopTicking, unlockAudio } from '../pomodoroSound';
+import { playAlarm, startFocusSound, stopFocusSound, unlockAudio } from '../pomodoroSound';
 import './PomodoroWidget.css';
 
 // Pomodoro countdown in the main header (#3/#39). The store holds phase/endsAt
@@ -35,19 +35,26 @@ export default function PomodoroWidget() {
     ? Math.max(0, (pomodoro.endsAt ?? 0) - Date.now())
     : pomodoro.remainingMs;
 
-  // Optional ticking while focusing.
+  // Optional looping focus sound (ticking / noise) — only while focusing.
+  const focusSound = settings.pomodoroFocusSound ?? 'none';
+  const focusVolume = settings.pomodoroFocusVolume ?? 50;
   useEffect(() => {
-    const tick = (settings.pomodoroTicking ?? 0) === 1;
-    if (pomodoro.running && pomodoro.phase === 'focus' && tick) startTicking();
-    else stopTicking();
-    return () => stopTicking();
-  }, [pomodoro.running, pomodoro.phase, settings.pomodoroTicking]);
+    if (pomodoro.running && pomodoro.phase === 'focus' && focusSound !== 'none') {
+      startFocusSound(focusSound, focusVolume);
+    } else {
+      stopFocusSound();
+    }
+    return () => stopFocusSound();
+  }, [pomodoro.running, pomodoro.phase, focusSound, focusVolume]);
 
   // Phase finished → alarm + notify + advance (runs at most once per zero-crossing).
+  const alarmSound = settings.pomodoroAlarmSound ?? 'bell';
+  const alarmVolume = settings.pomodoroAlarmVolume ?? 50;
+  const alarmRepeat = settings.pomodoroAlarmRepeat ?? 1;
   useEffect(() => {
     if (!pomodoro.running || remaining > 0) return;
-    stopTicking();
-    if ((settings.pomodoroAlarm ?? 1) === 1) playAlarm();
+    stopFocusSound();
+    if (alarmVolume > 0) playAlarm(alarmSound, alarmVolume, alarmRepeat);
     const next = pomodoro.phase === 'focus' ? 'Pause' : 'Weiterarbeiten';
     try {
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -55,7 +62,7 @@ export default function PomodoroWidget() {
       }
     } catch { /* notifications unavailable */ }
     advance();
-  }, [remaining, pomodoro.running, pomodoro.phase, advance, settings.pomodoroAlarm]);
+  }, [remaining, pomodoro.running, pomodoro.phase, advance, alarmSound, alarmVolume, alarmRepeat]);
 
   const mm = String(Math.floor(remaining / 60_000)).padStart(2, '0');
   const ss = String(Math.floor((remaining % 60_000) / 1000)).padStart(2, '0');

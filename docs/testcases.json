@@ -40,6 +40,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -69,6 +74,11 @@
         },
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -122,6 +132,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -136,6 +151,11 @@
       "laeufe": [
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -174,6 +194,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -186,6 +211,11 @@
       "quelle": "scripts/pomodoro.test.ts",
       "regression": true,
       "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
         {
           "datum": "2026-07-08",
           "ergebnis": "pass",
@@ -236,6 +266,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -265,6 +300,11 @@
         },
         {
           "datum": "2026-07-06",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
         },
@@ -1236,6 +1276,38 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": "Playwright 13/13: Wechsel ohne Reset (endsAt gleich), A=4s/B=4s summiert, Heute-Liste+Klick, focusSeconds server-persistiert, beide Ansichten"
+        }
+      ]
+    },
+    {
+      "id": "TC-M61",
+      "bereich": "Runde 5",
+      "titel": "#39 Pomodoro-Sound-Auswahl (Alarm + Focus, pomofocus-Stil)",
+      "erwartung": "Einstellungen: Alarm-Ton-Dropdown (Glocke/Küchenwecker/Digital/Chime/Holzblock) + Lautstärke + Wiederholungen; Fokus-Sound-Dropdown (Keiner/Ticken langsam/schnell/Weißes/Braunes Rauschen) + Lautstärke; ▶ Test lädt die gebündelte .wav; Auswahl persistiert (String + numerisch) und übersteht Reload; Focus-Sound nur in der Fokus-Phase. Hörbarkeit = Gerätetest.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright 11/11: Dropdowns+Optionen, Persistenz, Test lädt kitchen.wav (200), Reload, keine Konsolenfehler; Ton = Gerätetest"
+        }
+      ]
+    },
+    {
+      "id": "TC-M62",
+      "bereich": "Runde 5",
+      "titel": "Bool-als-String-Fix: Boolean-Settings round-trippen korrekt",
+      "erwartung": "sectionsCollapsed/filtersCollapsed/addToTop kommen vom Server als echtes Boolean zurück (nicht als truthy-String \"false\") — BOOL_KEYS-Coercion.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-5.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": "sectionsCollapsed=false → GET liefert Boolean false (Typ boolean)"
         }
       ]
     }
