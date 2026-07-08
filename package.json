@@ -10,6 +10,8 @@
     "build:electron": "npm run build && cd electron && npm run build",
     "start:prod": "npm run build && cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
     "start:prod:run": "cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
+    "prod": "npm run start:prod",
+    "prod:run": "npm run start:prod:run",
     "dev:mobile": "vite --config apps/mobile/vite.config.ts",
     "build:mobile": "vite build --config apps/mobile/vite.config.ts",
     "db:seed-dev": "node scripts/seed-dev-db.mjs",
