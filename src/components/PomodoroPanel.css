@@ -145,6 +145,55 @@
   line-height: 1.4;
 }
 
+.pomodoro-note {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pomodoro-note-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 40px;
+  padding: 7px 9px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #333;
+  font-family: inherit;
+  font-size: 13px;
+}
+.pomodoro-note-input:focus { outline: 2px solid rgba(255, 255, 255, 0.6); }
+.pomodoro-note-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pomodoro-note-count {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.pomodoro-note-add {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary, #333);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pomodoro-note-add:disabled { opacity: 0.5; cursor: default; }
+
 .pomodoro-worked {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;

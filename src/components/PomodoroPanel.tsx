@@ -24,7 +24,11 @@ export default function PomodoroPanel() {
   const setPhase = useStore((s) => s.pomodoroSetPhase);
   const setTask = useStore((s) => s.pomodoroSetTask);
   const selectTask = useStore((s) => s.selectTask);
+  const addComment = useStore((s) => s.addComment);
   const setSidePanel = useStore((s) => s.setSidePanel);
+
+  // Work note typed while focusing → added as a comment on the current task (#39).
+  const [noteText, setNoteText] = useState('');
 
   // 1s display tick while running (remaining derives from endsAt — drift-free).
   const [, setTick] = useState(0);
@@ -52,6 +56,13 @@ export default function PomodoroPanel() {
     .sort((a, b) => b.sec - a.sec);
 
   const onStart = () => { unlockAudio(); start(); };
+  const submitNote = () => {
+    const text = noteText.trim();
+    if (text && currentTask) {
+      addComment(currentTask.id, text);
+      setNoteText('');
+    }
+  };
 
   return (
     <div className={`pomodoro-panel phase-${pomodoro.phase}`}>
@@ -100,6 +111,30 @@ export default function PomodoroPanel() {
                 {currentTask.title}
               </button>
               <button className="pomodoro-current-clear" title="Lösen" onClick={() => setTask(null)}>✕</button>
+            </div>
+            <div className="pomodoro-note">
+              <textarea
+                className="pomodoro-note-input"
+                rows={2}
+                placeholder="Arbeitsnotiz zur Aufgabe… (Strg+Enter)"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitNote(); }
+                }}
+              />
+              <div className="pomodoro-note-row">
+                {(currentTask.comments?.length ?? 0) > 0 ? (
+                  <button
+                    className="pomodoro-note-count"
+                    title="Notizen/Kommentare der Aufgabe ansehen"
+                    onClick={() => selectTask(currentTask.id)}
+                  >
+                    🗒 {currentTask.comments!.length} Notiz{currentTask.comments!.length === 1 ? '' : 'en'}
+                  </button>
+                ) : <span />}
+                <button className="pomodoro-note-add" disabled={!noteText.trim()} onClick={submitNote}>+ Notiz</button>
+              </div>
             </div>
           </>
         ) : (
