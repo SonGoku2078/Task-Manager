@@ -124,10 +124,13 @@ export interface Attachment {
   url?: string; // server-hosted URL (used after backend migration; local uses dataUrl)
 }
 
-// A reference from one task to another task or to a project.
+// A reference from a task to another task, a project, or an external Evernote
+// note (#8 — Evernote stays the archive; the task just points at the note).
 export interface TaskLink {
-  type: 'task' | 'project';
-  id: string;
+  type: 'task' | 'project' | 'evernote';
+  id: string; // task/project id, or a generated id for an evernote link
+  url?: string; // evernote note link (web https://…evernote.com/… or evernote:///view/…)
+  title?: string; // display label for an evernote link
 }
 
 export interface Task {

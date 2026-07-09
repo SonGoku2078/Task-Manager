@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { parseDuration, formatDuration, minutesToTimeInput, timeInputToMinutes } from '../duration';
 import { dateKey, isTodayFlagActive } from '../selectors';
 import { useSwipeDown } from '../gestures';
+import { isEvernoteUrl, DEFAULT_EVERNOTE_TITLE } from '../evernote';
 import type { Priority, RecurrenceType, RecurUnit, RecurMonthDay, TaskLink, Task } from '../types';
 
 const toInput = (d: Date | null | undefined) =>
@@ -346,12 +347,31 @@ function LinksSection({
   onOpenProject?: (id: string) => void;
 }) {
   const rootTasks = tasks.filter((t) => !t.parentId && t.id !== selfId && !t.completed);
+  const [evnUrl, setEvnUrl] = useState('');
+  const [evnTitle, setEvnTitle] = useState('');
+  const [evnError, setEvnError] = useState('');
+  const addEvernote = () => {
+    const url = evnUrl.trim();
+    if (!isEvernoteUrl(url)) { setEvnError('Kein gültiger Evernote-Link.'); return; }
+    onAdd({ type: 'evernote', id: `evn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, url, title: evnTitle.trim() || undefined });
+    setEvnUrl(''); setEvnTitle(''); setEvnError('');
+  };
   return (
     <div className="m-field">
       <span>Verknüpfungen</span>
       {links.length > 0 && (
         <div className="m-cats">
           {links.map((link) => {
+            if (link.type === 'evernote') {
+              return (
+                <span key={`evernote:${link.id}`} className="m-link-chip m-link-evernote">
+                  <a className="m-link-open" href={link.url} target="_blank" rel="noopener noreferrer">
+                    🐘 {link.title || DEFAULT_EVERNOTE_TITLE}
+                  </a>
+                  <button className="m-link-del" onClick={() => onRemove(link)}>×</button>
+                </span>
+              );
+            }
             const isProject = link.type === 'project';
             const proj = isProject ? projects.find((p) => p.id === link.id) : null;
             const lt = !isProject ? tasks.find((x) => x.id === link.id) : null;
@@ -387,6 +407,17 @@ function LinksSection({
           {rootTasks.map((rt) => <option key={rt.id} value={`task:${rt.id}`}>#{rt.number} {rt.title}</option>)}
         </optgroup>
       </select>
+      {/* Evernote note link (#8) */}
+      <div className="m-evernote-add">
+        <input
+          placeholder="🐘 Evernote-Link (evernote:/// oder evernote.com)"
+          value={evnUrl}
+          onChange={(e) => { setEvnUrl(e.target.value); setEvnError(''); }}
+        />
+        <input placeholder="Titel (optional)" value={evnTitle} onChange={(e) => setEvnTitle(e.target.value)} />
+        <button className="m-evernote-btn" onClick={addEvernote}>+ Evernote</button>
+      </div>
+      {evnError && <p className="m-settings-hint" style={{ color: '#e5484d' }}>{evnError}</p>}
     </div>
   );
 }

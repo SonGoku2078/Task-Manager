@@ -50,6 +50,7 @@ interface TaskDetailPanelProps {
 // Duration parse/format live in a shared util (also used by the mobile app).
 import { parseDuration, formatDuration, minutesToTimeInput, timeInputToMinutes } from '../duration';
 import { fmtFocus } from '../pomodoro';
+import { isEvernoteUrl, DEFAULT_EVERNOTE_TITLE } from '../evernote';
 export { parseDuration, formatDuration };
 
 const toDateInput = (d: Date | null) =>
@@ -138,6 +139,10 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [attachError, setAttachError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
+  // Evernote note link inputs (#8).
+  const [evnUrl, setEvnUrl] = useState('');
+  const [evnTitle, setEvnTitle] = useState('');
+  const [evnError, setEvnError] = useState('');
   // Newest comments first (#37). createdAt may be a string after a server
   // roundtrip, so normalise via new Date() before comparing.
   const comments = [...(task.comments ?? [])].sort(
@@ -948,6 +953,28 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
             <label className="detail-label">Verknüpfungen</label>
             <div className="detail-links">
               {(task.links ?? []).map((link) => {
+                if (link.type === 'evernote') {
+                  return (
+                    <span key={`evernote:${link.id}`} className="detail-link-chip detail-link-evernote">
+                      <a
+                        className="detail-link-open"
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={link.url}
+                      >
+                        🐘 {link.title || DEFAULT_EVERNOTE_TITLE}
+                      </a>
+                      <button
+                        className="detail-link-del"
+                        title="Verknüpfung entfernen"
+                        onClick={() => removeTaskLink(task.id, link)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                }
                 const isProject = link.type === 'project';
                 const proj = isProject ? projects.find((p) => p.id === link.id) : null;
                 const linked = !isProject ? tasks.find((t) => t.id === link.id) : null;
@@ -991,6 +1018,38 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
                 addTaskLink(task.id, { type: type as 'task' | 'project', id });
               }}
             />
+            {/* Evernote note link (#8): paste a web link or an evernote:/// deep link. */}
+            <div className="detail-evernote-add">
+              <input
+                className="detail-input"
+                placeholder="🐘 Evernote-Notiz-Link (https://www.evernote.com/… oder evernote:///…)"
+                value={evnUrl}
+                onChange={(e) => { setEvnUrl(e.target.value); setEvnError(''); }}
+              />
+              <input
+                className="detail-input"
+                placeholder="Titel (optional)"
+                value={evnTitle}
+                onChange={(e) => setEvnTitle(e.target.value)}
+              />
+              <button
+                className="btn"
+                onClick={() => {
+                  const url = evnUrl.trim();
+                  if (!isEvernoteUrl(url)) { setEvnError('Kein gültiger Evernote-Link (evernote:/// oder evernote.com).'); return; }
+                  addTaskLink(task.id, {
+                    type: 'evernote',
+                    id: `evn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+                    url,
+                    title: evnTitle.trim() || undefined,
+                  });
+                  setEvnUrl(''); setEvnTitle(''); setEvnError('');
+                }}
+              >
+                + Evernote
+              </button>
+            </div>
+            {evnError && <p className="detail-evernote-error">{evnError}</p>}
           </div>
         </div>
       </div>

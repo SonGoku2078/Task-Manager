@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-08",
+  "updated": "2026-07-09",
   "hinweis": "Zentrale Testfalldatenbank. Auto-Fälle werden von scripts/run-tests.mjs aktualisiert; manuelle Läufe trägt der Test-Manager ein. Anzeige: Web-App → 🧪 Testreport.",
   "cases": [
     {
@@ -43,6 +43,11 @@
         },
         {
           "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -91,6 +96,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -137,6 +147,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -166,6 +181,11 @@
         },
         {
           "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -199,6 +219,11 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
     },
@@ -225,8 +250,23 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
+          "ergebnis": "pass",
+          "bemerkung": ""
         }
       ]
+    },
+    {
+      "id": "TC-A09",
+      "bereich": "Auto-Tests",
+      "titel": "Evernote-Link-Erkennung: Web + Deeplink erkannt, Fremd-URLs abgelehnt (#8)",
+      "erwartung": "isEvernoteUrl akzeptiert evernote:///view/… und https://(www.|app.)evernote.com/…; lehnt fremde/Lookalike-Hosts ab; isEvernoteDeepLink nur bei evernote:///.",
+      "typ": "auto",
+      "quelle": "scripts/evernote.test.ts",
+      "regression": true,
+      "laeufe": []
     },
     {
       "id": "TC-A04",
@@ -269,6 +309,11 @@
         },
         {
           "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -315,6 +360,11 @@
         },
         {
           "datum": "2026-07-08",
+          "ergebnis": "pass",
+          "bemerkung": ""
+        },
+        {
+          "datum": "2026-07-09",
           "ergebnis": "pass",
           "bemerkung": ""
         }
@@ -1308,6 +1358,22 @@
           "datum": "2026-07-08",
           "ergebnis": "pass",
           "bemerkung": "sectionsCollapsed=false → GET liefert Boolean false (Typ boolean)"
+        }
+      ]
+    },
+    {
+      "id": "TC-M63",
+      "bereich": "Runde 6",
+      "titel": "#8 Evernote-Notiz am Task verlinken (Web + Deeplink, Web & Mobile)",
+      "erwartung": "Im Task-Detail lässt sich ein Evernote-Link (https://www.evernote.com/… oder evernote:///…) als Verknüpfung einfügen: grüner 🐘-Chip als <a href> (Web öffnet Tab, Deeplink → OS/App), ungültige URL → Hinweis; persistiert in task.links; entfernbar. In Web und Mobile.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-runde-6.md",
+      "regression": true,
+      "laeufe": [
+        {
+          "datum": "2026-07-09",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright 11/11: Web-Link+Deeplink als Chip (korrekte href/target), Ungültig-Guard, 2 Links server-persistiert (task.links), Entfernen. Mobile-Build grün; Gerätetest Deeplink offen."
         }
       ]
     }
