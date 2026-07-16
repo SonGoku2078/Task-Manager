@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import {
-  startOfWeek,
-  weekDays7,
+  weekViewDays,
   addDays,
   isSameDay,
   dateKey,
@@ -20,7 +19,6 @@ interface WeekViewProps {
   mode: 'week' | 'rolling';
 }
 
-const parseKey = (k: string) => new Date(`${k}T00:00:00`);
 
 // Side-by-side layout for overlapping items (blockers + timed tasks): assigns
 // each a column within its overlap cluster → { left, width } as 0..1 fractions.
@@ -137,16 +135,8 @@ export default function WeekView({ mode }: WeekViewProps) {
   const openSubtasksOf = (taskId: string): Task[] =>
     tasks.filter((c) => c.parentId === taskId && !c.completed);
 
-  // Which days become columns.
-  let days: Date[];
-  if (mode === 'rolling') {
-    days = weekDays7(addDays(today, 0));
-  } else if (selectedDates.length > 1) {
-    // A drag/range selection in the month panel drives the visible columns.
-    days = [...selectedDates].sort().slice(0, 14).map(parseKey);
-  } else {
-    days = weekDays7(startOfWeek(currentDate));
-  }
+  // Which days become columns — shared with the header totals (#47).
+  const days = weekViewDays(mode, currentDate, selectedDates, today);
 
   const selectedSet = new Set(selectedDates);
 

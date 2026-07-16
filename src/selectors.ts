@@ -292,6 +292,20 @@ export const selectVisibleTasks = (
   return [...sorted.filter((t) => !t.completed), ...sorted.filter((t) => t.completed)];
 };
 
+// Header totals over the currently visible tasks (#47): planned = entered
+// durations, actual = Pomodoro-booked focus time, rounded to whole minutes.
+export interface TaskTotals {
+  count: number;
+  plannedMin: number;
+  actualMin: number;
+}
+
+export const selectTaskTotals = (tasks: Task[]): TaskTotals => ({
+  count: tasks.length,
+  plannedMin: tasks.reduce((sum, t) => sum + (t.durationMin ?? 0), 0),
+  actualMin: Math.round(tasks.reduce((sum, t) => sum + (t.focusSeconds ?? 0), 0) / 60),
+});
+
 // Top non-completed tasks for the Priority list (starred & high priority first).
 export const selectPriorityTasks = (tasks: Task[], limit = 5): Task[] => {
   return [...tasks]
@@ -329,6 +343,23 @@ export const startOfWeek = (d: Date): Date => {
 // Seven consecutive days starting at `start`.
 export const weekDays7 = (start: Date): Date[] =>
   Array.from({ length: 7 }, (_, i) => addDays(start, i));
+
+// Local date from a YYYY-MM-DD key (midnight local time).
+export const parseDateKey = (k: string): Date => new Date(`${k}T00:00:00`);
+
+// The day columns the calendar week grid shows (#47): rolling = 7 days from
+// today, an explicit multi-day selection wins, otherwise the Monday week of
+// the anchor date. Shared by WeekView and the header totals so both agree.
+export const weekViewDays = (
+  mode: 'week' | 'rolling',
+  currentDate: Date,
+  selectedDates: string[],
+  now: Date = new Date()
+): Date[] => {
+  if (mode === 'rolling') return weekDays7(now);
+  if (selectedDates.length > 1) return [...selectedDates].sort().slice(0, 14).map(parseDateKey);
+  return weekDays7(startOfWeek(currentDate));
+};
 
 // ISO-8601 week number (weeks start Monday; week 1 contains the first Thursday).
 export const isoWeek = (d: Date): number => {

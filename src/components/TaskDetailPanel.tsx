@@ -136,6 +136,8 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
   const descRef = useRef<HTMLTextAreaElement>(null);
   const [editingDuration, setEditingDuration] = useState(false);
   const [durationInput, setDurationInput] = useState('');
+  const [editingFocus, setEditingFocus] = useState(false);
+  const [focusInput, setFocusInput] = useState('');
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [attachError, setAttachError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -784,14 +786,54 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
           </div>
         </div>
 
-        {(task.focusSeconds ?? 0) > 0 && (
-          <div className="detail-field">
-            <label className="detail-label">🍅 Fokuszeit gesamt</label>
-            <span className="detail-input detail-duration-display" title="Gesamte mit dem Pomodoro-Timer auf dieser Aufgabe erfasste Zeit">
-              {fmtFocus(task.focusSeconds ?? 0)}
+        <div className="detail-field">
+          <label className="detail-label">🍅 Fokuszeit gesamt</label>
+          {editingFocus ? (
+            <input
+              autoFocus
+              className="detail-input detail-duration-input"
+              value={focusInput}
+              placeholder="30m · 1h · 1.5h · 90m"
+              onChange={(e) => setFocusInput(e.target.value)}
+              onBlur={() => {
+                // Leer = Reset auf 0; ungültige Eingabe wird verworfen (AC10).
+                const t = focusInput.trim();
+                const min = t === '' ? 0 : parseDuration(t);
+                if (min != null) updateTask(task.id, { focusSeconds: min * 60 });
+                setEditingFocus(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                } else if (e.key === 'Escape') {
+                  setEditingFocus(false);
+                }
+              }}
+            />
+          ) : (
+            <span
+              className="detail-input detail-duration-display"
+              title="Mit dem Pomodoro-Timer erfasste Zeit — klicken zum manuellen Überschreiben"
+              onClick={() => {
+                // Vorbelegung in parseDuration-tauglicher Form (nicht fmtFocus,
+                // dessen "12 Min"/"1h 5m"-Labels nur teilweise parsebar sind).
+                const m = Math.round((task.focusSeconds ?? 0) / 60);
+                setFocusInput(
+                  m === 0
+                    ? ''
+                    : m % 60 === 0
+                      ? `${m / 60}h`
+                      : m < 60
+                        ? `${m}m`
+                        : `${Math.floor(m / 60)}h ${m % 60}m`
+                );
+                setEditingFocus(true);
+              }}
+            >
+              {(task.focusSeconds ?? 0) > 0 ? fmtFocus(task.focusSeconds ?? 0) : '—'}
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Wiederholung + Custom-Editor auf EINER Zeile (#7): Select, „alle",
             schmales Zahlenfeld und Einheit teilen sich die Breite. */}

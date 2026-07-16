@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
-import { dateKey, selectVisibleTasks } from './selectors';
+import { dateKey, selectVisibleTasks, selectTaskTotals, weekViewDays } from './selectors';
+import { fmtFocus } from './pomodoro';
 import { parseQuickAdd } from './quickParse';
 import type { ViewType } from './types';
 import './App.css';
@@ -50,6 +51,18 @@ const VIEW_TITLES: Record<ViewType, string> = {
   members: 'Benutzer',
   settings: 'Einstellungen',
 };
+
+// Views whose header pill shows the effort totals (#47) — planning views plus
+// the single-project list; everywhere else the pill stays a plain task count.
+// Die Wochenansicht ist KEIN eigener ViewType (calendar + calendarMode week/
+// rolling) und wird separat über weekGridActive abgedeckt.
+const TOTALS_VIEWS: ReadonlySet<ViewType> = new Set([
+  'inbox',
+  'today',
+  'priority',
+  'nextweek',
+  'projects',
+]);
 
 function App() {
   const tasks = useStore((s) => s.tasks);
@@ -285,6 +298,18 @@ function App() {
   }, [selectTask, setView, deleteTask, bulkMode, selectedIds]);
 
   const visibleTasks = selectVisibleTasks(tasks, ui, projects, members);
+  // Das Wochenraster zeigt die Tasks der sichtbaren Tage, nicht visibleTasks
+  // (calendar scopt auf den ausgewählten Tag) — Totals folgen dem Raster (#47).
+  const weekGridActive = ui.currentView === 'calendar' && calendarMode !== 'list';
+  let totalsTasks = visibleTasks;
+  if (weekGridActive) {
+    const dayKeys = new Set(
+      weekViewDays(calendarMode, ui.currentDate, ui.selectedDates).map(dateKey)
+    );
+    totalsTasks = tasks.filter((t) => t.dueDate && dayKeys.has(dateKey(t.dueDate)));
+  }
+  const totals = selectTaskTotals(totalsTasks);
+  const showTotalsPill = weekGridActive || TOTALS_VIEWS.has(ui.currentView);
   const selectedTask = ui.selectedTaskId
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
@@ -490,7 +515,22 @@ function App() {
           )}
           <div className="task-header-right">
             <PomodoroWidget />
-            <span className="task-count">{visibleTasks.length}</span>
+            {showTotalsPill ? (
+              <span
+                className="task-count task-count-totals"
+                title={`${totals.count} Tasks · Geplant: ${
+                  totals.plannedMin > 0 ? fmtFocus(totals.plannedMin * 60) : '—'
+                } · Tatsächlich: ${
+                  totals.actualMin > 0 ? fmtFocus(totals.actualMin * 60) : '—'
+                }`}
+              >
+                {totals.count}
+                {totals.plannedMin > 0 && ` · ⏱ ${fmtFocus(totals.plannedMin * 60)}`}
+                {totals.actualMin > 0 && ` · 🍅 ${fmtFocus(totals.actualMin * 60)}`}
+              </span>
+            ) : (
+              <span className="task-count">{visibleTasks.length}</span>
+            )}
             {ui.currentView === 'inbox' && (
               <button
                 className={`header-icon-btn ${inboxPanelShown ? 'on' : ''}`}
