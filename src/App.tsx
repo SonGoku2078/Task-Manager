@@ -538,7 +538,8 @@ function App() {
               >
                 {totals.count}
                 {totals.plannedMin > 0 && ` · ⏱ ${fmtFocus(totals.plannedMin * 60)}`}
-                {totals.actualMin > 0 && ` · 🍅 ${fmtFocus(totals.actualMin * 60)}`}
+                {/* ⏳ statt 🍅: die Tomate direkt neben dem Pomodoro-Widget war doppeldeutig. */}
+                {totals.actualMin > 0 && ` · ⏳ ${fmtFocus(totals.actualMin * 60)}`}
               </span>
             ) : (
               <span className="task-count">{visibleTasks.length}</span>
