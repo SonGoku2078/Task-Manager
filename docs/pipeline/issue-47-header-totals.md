@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | testdesign-done |
-| Nächste Rolle | /test-manager |
-| Owner-Rolle | test-designer |
+| Status | defects-open |
+| Nächste Rolle | /developer |
+| Owner-Rolle | test-manager |
 | Datum | 2026-07-16 |
 
 > Orchestrator-Log:
@@ -13,6 +13,7 @@
 > - 2026-07-16 architecture-done (Selector + Header-Pill + Click-to-Edit-Fokuszeit) → /developer
 > - 2026-07-16 implementation-done (Commit 7cc86ce auf feat/47-header-totals, Build+Tests grün) → /test-designer
 > - 2026-07-16 testdesign-done (TC-A10 neu in npm test; TC-M64–66 in testcases.json) → /test-manager
+> - 2026-07-16 GATE NO-GO: D1 Wochenansicht ohne Totals ('week' = toter ViewType; real = calendar+mode week) → /developer
 
 ## 0. Vorgaben (fix, per /grill-me bestätigt — nicht neu verhandeln)
 
@@ -70,6 +71,7 @@ Kein Schema-/Server-Change: `task.update`-Patch transportiert `focusSeconds` ber
   - [src/components/TaskDetailPanel.tsx](../../src/components/TaskDetailPanel.tsx) — Fokuszeit-Feld immer sichtbar, Click-to-Edit im Dauer-Feld-Muster; leer ⇒ 0, ungültig ⇒ verworfen; Vorbelegung in parseDuration-tauglicher Form (`45m`/`2h`/`1h 15m`), da `fmtFocus`-Labels („12 Min") nicht rund-trip-sicher sind.
   - [src/App.css](../../src/App.css) — `.task-count-totals { white-space: nowrap }`.
 - **Abweichungen von der Architektur:** keine inhaltlichen; Enter im Fokuszeit-Feld delegiert per `blur()` an den Commit-Pfad statt Logik zu duplizieren.
+- **Nachtrag (D1-Fix):** `ViewType 'week'` war toter Code — die reale Wochenansicht ist `calendar` + `calendarMode 'week'|'rolling'`. Fix: Spaltenlogik als purer Helper `weekViewDays` (+ `parseDateKey`) nach [src/selectors.ts](../../src/selectors.ts) extrahiert und in WeekView wiederverwendet; App.tsx bildet im aktiven Wochenraster die Totals über die Tasks der sichtbaren Tage (`weekGridActive`), Kalender-Listenmodus bleibt beim reinen Count; toter `'week'`-Eintrag aus `TOTALS_VIEWS` entfernt. Auto-Test um `weekViewDays`-Fälle erweitert (Mo-Start, rolling ab heute, Mehrfachauswahl).
 - **Local Verification:**
   - [x] `tsc -b` + `vite build` grün.
   - [x] `npm test` — alle 7 Suiten PASS.
@@ -95,3 +97,18 @@ Zwei Ebenen, dem Projektmuster folgend: (1) **Auto-Test** [scripts/totals.test.t
 - Dev-Umgebung verwenden (`:3002`/`dev.db`), niemals `:3001`.
 - Für TC-M65 (Pomodoro-Buchung) reicht: Pomodoro auf Task starten, nach ein paar Sekunden pausieren → 🍅-Total muss um die gebuchte Zeit steigen.
 - TC-M66 prüft Persistenz am besten via `GET /api/tasks` (focusSeconds) nach Hard-Reload.
+
+## 5. Testausführung & Gate
+
+### Lauf 1 — 2026-07-16 (Branch feat/47-header-totals, Commits 7cc86ce+ad3c480, DEV :3002)
+
+**Auto-Tests:** `npm test` 8/8 Suiten PASS (inkl. neuem TC-A10); `npm run build` PASS (TC-A04); `npm run build:mobile` PASS (TC-A05).
+**E2E (Playwright, Chromium):** 22/22 Checks PASS — TC-M64 (5 von 6 Views exakt: Pill, Tooltip, Null-Segmente), TC-M65 (Filter-Shrink 3→1 exakt, kein Live-Ticken über 3.2 s, Pause bucht 90→94 s serverseitig), TC-M66 (1h 15m ⇒ 4500 s + Header 1h 17m, Reload-fest, ungültig verworfen, leer ⇒ 0). Testdaten via API angelegt und rückstandsfrei entfernt. Screenshots: Scratchpad `tc47-project-pill.png`, `tc47-focus-edit.png`.
+
+### Defekt D1
+- **Severity:** MAJOR (AC1 teilweise nicht erfüllt)
+- **Befund:** Die Wochenansicht zeigt keine Totals. Ursache: `ViewType 'week'` ist **toter Code** — es gibt keinen Sidebar-Eintrag und kein `setView('week')`; die reale Wochenansicht ist `currentView='calendar'` mit `calendarMode='week'|'rolling'` (WeekView-Raster). Der `TOTALS_VIEWS`-Eintrag `'week'` greift daher nie. Zusätzlich wäre `visibleTasks` (calendar = nur ausgewählter Tag) die falsche Zählbasis fürs Wochenraster; das Raster zeigt Tasks der 7 sichtbaren Tage (`weekDays7`/`startOfWeek`, WeekView.tsx:140-149).
+- **Fix erforderlich:** JA → /developer. Empfehlung: Spalten-Berechnung als puren Helper aus WeekView extrahieren, im Kalender-Wochenraster Totals über die Tasks der sichtbaren Tage bilden; toten `'week'`-Eintrag entfernen; Kalender-Listenmodus bleibt ohne Totals (Kalender ist nicht im Scope).
+
+### Quality Gate Decision (Lauf 1)
+**GATE: NO-GO** — Status `defects-open`, zurück an `/developer` mit D1.

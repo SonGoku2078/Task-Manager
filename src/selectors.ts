@@ -344,6 +344,23 @@ export const startOfWeek = (d: Date): Date => {
 export const weekDays7 = (start: Date): Date[] =>
   Array.from({ length: 7 }, (_, i) => addDays(start, i));
 
+// Local date from a YYYY-MM-DD key (midnight local time).
+export const parseDateKey = (k: string): Date => new Date(`${k}T00:00:00`);
+
+// The day columns the calendar week grid shows (#47): rolling = 7 days from
+// today, an explicit multi-day selection wins, otherwise the Monday week of
+// the anchor date. Shared by WeekView and the header totals so both agree.
+export const weekViewDays = (
+  mode: 'week' | 'rolling',
+  currentDate: Date,
+  selectedDates: string[],
+  now: Date = new Date()
+): Date[] => {
+  if (mode === 'rolling') return weekDays7(now);
+  if (selectedDates.length > 1) return [...selectedDates].sort().slice(0, 14).map(parseDateKey);
+  return weekDays7(startOfWeek(currentDate));
+};
+
 // ISO-8601 week number (weeks start Monday; week 1 contains the first Thursday).
 export const isoWeek = (d: Date): number => {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));

@@ -5,7 +5,7 @@
 // edit: the click-to-edit prefill formats must round-trip through parseDuration.
 // Run: npx tsx scripts/totals.test.ts
 import assert from 'node:assert';
-import { selectTaskTotals, selectVisibleTasks } from '../src/selectors';
+import { selectTaskTotals, selectVisibleTasks, weekViewDays, dateKey, startOfWeek } from '../src/selectors';
 import { parseDuration } from '../src/duration';
 import type { Task, UIState } from '../src/types';
 
@@ -52,6 +52,18 @@ assert.deepStrictEqual(
   { count: 1, plannedMin: 30, actualMin: 10 },
   'completed filtered away → totals shrink'
 );
+
+// Week grid columns (D1-Fix): the header totals share WeekView's day logic.
+const anchor = new Date('2026-07-16T10:00:00'); // Donnerstag
+const week = weekViewDays('week', anchor, []);
+assert.strictEqual(week.length, 7, 'week mode → 7 columns');
+assert.strictEqual(dateKey(week[0]), dateKey(startOfWeek(anchor)), 'week starts Monday');
+assert.strictEqual(dateKey(week[0]), '2026-07-13', 'Monday of Jul 16 2026 is Jul 13');
+const rolling = weekViewDays('rolling', anchor, [], anchor);
+assert.strictEqual(dateKey(rolling[0]), '2026-07-16', 'rolling starts today');
+assert.strictEqual(rolling.length, 7, 'rolling → 7 columns');
+const picked = weekViewDays('week', anchor, ['2026-07-20', '2026-07-18']);
+assert.deepStrictEqual(picked.map(dateKey), ['2026-07-18', '2026-07-20'], 'multi-selection wins, sorted');
 
 // Focus-time edit (AC8/AC10): every prefill shape the panel produces parses
 // back to the same minutes, and garbage stays unparseable.
