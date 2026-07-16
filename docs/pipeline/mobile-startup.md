@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | gate-go |
-| Nächste Rolle | /cicd-engineer |
-| Owner-Rolle | test-manager |
+| Status | done |
+| Nächste Rolle | — (User-Nachtest Splash auf Gerät) |
+| Owner-Rolle | cicd-engineer |
 | Datum | 2026-07-16 |
 
 > Orchestrator-Log:
@@ -55,4 +55,6 @@ Playwright-Suite (Chromium, Mobile-Dev :5174 gegen Dev-Backend :3002/dev.db — 
 
 ## 6. CI/CD & Deployment
 
-- PR gegen master (Closes #51), Squash-Merge, danach Tag `mobile-v0.5.10` → CI-APK → In-App-Update. Kein Prod-Zugriff (Web-Prod unverändert; Fix A wirkt dort erst nach User-Deploy).
+- **PR:** [#52](https://github.com/SonGoku2078/Task-Manager/pull/52) squash-merged → `86e3890`; Issue #51 automatisch geschlossen.
+- **Release:** Tag `mobile-v0.5.10` → CI-Build grün, Release-Asset `SelfManaged-0.5.10.apk` veröffentlicht (In-App-Update).
+- Kein Prod-Zugriff (Web-Prod unverändert; Fix A wirkt dort erst nach User-Deploy).
