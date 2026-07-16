@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | gate-go |
-| Nächste Rolle | /cicd-engineer |
-| Owner-Rolle | test-manager |
+| Status | done |
+| Nächste Rolle | — |
+| Owner-Rolle | cicd-engineer |
 | Datum | 2026-07-16 |
 
 > Orchestrator-Log:
@@ -15,6 +15,7 @@
 > - 2026-07-16 testdesign-done (TC-A10 neu in npm test; TC-M64–66 in testcases.json) → /test-manager
 > - 2026-07-16 GATE NO-GO: D1 Wochenansicht ohne Totals ('week' = toter ViewType; real = calendar+mode week) → /developer
 > - 2026-07-16 D1 gefixt (aa07e48: weekViewDays-Helper, weekGridActive-Totals); Lauf 2: 24/24 E2E + 8/8 Auto PASS → GATE GO → /cicd-engineer
+> - 2026-07-16 PR #48 squash-merged (9d4cdeb auf master), Issue #47 geschlossen → done
 
 ## 0. Vorgaben (fix, per /grill-me bestätigt — nicht neu verhandeln)
 
@@ -121,3 +122,14 @@ Zwei Ebenen, dem Projektmuster folgend: (1) **Auto-Test** [scripts/totals.test.t
 
 ### Quality Gate Decision (Lauf 2 — final)
 **GATE: GO** ✅ — Alle ACs erfüllt (AC1–AC11), keine offenen Defekte. Weiter an `/cicd-engineer`.
+
+## 6. CI/CD & Deployment
+
+- **PR:** [#48](https://github.com/SonGoku2078/Task-Manager/pull/48) · **Branch:** `feat/47-header-totals` (nach Merge gelöscht)
+- **Merge-Commit:** `9d4cdeb` (Squash) auf `master` · 2026-07-16
+- **Test Status:** master nach Merge grün (`npm test` 8/8 Suiten PASS) ✅
+- **Issue:** #47 automatisch via „Closes #47" geschlossen
+- **Deployment:** Kein Produktions-Deploy durch die Pipeline — Prod (`:3001`/`data.db`) macht der User nach Testreport-Approve (`npm run prod`).
+
+### Summary
+Header-Totals (Anzahl · ⏱ geplant · 🍅 tatsächlich) in Inbox/Heute/Nächste Aktion/Next Week/Projektansicht + Kalender-Wochenraster, mit Tooltip und ausgeblendeten Null-Segmenten; Fokuszeit im Detail-Panel manuell überschreibbar. Alle ACs erfüllt, Gate GO nach D1-Fix, merged zu master.
