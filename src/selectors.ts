@@ -292,6 +292,20 @@ export const selectVisibleTasks = (
   return [...sorted.filter((t) => !t.completed), ...sorted.filter((t) => t.completed)];
 };
 
+// Header totals over the currently visible tasks (#47): planned = entered
+// durations, actual = Pomodoro-booked focus time, rounded to whole minutes.
+export interface TaskTotals {
+  count: number;
+  plannedMin: number;
+  actualMin: number;
+}
+
+export const selectTaskTotals = (tasks: Task[]): TaskTotals => ({
+  count: tasks.length,
+  plannedMin: tasks.reduce((sum, t) => sum + (t.durationMin ?? 0), 0),
+  actualMin: Math.round(tasks.reduce((sum, t) => sum + (t.focusSeconds ?? 0), 0) / 60),
+});
+
 // Top non-completed tasks for the Priority list (starred & high priority first).
 export const selectPriorityTasks = (tasks: Task[], limit = 5): Task[] => {
   return [...tasks]

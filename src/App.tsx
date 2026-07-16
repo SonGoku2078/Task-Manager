@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
-import { dateKey, selectVisibleTasks } from './selectors';
+import { dateKey, selectVisibleTasks, selectTaskTotals } from './selectors';
+import { fmtFocus } from './pomodoro';
 import { parseQuickAdd } from './quickParse';
 import type { ViewType } from './types';
 import './App.css';
@@ -50,6 +51,17 @@ const VIEW_TITLES: Record<ViewType, string> = {
   members: 'Benutzer',
   settings: 'Einstellungen',
 };
+
+// Views whose header pill shows the effort totals (#47) — planning views plus
+// the single-project list; everywhere else the pill stays a plain task count.
+const TOTALS_VIEWS: ReadonlySet<ViewType> = new Set([
+  'inbox',
+  'today',
+  'week',
+  'priority',
+  'nextweek',
+  'projects',
+]);
 
 function App() {
   const tasks = useStore((s) => s.tasks);
@@ -285,6 +297,7 @@ function App() {
   }, [selectTask, setView, deleteTask, bulkMode, selectedIds]);
 
   const visibleTasks = selectVisibleTasks(tasks, ui, projects, members);
+  const totals = selectTaskTotals(visibleTasks);
   const selectedTask = ui.selectedTaskId
     ? tasks.find((t) => t.id === ui.selectedTaskId) ?? null
     : null;
@@ -490,7 +503,22 @@ function App() {
           )}
           <div className="task-header-right">
             <PomodoroWidget />
-            <span className="task-count">{visibleTasks.length}</span>
+            {TOTALS_VIEWS.has(ui.currentView) ? (
+              <span
+                className="task-count task-count-totals"
+                title={`${totals.count} Tasks · Geplant: ${
+                  totals.plannedMin > 0 ? fmtFocus(totals.plannedMin * 60) : '—'
+                } · Tatsächlich: ${
+                  totals.actualMin > 0 ? fmtFocus(totals.actualMin * 60) : '—'
+                }`}
+              >
+                {totals.count}
+                {totals.plannedMin > 0 && ` · ⏱ ${fmtFocus(totals.plannedMin * 60)}`}
+                {totals.actualMin > 0 && ` · 🍅 ${fmtFocus(totals.actualMin * 60)}`}
+              </span>
+            ) : (
+              <span className="task-count">{visibleTasks.length}</span>
+            )}
             {ui.currentView === 'inbox' && (
               <button
                 className={`header-icon-btn ${inboxPanelShown ? 'on' : ''}`}

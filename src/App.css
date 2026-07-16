@@ -446,6 +446,11 @@ body {
   font-weight: 600;
 }
 
+/* Aufwand-Totals im Pill (#47) — darf bei ⏱/🍅-Segmenten nicht umbrechen. */
+.task-count-totals {
+  white-space: nowrap;
+}
+
 .quick-add {
   display: flex;
   gap: 8px;
