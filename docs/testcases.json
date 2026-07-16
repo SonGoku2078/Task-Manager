@@ -276,7 +276,18 @@
       "typ": "auto",
       "quelle": "scripts/totals.test.ts",
       "regression": true,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-16",
+          "ergebnis": "pass",
+          "bemerkung": "npm test: Summen 90/62, Rundung 119s→2min, Filter-Shrink, Prefill-Round-trip"
+        },
+        {
+          "datum": "2026-07-16",
+          "ergebnis": "pass",
+          "bemerkung": "Lauf 2 (erweitert um weekViewDays: Mo-Start, rolling ab heute, Mehrfachauswahl)"
+        }
+      ]
     },
     {
       "id": "TC-A04",
@@ -1379,7 +1390,18 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/issue-47-header-totals.md (AC1–AC4)",
       "regression": false,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-16",
+          "ergebnis": "fail",
+          "bemerkung": "Playwright: 5/6 Views ok (Pill exakt inkl. Tooltip + Null-Segmente); DEFEKT D1: Wochenansicht (calendar+mode week) zeigt keine Totals — ViewType 'week' ist toter Code"
+        },
+        {
+          "datum": "2026-07-16",
+          "ergebnis": "pass",
+          "bemerkung": "Lauf 2 nach D1-Fix (aa07e48): 24/24 Checks — Wochenraster zeigt Totals der Wochen-Tasks, Tag/Liste bleibt reiner Count, alle übrigen Views exakt wie Lauf 1"
+        }
+      ]
     },
     {
       "id": "TC-M65",
@@ -1389,7 +1411,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/issue-47-header-totals.md (AC5–AC7)",
       "regression": false,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-16",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: Titel-Filter 3→1 Tasks mit exakten Summen; Pill stabil bei laufendem Pomodoro (3.2s); Pause bucht 90→94s serverseitig"
+        }
+      ]
     },
     {
       "id": "TC-M66",
@@ -1399,7 +1427,13 @@
       "typ": "manuell",
       "quelle": "docs/pipeline/issue-47-header-totals.md (AC8–AC10)",
       "regression": false,
-      "laeufe": []
+      "laeufe": [
+        {
+          "datum": "2026-07-16",
+          "ergebnis": "pass",
+          "bemerkung": "Playwright: 1h 15m → 4500s serverseitig + Header 1h 17m; Reload-fest; 'abc' verworfen; leer ⇒ 0/—"
+        }
+      ]
     },
     {
       "id": "TC-M63",

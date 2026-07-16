@@ -2,8 +2,8 @@
 
 | Feld | Wert |
 |---|---|
-| Status | defects-open |
-| Nächste Rolle | /developer |
+| Status | gate-go |
+| Nächste Rolle | /cicd-engineer |
 | Owner-Rolle | test-manager |
 | Datum | 2026-07-16 |
 
@@ -14,6 +14,7 @@
 > - 2026-07-16 implementation-done (Commit 7cc86ce auf feat/47-header-totals, Build+Tests grün) → /test-designer
 > - 2026-07-16 testdesign-done (TC-A10 neu in npm test; TC-M64–66 in testcases.json) → /test-manager
 > - 2026-07-16 GATE NO-GO: D1 Wochenansicht ohne Totals ('week' = toter ViewType; real = calendar+mode week) → /developer
+> - 2026-07-16 D1 gefixt (aa07e48: weekViewDays-Helper, weekGridActive-Totals); Lauf 2: 24/24 E2E + 8/8 Auto PASS → GATE GO → /cicd-engineer
 
 ## 0. Vorgaben (fix, per /grill-me bestätigt — nicht neu verhandeln)
 
@@ -112,3 +113,11 @@ Zwei Ebenen, dem Projektmuster folgend: (1) **Auto-Test** [scripts/totals.test.t
 
 ### Quality Gate Decision (Lauf 1)
 **GATE: NO-GO** — Status `defects-open`, zurück an `/developer` mit D1.
+
+### Lauf 2 — 2026-07-16 (nach D1-Fix, Commit aa07e48)
+
+**Auto-Tests:** `npm test` 8/8 PASS (TC-A10 erweitert um `weekViewDays`: Mo-Start, rolling ab heute, Mehrfachauswahl); `npm run build` PASS.
+**E2E (Playwright):** **24/24 Checks PASS** — neu: Kalender→Wochenraster zeigt Totals der Wochen-Tasks (`1 · ⏱ 30 Min · 🍅 2 Min` mit Seed-Task), Tag/Liste-Modus bleibt reiner Count; alle Checks aus Lauf 1 unverändert grün. D1 **behoben und verifiziert**.
+
+### Quality Gate Decision (Lauf 2 — final)
+**GATE: GO** ✅ — Alle ACs erfüllt (AC1–AC11), keine offenen Defekte. Weiter an `/cicd-engineer`.
