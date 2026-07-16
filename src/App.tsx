@@ -532,7 +532,7 @@ function App() {
                 className="task-count task-count-totals"
                 title={`${totals.count} Tasks · Geplant: ${
                   totals.plannedMin > 0 ? fmtFocus(totals.plannedMin * 60) : '—'
-                } · Tatsächlich: ${
+                } · Gearbeitet: ${
                   totals.actualMin > 0 ? fmtFocus(totals.actualMin * 60) : '—'
                 }`}
               >
