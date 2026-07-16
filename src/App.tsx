@@ -93,6 +93,18 @@ function App() {
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
   const [pendingWrites, setPendingWrites] = useState(0);
   useEffect(() => outboxOnChange(setPendingWrites), []);
+  // Runtime-DEV-Erkennung wie beim Testreport-Menü (#31): der Dev-Server :3002
+  // liefert dasselbe production-Bundle aus wie Prod (:3001) — das Env-Banner
+  // muss deshalb am gemeldeten Server-Port hängen, nicht nur an VITE_APP_ENV.
+  const [serverIsDev, setServerIsDev] = useState(false);
+  useEffect(() => {
+    let on = true;
+    fetch('/api/lan')
+      .then((r) => r.json())
+      .then((d) => { if (on) setServerIsDev(d.port === 3002); })
+      .catch(() => {});
+    return () => { on = false; };
+  }, []);
   // Only show the sync banner once writes have been pending for a moment. Quick
   // saves (e.g. one keystroke) drain in well under this delay, so the banner
   // never flashes — which previously caused a layout jump on every keypress.
@@ -396,8 +408,8 @@ function App() {
 
   return (
     <div className="app-container">
-      {appEnv !== 'production' && (
-        <div className="env-banner" title={`Umgebung: ${appEnv}`}>
+      {(appEnv !== 'production' || serverIsDev) && (
+        <div className="env-banner" title={`Umgebung: ${serverIsDev ? 'development (Server :3002)' : appEnv}`}>
           🚧 ENTWICKLUNG &amp; TEST — getrennte Datenbank, keine Produktionsdaten
         </div>
       )}
