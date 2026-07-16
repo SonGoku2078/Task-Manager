@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-Icon-Layer (Android 13+): Haken-Silhouette, vom System eingefärbt.
+     Geometrie identisch mit scripts/generate-icons.mjs (Safe-Zone-Skalierung 0.72). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <group
+        android:pivotX="32"
+        android:pivotY="32"
+        android:scaleX="0.72"
+        android:scaleY="0.72">
+        <path
+            android:pathData="M16.5,33.5 L27.5,44.5 L47.5,21.5"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="9.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>
