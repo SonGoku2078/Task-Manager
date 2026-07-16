@@ -3,7 +3,7 @@
 **Projekt:** Nozbe Task Manager Clone (HTML MVP)  
 **Repository:** https://github.com/SonGoku2078/Task-Manager  
 **Status:** ✅ Tier-1 Core Features COMPLETE (14/14) — MVP funktionsfähig  
-**Last Updated:** 2026-06-18
+**Last Updated:** 2026-07-16
 
 ---
 
@@ -67,6 +67,7 @@ Triagiert, gruppiert nach Tier.
 - [x] **[TIER-4] Print/PDF Export** — Export tasks as documents
 - [x] **[TIER-4] Dark Mode** — Night theme
 - [ ] **[TIER-4] Mobile App** — Electron/React Native version — *zurückgestellt: separater Build-Target/Epic, kein HTML-MVP-Scope*
+- [ ] **[TIER-4] HIGH — App-Logo & Icons** — Eigenes Branding (Haken auf Grün) für Browser-Tab, Android-Launcher/Themed/Splash, Electron. Design final vom User bestätigt → direkt in Req-Eng.
 
 ---
 
@@ -77,6 +78,18 @@ Features gebrieft, beim Requirements Engineer in Arbeit.
 | ID | Feature | Status | Issue | Owner |
 |----|---------|---------| -----|-------|
 | — | Alle Tier-1-Features abgeschlossen | done | docs/pipeline/* | — |
+| 015 | App-Logo & Icons (SelfManaged) | CONVERTED-TO-ISSUE | [#49](https://github.com/SonGoku2078/Task-Manager/issues/49) | architect |
+
+### Briefing → /req-engineer: App-Logo & Icons (SelfManaged)
+- **Kontext / Warum:** App läuft mit Platzhalter-Branding (Bolt-Favicon im Tab, Capacitor-Standard-Icon/-Splash auf Android, Electron-Default-Icon). Eigenes Logo schafft Wiedererkennung auf allen drei Plattformen.
+- **Nozbe-Referenz:** N/A — bewusst eigenes Branding (SelfManaged), kein Nozbe-Clone-Element.
+- **Ziel / Output:** Weißer Checkmark-Haken auf grüner Kachel `#2b8a3e` erscheint als Favicon im Browser-Tab, als Android-Launcher-Icon (inkl. Themed Icon + Splash) und als Electron-/Windows-Icon.
+- **Scope-Hinweise:** Design + vollständiger Scope sind final vom User bestätigt und BINDEND dokumentiert in `docs/pipeline/app-logo.md` Sektion 0 (SVG-Pfaddaten, Dateiliste, Generator-Script per Playwright, kein PWA-Manifest, kein In-App-Branding). Keine Design-Fragen neu aufmachen.
+- **Acceptance Criteria (grob):** Als Nutzer sehe ich im Browser-Tab, auf dem Android-Homescreen (auch themed), beim App-Start (Splash) und in der Windows-Taskbar das SelfManaged-Logo statt der Platzhalter.
+- **Constraints:** Keine neuen Dependencies (Playwright vorhanden); `mobile-v*`-Tag erst nach Merge; Production niemals anfassen.
+- **Definition of Done (PM-Sicht):** Kein Platzhalter-Logo mehr sichtbar auf Web/Android/Electron; APK-Release getaggt; Prod-Web-Deploy bleibt beim User.
+- **History:**
+  - 2026-07-16: Design-Interview mit User abgeschlossen (Variante A, Splash vollgrün), Item direkt reif → gebrieft an /req-engineer.
 
 ---
 

@@ -15,6 +15,7 @@
     "dev:mobile": "vite --config apps/mobile/vite.config.ts",
     "build:mobile": "vite build --config apps/mobile/vite.config.ts",
     "db:seed-dev": "node scripts/seed-dev-db.mjs",
+    "icons": "node scripts/generate-icons.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "tsx scripts/recurrence.test.ts && tsx scripts/todayflag.test.ts && tsx scripts/ics.test.ts && tsx scripts/widgetmeta.test.ts && tsx scripts/sharefields.test.ts && tsx scripts/pomodoro.test.ts && tsx scripts/evernote.test.ts && tsx scripts/totals.test.ts",
