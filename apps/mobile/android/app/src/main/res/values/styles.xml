@@ -16,7 +16,11 @@
     </style>
 
 
+    <!-- Pre-Android-12 (API 24-30): grünes Splash-PNG als Fensterhintergrund,
+         bis die WebView den ersten Frame zeichnet. android:background wäre kein
+         Fenster-Attribut — das androidx-Theme.SplashScreen würde es übermalen.
+         Für API 31+ überschreibt values-v31/styles.xml diesen Style komplett. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:windowBackground">@drawable/splash</item>
     </style>
 </resources>

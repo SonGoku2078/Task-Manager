@@ -4,19 +4,15 @@ import './index.css'
 import App from './App.tsx'
 import { useStore } from './store.ts'
 
-async function boot() {
-  const root = document.getElementById('root')!;
+// Kick off the initial load BEFORE render, but never await it: loadAll()
+// hydrates the offline snapshot synchronously up to its first await, so the
+// first paint already shows cached data. Blocking here stalled startup for the
+// full fetch timeout when the server was unreachable; App shows its
+// "Verbindung wird hergestellt…" banner until dataLoaded flips.
+useStore.getState().loadAll().catch((e) => console.warn('initial loadAll failed', e));
 
-  // Show a minimal loading screen while the server responds.
-  root.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666">Lade Daten…</div>';
-
-  await useStore.getState().loadAll();
-
-  createRoot(root).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-}
-
-boot();
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)

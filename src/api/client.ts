@@ -12,12 +12,19 @@ export function getBaseUrl(): string {
   return DEFAULT_BASE_URL;
 }
 
+// Normalize a user-typed backend URL: trim, strip trailing slashes, force an
+// absolute http(s) URL — otherwise requests resolve relative to the app's own
+// origin (e.g. Capacitor's localhost), which silently "works". Shared by
+// setBaseUrl and the pure "Verbindung testen" check (which must not persist).
+export function normalizeBaseUrl(url: string): string {
+  let v = url.trim().replace(/\/+$/, '');
+  if (v && !/^https?:\/\//i.test(v)) v = `http://${v}`;
+  return v;
+}
+
 export function setBaseUrl(url: string): void {
   try {
-    let v = url.trim().replace(/\/+$/, '');
-    // Force an absolute http(s) URL — otherwise requests resolve relative to the
-    // app's own origin (e.g. Capacitor's localhost), which silently "works".
-    if (v && !/^https?:\/\//i.test(v)) v = `http://${v}`;
+    const v = normalizeBaseUrl(url);
     if (v) localStorage.setItem('tm-api-url', v);
     else localStorage.removeItem('tm-api-url');
   } catch { /* ignore */ }

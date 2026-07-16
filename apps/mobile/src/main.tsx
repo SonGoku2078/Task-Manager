@@ -4,18 +4,15 @@ import './styles.css';
 import App from './App';
 import { useStore } from './store';
 
-async function boot() {
-  const root = document.getElementById('root')!;
-  root.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888">Lädt…</div>';
+// Kick off the initial load BEFORE render, but never await it: loadAll()
+// hydrates the offline snapshot synchronously up to its first await, so the
+// first paint already shows cached tasks. Blocking here used to stall startup
+// ~20 s when the LAN server was unreachable (outbox flush + 9 GETs, 10 s
+// timeouts each); the auto-sync poller retries the load once the server is back.
+useStore.getState().loadAll().catch((e) => console.warn('initial loadAll failed', e));
 
-  await useStore.getState().loadAll();
-
-  createRoot(root).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-}
-
-boot();
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
