@@ -2,15 +2,17 @@
 
 | Feld | Wert |
 |---|---|
-| Status | architecture-done |
-| Nächste Rolle | /developer |
-| Owner-Rolle | architect |
+| Status | testdesign-done |
+| Nächste Rolle | /test-manager |
+| Owner-Rolle | test-designer |
 | Datum | 2026-07-16 |
 
 > Orchestrator-Log:
 > - 2026-07-16 Verständnis per /grill-me mit User erarbeitet und bestätigt; Artefakt angelegt → /req-engineer
 > - 2026-07-16 requirements-done (ACs in Issue #47 kommentiert) → /architect
 > - 2026-07-16 architecture-done (Selector + Header-Pill + Click-to-Edit-Fokuszeit) → /developer
+> - 2026-07-16 implementation-done (Commit 7cc86ce auf feat/47-header-totals, Build+Tests grün) → /test-designer
+> - 2026-07-16 testdesign-done (TC-A10 neu in npm test; TC-M64–66 in testcases.json) → /test-manager
 
 ## 0. Vorgaben (fix, per /grill-me bestätigt — nicht neu verhandeln)
 
@@ -58,3 +60,38 @@ Kein Schema-/Server-Change: `task.update`-Patch transportiert `focusSeconds` ber
 - **Selector in selectors.ts statt Inline-Reduce in App.tsx:** minimal mehr Struktur, dafür unit-testbar und mobil wiederverwendbar, falls „Mobile nie" doch mal kippt.
 - **`fmtFocus` für beide Zeiten statt `formatDuration`:** eine Formatlogik, konsistente Optik im Pill; `formatDuration` bleibt dem Dauer-Feld vorbehalten.
 - **Kein Live-Ticken:** bewusst (Vorgabe) — spart Sekunden-Rerenders; laufende Zeit ist im Pomodoro-Widget daneben sichtbar.
+
+## 3. Implementierung
+
+- **Branch:** `feat/47-header-totals` · **Commit:** `7cc86ce`
+- **Files Changed:**
+  - [src/selectors.ts](../../src/selectors.ts) — `TaskTotals` + `selectTaskTotals` (pur, direkt nach `selectVisibleTasks`).
+  - [src/App.tsx](../../src/App.tsx) — `TOTALS_VIEWS`-Set; Pill rendert in Scope-Views `n · ⏱ … · 🍅 …` mit Tooltip (`fmtFocus`, Null-Segmente ausgeblendet), sonst unverändert `n`.
+  - [src/components/TaskDetailPanel.tsx](../../src/components/TaskDetailPanel.tsx) — Fokuszeit-Feld immer sichtbar, Click-to-Edit im Dauer-Feld-Muster; leer ⇒ 0, ungültig ⇒ verworfen; Vorbelegung in parseDuration-tauglicher Form (`45m`/`2h`/`1h 15m`), da `fmtFocus`-Labels („12 Min") nicht rund-trip-sicher sind.
+  - [src/App.css](../../src/App.css) — `.task-count-totals { white-space: nowrap }`.
+- **Abweichungen von der Architektur:** keine inhaltlichen; Enter im Fokuszeit-Feld delegiert per `blur()` an den Commit-Pfad statt Logik zu duplizieren.
+- **Local Verification:**
+  - [x] `tsc -b` + `vite build` grün.
+  - [x] `npm test` — alle 7 Suiten PASS.
+  - [x] Selector-Smoke: `[30m/90s, –, 60m/3630s]` ⇒ `{count:3, plannedMin:90, actualMin:62}`; leere Liste ⇒ `0/0/0`.
+  - [ ] Browser-E2E gegen Dev → Stufe 5 (Test Manager).
+
+## 4. Testdesign
+
+### Teststrategie
+Zwei Ebenen, dem Projektmuster folgend: (1) **Auto-Test** [scripts/totals.test.ts](../../scripts/totals.test.ts) (in `npm test` registriert) deckt die Berechnungslogik deterministisch ab — Summen, Rundung, Filter-Konsistenz über `selectVisibleTasks`, parseDuration-Round-trip der Prefill-Formate. (2) **Manuelle Playwright-Tests gegen Dev (:3002)** decken das Sichtbare ab — Pill-Rendering pro View, Tooltip, Click-to-Edit inkl. Server-Persistenz. Mobile braucht keinen eigenen Fall: AC11 ist durch Build-Regression TC-A05 + Mobile-Smoke TC-M19 abgedeckt (keine Mobile-Datei geändert).
+
+### Testfälle (docs/testcases.json)
+| ID | Typ | Deckt | Kern |
+|---|---|---|---|
+| TC-A10 | auto | AC5, AC6, AC7, AC10 | Summen (90/62 min), 119s→2min, Erledigt-Filter verkleinert Basis, Prefill-Round-trip, `abc`→null |
+| TC-M64 | manuell | AC1–AC4 | Pill in allen 6 Scope-Views mit Format+Tooltip; plain Count in Kategorien/Kalender/Someday/Suche/Erledigt; Null-Segmente ausgeblendet |
+| TC-M65 | manuell | AC5–AC7 | Filter/Suche/Erledigt-Toggle ändern alle 3 Werte synchron; 🍅 springt erst bei Pomodoro-Pause (kein Live-Ticken) |
+| TC-M66 | manuell | AC8–AC10 | Fokuszeit setzen (1h 15m ⇒ 4500s serverseitig, Reload-fest), leer ⇒ 0, ungültig ⇒ unverändert, Header spiegelt |
+| TC-A04 | auto (Regression) | — | `npm run build` (Web+Server) |
+| TC-A05/TC-M19 | Regression | AC11 | Mobile-Build + Mobile-Smoke unverändert grün |
+
+### Hinweise für den Test Manager
+- Dev-Umgebung verwenden (`:3002`/`dev.db`), niemals `:3001`.
+- Für TC-M65 (Pomodoro-Buchung) reicht: Pomodoro auf Task starten, nach ein paar Sekunden pausieren → 🍅-Total muss um die gebuchte Zeit steigen.
+- TC-M66 prüft Persistenz am besten via `GET /api/tasks` (focusSeconds) nach Hard-Reload.

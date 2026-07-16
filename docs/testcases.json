@@ -269,6 +269,16 @@
       "laeufe": []
     },
     {
+      "id": "TC-A10",
+      "bereich": "Auto-Tests",
+      "titel": "Header-Totals: Summen über sichtbare Tasks, Rundung, Filter-Konsistenz (#47)",
+      "erwartung": "selectTaskTotals summiert durationMin (null=0) und focusSeconds→Minuten (gerundet); Erledigt-Filter verkleinert die Zählbasis via selectVisibleTasks; Fokuszeit-Prefill-Formate (45m/2h/1h 15m) round-trippen durch parseDuration.",
+      "typ": "auto",
+      "quelle": "scripts/totals.test.ts",
+      "regression": true,
+      "laeufe": []
+    },
+    {
       "id": "TC-A04",
       "bereich": "Auto-Tests",
       "titel": "Build Web + Server (tsc -b, vite build, server tsc)",
@@ -1360,6 +1370,36 @@
           "bemerkung": "sectionsCollapsed=false → GET liefert Boolean false (Typ boolean)"
         }
       ]
+    },
+    {
+      "id": "TC-M64",
+      "bereich": "Issue 47 (Header-Totals)",
+      "titel": "#47: Totals-Pill in den 6 Scope-Views, plain Count anderswo",
+      "erwartung": "Inbox/Heute/Woche/Nächste Aktion/Next Week/Projekt zeigen im Header 'n · ⏱ geplant · 🍅 tatsächlich' mit Tooltip (n Tasks · Geplant: … · Tatsächlich: …); Null-Segmente ausgeblendet (leere Liste ⇒ nur n); Kategorien/Kalender/Someday/Suche/Erledigt zeigen weiter nur n.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-47-header-totals.md (AC1–AC4)",
+      "regression": false,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M65",
+      "bereich": "Issue 47 (Header-Totals)",
+      "titel": "#47: Totals folgen der sichtbaren Liste (Filter/Suche/Erledigt)",
+      "erwartung": "Erledigt-Filter, Prioritätsfilter und Suchfeld verändern Anzahl UND beide Zeitsummen synchron zur Liste; nach Pomodoro-Pause springt 🍅 um die gebuchte Zeit hoch (kein Sekunden-Ticken während des Laufs).",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-47-header-totals.md (AC5–AC7)",
+      "regression": false,
+      "laeufe": []
+    },
+    {
+      "id": "TC-M66",
+      "bereich": "Issue 47 (Header-Totals)",
+      "titel": "#47: Fokuszeit im Detail-Panel manuell überschreiben",
+      "erwartung": "Klick auf '🍅 Fokuszeit gesamt' öffnet Eingabe (Prefill parse-sicher); '1h 15m' setzen ⇒ Anzeige 1h 15m, überlebt Hard-Reload (focusSeconds=4500 serverseitig); leere Eingabe ⇒ 0 ('—'); 'abc' ⇒ Wert unverändert; Header-🍅-Total spiegelt den neuen Wert.",
+      "typ": "manuell",
+      "quelle": "docs/pipeline/issue-47-header-totals.md (AC8–AC10)",
+      "regression": false,
+      "laeufe": []
     },
     {
       "id": "TC-M63",
