@@ -67,7 +67,7 @@ Triagiert, gruppiert nach Tier.
 - [x] **[TIER-4] Print/PDF Export** — Export tasks as documents
 - [x] **[TIER-4] Dark Mode** — Night theme
 - [ ] **[TIER-4] Mobile App** — Electron/React Native version — *zurückgestellt: separater Build-Target/Epic, kein HTML-MVP-Scope*
-- [ ] **[TIER-4] HIGH — App-Logo & Icons** — Eigenes Branding (Haken auf Grün) für Browser-Tab, Android-Launcher/Themed/Splash, Electron. Design final vom User bestätigt → direkt in Req-Eng.
+- [x] **[TIER-4] HIGH — App-Logo & Icons** — Eigenes Branding (Haken auf Grün) für Browser-Tab, Android-Launcher/Themed/Splash, Electron. Design final vom User bestätigt → direkt in Req-Eng.
 
 ---
 
@@ -78,7 +78,7 @@ Features gebrieft, beim Requirements Engineer in Arbeit.
 | ID | Feature | Status | Issue | Owner |
 |----|---------|---------| -----|-------|
 | — | Alle Tier-1-Features abgeschlossen | done | docs/pipeline/* | — |
-| 015 | App-Logo & Icons (SelfManaged) | CONVERTED-TO-ISSUE | [#49](https://github.com/SonGoku2078/Task-Manager/issues/49) | architect |
+| 015 | App-Logo & Icons (SelfManaged) | COMPLETED (PR #50, 2026-07-16) | [#49](https://github.com/SonGoku2078/Task-Manager/issues/49) | — |
 
 ### Briefing → /req-engineer: App-Logo & Icons (SelfManaged)
 - **Kontext / Warum:** App läuft mit Platzhalter-Branding (Bolt-Favicon im Tab, Capacitor-Standard-Icon/-Splash auf Android, Electron-Default-Icon). Eigenes Logo schafft Wiedererkennung auf allen drei Plattformen.
@@ -143,6 +143,7 @@ Archive of finished features.
 | 012 | Full-Text Search | 2026-06-18 | docs/pipeline/12-search.md |
 | 013 | Keyboard Shortcuts | 2026-06-18 | docs/pipeline/13-shortcuts.md |
 | 014 | Nozbe-Exact UI Polish | 2026-06-18 | docs/pipeline/14-ui-polish.md |
+| 015 | App-Logo & Icons (SelfManaged) | 2026-07-16 | #49 / PR #50 / docs/pipeline/app-logo.md |
 
 ---
 

@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | gate-go |
-| Nächste Rolle | /cicd-engineer |
-| Owner-Rolle | test-manager |
+| Status | done |
+| Nächste Rolle | — (Release-Tag gepusht, Web-Prod-Deploy beim User) |
+| Owner-Rolle | cicd-engineer |
 | Datum | 2026-07-16 |
 
 > Orchestrator-Log:
@@ -15,6 +15,7 @@
 > - 2026-07-16 Developer: Branch feature/app-logo-icons — Generator + 30 Assets + XML/HTML-Änderungen, idempotent verifiziert, Build grün → /test-designer.
 > - 2026-07-16 Test-Designer: TC1–TC12 (dateibasiert + Build-Integration + visuell), Matrix Plattform×Asset, Einschränkungen Safari/Themed-Gerätetest dokumentiert → /test-manager.
 > - 2026-07-16 Test-Manager: 12/12 PASS (inkl. lokalem assembleDebug), 0 Defekte, GATE: GO → /cicd-engineer.
+> - 2026-07-16 CI/CD: PR #50 squash-merged (fce4b35), Issue #49 geschlossen, Tag mobile-v0.5.9 → done.
 
 ## 0. Design-Vorgaben (final, vom User bestätigt — bindend für alle Stufen)
 
@@ -167,3 +168,18 @@ Reines Asset-/Build-Feature ⇒ statt UI-Flows: (a) **dateibasierte Checks** (Ex
 
 ### Quality Gate Decision
 **GATE: GO** — alle 12 ACs verifiziert, keine Defekte. Freigabe an `/cicd-engineer` (PR + Merge + `mobile-v*`-Tag lt. Sektion 0).
+
+## 6. CI/CD & Deployment
+
+- **PR:** [#50](https://github.com/SonGoku2078/Task-Manager/pull/50) (squash-merged, Branch gelöscht)
+- **Branch:** feature/app-logo-icons (Commits c98309c + 17c10c8)
+- **Merge-Commit:** `fce4b35` auf `master`
+- **Timestamp:** 2026-07-16
+- **CI:** build ✅ + GitGuardian ✅ auf dem PR; Issue #49 automatisch geschlossen (Closes-Referenz)
+- **Release:** Tag `mobile-v0.5.9` auf fce4b35 → Mobile-APK-Workflow baut signierte Release-APK (versionName = Tag), In-App-Update verteilt sie
+- **Deployment-Hinweise:**
+  - Web/Prod: neues Favicon geht erst mit dem nächsten **User-eigenen** Prod-Deploy live (Leitplanke: Production unangetastet).
+  - Electron: Icon greift beim nächsten `npm run build:electron`.
+
+### Summary
+Feature „App-Logo & Icons" vollständig durch die Pipeline (PM → Req-Eng #49 → Architektur → Implementierung → 12/12 Tests → GATE GO → PR #50 → master). Alle Platzhalter (Bolt-Favicon, Capacitor-Icon/-Splash, Electron-Default) sind durch das SelfManaged-Logo ersetzt.
