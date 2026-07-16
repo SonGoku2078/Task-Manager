@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { getBaseUrl, setBaseUrl, flushOutbox } from '../api';
+import { getBaseUrl, setBaseUrl, normalizeBaseUrl, flushOutbox } from '../api';
 import { checkForUpdate, openApk, APP_VERSION } from '../update';
 import { notificationStatus, sendTestNotification } from '../notifications';
 import { Ringtone } from '../ringtone';
@@ -23,6 +23,8 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const [url, setUrl] = useState(getBaseUrl() || 'http://192.168.8.188:3001');
   const [status, setStatus] = useState<string>('');
   const [busy, setBusy] = useState(false);
+  const [testStatus, setTestStatus] = useState<string>('');
+  const [testing, setTesting] = useState(false);
   const swipe = useSwipeDown(onClose);
   const [updateMsg, setUpdateMsg] = useState<string>('');
   const [updateUrl, setUpdateUrl] = useState<string | null>(null);
@@ -60,6 +62,32 @@ export default function Settings({ onClose }: { onClose: () => void }) {
       setUpdateMsg(`⬆ Update ${u.latest.replace(/^mobile-v/, 'v')} verfügbar`);
     } else {
       setUpdateMsg(`✓ Aktuell (${u.current === 'dev' ? 'Entwicklungs-Build' : 'v' + u.current})`);
+    }
+  };
+
+  // Pure reachability check on the URL as typed — saves nothing, loads nothing.
+  // Same normalization as setBaseUrl, but WITHOUT persisting.
+  const testConnection = async () => {
+    const target = normalizeBaseUrl(url);
+    if (!target) { setTestStatus('✕ Keine URL eingegeben'); return; }
+    setTesting(true);
+    setTestStatus('… teste');
+    const t0 = performance.now();
+    try {
+      const res = await fetch(`${target}/health`, { signal: AbortSignal.timeout(5000) });
+      const ms = Math.round(performance.now() - t0);
+      if (!res.ok) { setTestStatus(`✕ Erreichbar, aber HTTP ${res.status} (${ms} ms)`); return; }
+      const data = await res.json().catch(() => null);
+      if (!data || data.ok !== true) { setTestStatus(`✕ Erreichbar, aber kein SelfManaged-Server (${ms} ms)`); return; }
+      setTestStatus(`✓ Server erreichbar (${ms} ms)`);
+    } catch (e) {
+      const ms = Math.round(performance.now() - t0);
+      const timedOut = e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError');
+      setTestStatus(timedOut
+        ? `✕ Zeitüberschreitung (${ms} ms) — Server nicht erreichbar`
+        : `✕ Nicht erreichbar (${e instanceof Error ? e.message : 'Netzwerkfehler'})`);
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -140,13 +168,23 @@ export default function Settings({ onClose }: { onClose: () => void }) {
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
-            onChange={(e) => { setUrl(e.target.value); setStatus(''); }}
+            onChange={(e) => { setUrl(e.target.value); setStatus(''); setTestStatus(''); }}
           />
         </label>
 
-        <button className="m-btn-ghost" onClick={testAndConnect} disabled={busy || !url.trim()}>
-          {busy ? '… verbinde' : 'Verbinden & Daten laden'}
-        </button>
+        <div className="m-settings-row">
+          <button className="m-btn-ghost" style={{ flex: 1 }} onClick={testConnection} disabled={testing || !url.trim()}>
+            {testing ? '… teste' : 'Verbindung testen'}
+          </button>
+          <button className="m-btn-ghost" style={{ flex: 1 }} onClick={testAndConnect} disabled={busy || !url.trim()}>
+            {busy ? '… verbinde' : 'Verbinden & Daten laden'}
+          </button>
+        </div>
+        {testStatus && (
+          <div className={testStatus.startsWith('✓') ? 'm-ok' : testStatus.startsWith('✕') ? 'm-fail' : ''}>
+            {testStatus}
+          </div>
+        )}
         {status && (
           <div className={status.startsWith('✓') ? 'm-ok' : status.startsWith('✕') ? 'm-fail' : ''}>
             {status}

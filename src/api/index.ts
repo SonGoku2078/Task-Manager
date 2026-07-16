@@ -3,4 +3,4 @@ export { projectsApi } from './projects';
 export { categoriesApi } from './categories';
 export { membersApi } from './members';
 export { sectionsApi, blockersApi, savedViewsApi, activityLogApi, settingsApi } from './other';
-export { BASE_URL, getBaseUrl, setBaseUrl } from './client';
+export { BASE_URL, getBaseUrl, setBaseUrl, normalizeBaseUrl } from './client';

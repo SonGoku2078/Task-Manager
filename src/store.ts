@@ -620,6 +620,12 @@ export const DEFAULT_NAV_ORDER: ViewType[] = [
   'members',
 ];
 
+// Coalesce concurrent loadAll() calls: since boot no longer awaits the initial
+// load, the auto-sync retry (and manual "Jetzt synchronisieren") can fire while
+// it is still in flight. A second run would fetch server state from BEFORE the
+// outbox flush and clobber newer optimistic edits.
+let loadAllInFlight: Promise<void> | null = null;
+
 export const useStore = create<AppState>()((set, get) => ({
   tasks: [],
   projects: [],
@@ -804,7 +810,9 @@ export const useStore = create<AppState>()((set, get) => ({
     enqueue('settings.patch', { patch });
   },
 
-  loadAll: async () => {
+  loadAll: () => {
+    if (loadAllInFlight) return loadAllInFlight;
+    loadAllInFlight = (async () => {
     // SQLite is the single source of truth. We NEVER fall back to the legacy
     // `nozbe-clone-state` localStorage snapshot — doing so resurrected stale
     // data and could overwrite the real DB. Any unsynced edits live in the
@@ -863,6 +871,8 @@ export const useStore = create<AppState>()((set, get) => ({
       console.warn('Server not reachable; staying in offline mode (no data touched)', e);
       set({ dataLoaded: false });
     }
+    })().finally(() => { loadAllInFlight = null; });
+    return loadAllInFlight;
   },
 
   addTask: (input) => {

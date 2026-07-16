@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ (API 31): das OS rendert den Start-Splash selbst und liest
+         diese Plattform-Attribute direkt aus dem Launch-Theme — kein
+         installSplashScreen()-Aufruf und kein Splash-Plugin nötig. Volle grüne
+         Fläche + weißer Haken (gleicher Look wie @drawable/splash auf Pre-12).
+         windowBackground zusätzlich grün, damit zwischen System-Splash und
+         erstem WebView-Paint kein weißer Blitz entsteht. -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_monochrome</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+</resources>

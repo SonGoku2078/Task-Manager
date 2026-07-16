@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash-Grün — Alias auf die eine Farbquelle in res
+         (values/ic_launcher_background.xml = #2B8A3E). -->
+    <color name="splash_background">@color/ic_launcher_background</color>
+</resources>
