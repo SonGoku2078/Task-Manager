@@ -84,7 +84,18 @@ app.get('*', (_req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Task Manager server running at http://localhost:${PORT}`);
   for (const ip of lanIPv4()) console.log(`  LAN (mobile): http://${ip}:${PORT}`);
+});
+
+// A busy port must end in a clear message, not an uncaught-exception crash
+// (#55 — the old in-process Electron server died silently on exactly this).
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`FEHLER: Port ${PORT} ist bereits belegt – läuft der Server schon? Beende.`);
+  } else {
+    console.error('FEHLER beim Serverstart:', err);
+  }
+  process.exit(1);
 });

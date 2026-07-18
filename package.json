@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:server": "cd server && npm run dev",
     "build": "tsc -b && vite build && cd server && npm run build",
-    "build:electron": "npm run build && cd electron && npm run build",
+    "build:electron": "cd electron && npm run build",
     "start:prod": "npm run build && cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
     "start:prod:run": "cross-env DB_FILE=data.db PORT=3001 node server/dist/index.js",
     "prod": "npm run start:prod",
