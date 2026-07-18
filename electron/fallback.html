@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>SelfManaged – Server nicht erreichbar</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      background: #f4f6f5; color: #1f2937;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .card {
+      max-width: 460px; padding: 36px 40px; text-align: center;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
+    }
+    .spinner {
+      width: 34px; height: 34px; margin: 0 auto 18px;
+      border: 3px solid #d1d5db; border-top-color: #4caf50; border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 1.15rem; margin: 0 0 10px; }
+    p { font-size: 0.92rem; line-height: 1.55; color: #4b5563; margin: 0 0 8px; }
+    code {
+      background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 5px;
+      padding: 1px 6px; font-size: 0.85rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111827; color: #e5e7eb; }
+      .card { background: #1f2937; border-color: #374151; }
+      p { color: #9ca3af; }
+      code { background: #111827; border-color: #374151; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" aria-hidden="true"></div>
+    <h1>Server nicht erreichbar</h1>
+    <p>Der Task-Manager-Server unter <code id="target">…</code> antwortet nicht.</p>
+    <p>Starte ihn mit <code>npm run prod</code> — die App verbindet sich automatisch, sobald der Server läuft.</p>
+  </div>
+  <script>
+    const t = new URLSearchParams(location.search).get('target');
+    if (t) document.getElementById('target').textContent = t;
+  </script>
+</body>
+</html>

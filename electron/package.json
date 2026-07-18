@@ -1,11 +1,11 @@
 {
   "name": "task-manager-electron",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "tsc src/main.ts --target ES2020 --module commonjs --esModuleInterop --outDir . --skipLibCheck && electron-builder --win --x64",
+    "build": "tsc && electron-builder --win --x64",
     "build:mac": "tsc && electron-builder --mac",
     "build:linux": "tsc && electron-builder --linux"
   },
@@ -22,23 +22,6 @@
     "directories": {
       "output": "../dist-electron"
     },
-    "extraResources": [
-      {
-        "from": "../server/dist",
-        "to": "server",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "../server/node_modules",
-        "to": "server/node_modules",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "../server/public",
-        "to": "public",
-        "filter": ["**/*"]
-      }
-    ],
     "win": {
       "target": "nsis",
       "icon": "../public/icon.ico"
