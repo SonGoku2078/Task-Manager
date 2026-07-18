@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | gate-go |
-| Nächste Rolle | /cicd-engineer |
-| Owner-Rolle | test-manager |
+| Status | done |
+| Nächste Rolle | — (User-Nachtest APK auf Gerät) |
+| Owner-Rolle | cicd-engineer |
 | Datum | 2026-07-18 |
 
 > Orchestrator-Log:
@@ -14,6 +14,7 @@
 > - 2026-07-18 implementation-done: Branch `feature/issue-53-erledigt-animation`, Web-E2E-Smoke 16/17 (1 racy Timing-Sonde), Builds+Unit-Tests grün → /test-designer.
 > - 2026-07-18 testdesign-done: 16 Testfälle (Web T1–T9, Mobile M1–M4, Regression R1–R3), Timing-Sonden als informativ markiert → /test-manager.
 > - 2026-07-18 GATE: GO — Web 21/21, Mobile 11/11, Regression grün, 0 Defekte → /cicd-engineer.
+> - 2026-07-18 done: PR #54 squash-merged (d4b7cbc), Issue #53 geschlossen, Release mobile-v0.5.11 (APK) veröffentlicht.
 
 ## 0. Briefing (Ergebnis Grill-me-Interview, 2026-07-18)
 
@@ -292,3 +293,16 @@ Erledigt-Verhalten (aus aktiver Liste in Erledigt-Bereich mit Zeitpunkt) entspri
 **GATE: GO** — alle gate-relevanten Tests grün (Web 21/21, Mobile 11/11, Regression vollständig), 0 Defekte.
 Offen (nicht blockierend): Sichtprüfung `prefers-reduced-motion`, APK-Optik auf echtem Gerät nach Release (User-Nachtest).
 Nächste Rolle: `/cicd-engineer`.
+
+## 6. CI/CD & Deployment
+
+- **PR:** [#54](https://github.com/SonGoku2078/Task-Manager/pull/54) — squash-merged → `d4b7cbc` auf master (16 Dateien, +504/−58); Branch gelöscht; Issue #53 automatisch geschlossen.
+- **CI (PR):** build ✅ (20 s) + GitGuardian ✅.
+- **Code-Review:** Self-Review im Rahmen der Pipeline — Commits sauber, keine Debug-Logs/TODOs, keine neue Dependency, Lint-Parität zu master (Abschnitt 5).
+- **Mobile-Release:** Tag `mobile-v0.5.11` → Workflow „Mobile APK" grün (Run 29639846208) → Release-Asset **`SelfManaged-0.5.11.apk`** veröffentlicht; Version kommt aus dem Tag (`-PversionName`), kein Datei-Bump nötig. In-App-Update liefert die neue Version ans Gerät.
+- **Web-Prod:** unverändert (kein Prod-Zugriff aus der Pipeline) — Feature wirkt am Desktop nach dem nächsten User-Deploy (`npm run prod` auf :3001 ist Sache des Users).
+- **Timestamp:** 2026-07-18 ~09:52 UTC.
+
+### Summary
+
+Issue #53 komplett durch die Pipeline (Grill-Interview → Requirements → Architektur → Implementierung → Testdesign → Gate → Release) an einem Tag. Erledigte Tasks: Grau-Phase an Ort (0,5 s) → Gleiten in den einheitlichen „✓ Erledigt"-Block (0,4 s, FLIP) bzw. Kollaps in Views ohne Erledigt-Bereich; Undo bricht ab; Datum nur im Erledigt-Bereich; Sortierung neueste zuerst — Web/Electron + Mobile. Verifiziert mit 21+11 E2E-Checks + Regression, 0 Defekte. **Offener User-Nachtest:** Animation/Optik auf echtem Android-Gerät nach In-App-Update auf 0.5.11; optional Sichtprüfung `prefers-reduced-motion`.
