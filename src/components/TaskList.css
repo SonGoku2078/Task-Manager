@@ -238,7 +238,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: background 0.1s;
+  transition: background 0.1s, opacity 0.2s ease;
   cursor: pointer;
 }
 
@@ -309,6 +309,24 @@
 /* Completed tasks are dimmed to light grey across all lists. */
 .task-item.is-completed {
   opacity: 0.55;
+}
+
+/* #53: grey hold phase — the task is completed in the store but still parked
+   at its old position ("virtually open") before gliding to ✓ Erledigt. */
+.task-item.is-completing {
+  opacity: 0.55;
+}
+.task-item.is-completing .task-title {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+.task-item.is-completing .task-checkbox {
+  accent-color: #9ca3af;
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-item {
+    transition: background 0.1s;
+  }
 }
 
 .task-item.is-completed .task-checkbox {

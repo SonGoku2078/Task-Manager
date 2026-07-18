@@ -1,7 +1,14 @@
 import { useRef, useState, type DragEvent } from 'react';
 import type { Task } from '../types';
 import { useStore } from '../store';
-import { isOverdue, isTodayFlagActive, orderSections } from '../selectors';
+import {
+  byCompletedAtDesc,
+  isOverdue,
+  isTodayFlagActive,
+  orderSections,
+  viewShowsCompleted,
+} from '../selectors';
+import { beginExitCollapse, useListFlip } from '../hooks/useListFlip';
 import { readTaskIds, writeTaskIds } from '../dnd';
 import AvatarStack from './AvatarStack';
 import { assigneesOf } from '../members';
@@ -32,6 +39,9 @@ export default function TaskList({
   showSectionToggle = true,
 }: TaskListProps) {
   const toggleTask = useStore((s) => s.toggleTask);
+  const completeTaskAnimated = useStore((s) => s.completeTaskAnimated);
+  const completionHold = useStore((s) => s.completionHold);
+  const completionPulse = useStore((s) => s.completionPulse);
   const toggleStar = useStore((s) => s.toggleStar);
   const selectTask = useStore((s) => s.selectTask);
   const selectProject = useStore((s) => s.selectProject);
@@ -145,6 +155,14 @@ export default function TaskList({
     ? orderSections(sections.filter((s) => s.scope === scopeKey))
     : [];
 
+  // #53: check-off animation. Which release the checkbox triggers depends on
+  // whether this view keeps completed tasks visible; the Erledigt view IS the
+  // completed area (rows show their date, no extra block).
+  const completionMode = viewShowsCompleted(currentView) ? 'move' : 'exit';
+  const inCompletedView = currentView === 'completed';
+  const listRef = useRef<HTMLDivElement>(null);
+  useListFlip(listRef, completionPulse);
+
   if (tasks.length === 0 && !grouped) {
     return (
       <div className="task-list-empty">
@@ -156,7 +174,7 @@ export default function TaskList({
 
   // Meta row (due date, recurrence, duration, GTD flags, comments, categories…)
   // shared by root tasks and subtasks, so both show the same essentials (#1).
-  const renderMeta = (task: Task, hideProjectHere: boolean) => {
+  const renderMeta = (task: Task, hideProjectHere: boolean, inCompletedSection = false) => {
     const project = projects.find((p) => p.id === task.projectId);
     const taskCats = categories.filter((c) => task.categoryIds.includes(c.id));
     const kids = childrenByParent.get(task.id) ?? [];
@@ -177,7 +195,8 @@ export default function TaskList({
             {project.name}
           </span>
         )}
-        {task.completed && task.completedAt && (
+        {/* Completion date only inside the ✓ Erledigt area (#53 AC6). */}
+        {inCompletedSection && task.completed && task.completedAt && (
           <span className="task-completed-at" title="Erledigt am">
             ✓ {new Date(task.completedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
@@ -310,7 +329,7 @@ export default function TaskList({
     </div>
   );
 
-  const renderTask = (task: Task) => {
+  const renderTask = (task: Task, inCompletedSection = false) => {
     // --- Project-reference task: renders as a dependency chip, not a normal row ---
     if (task.linkedProjectId) {
       const linked = projects.find((p) => p.id === task.linkedProjectId);
@@ -325,6 +344,7 @@ export default function TaskList({
       return (
         <div key={task.id} className="task-row">
           <div
+            data-flip-id={task.id}
             className={`task-item task-projref ${task.completed ? 'is-completed' : ''} ${
               overId === task.id ? 'drag-over' : ''
             } ${dragId === task.id ? 'dragging' : ''}`}
@@ -389,16 +409,24 @@ export default function TaskList({
 
     const kids = childrenByParent.get(task.id) ?? [];
     const expanded = expandedIds.has(task.id);
+    // #53: row is mid check-off animation — grey in place ('hold') or
+    // collapsing out of a view that hides completed tasks ('exit').
+    const holdPhase = completionHold[task.id];
+    const isHolding = holdPhase != null;
+    const isExiting = holdPhase === 'exit';
     return (
       <div key={task.id} className="task-row">
+      {/* .task-row is display:contents — flip/collapse live on the .task-item box. */}
       <div
         key={task.id}
+        data-flip-id={task.id}
+        ref={isExiting ? beginExitCollapse : undefined}
         className={`task-item ${selectedTaskId === task.id ? 'selected' : ''} ${
           task.completed ? 'is-completed' : ''
-        } ${selectionMode && selectedIds?.has(task.id) ? 'bulk-selected' : ''} ${
+        } ${isHolding ? 'is-completing' : ''} ${selectionMode && selectedIds?.has(task.id) ? 'bulk-selected' : ''} ${
           overId === task.id ? 'drag-over' : ''
         } ${nestId === task.id ? 'nest-target' : ''} ${dragId === task.id ? 'dragging' : ''}`}
-        draggable={dragEnabled}
+        draggable={dragEnabled && !isHolding}
         onDragStart={(e) => {
           if (!dragEnabled) return;
           setDragId(task.id);
@@ -475,20 +503,27 @@ export default function TaskList({
         <input
           type="checkbox"
           className="task-checkbox"
-          checked={selectionMode ? !!selectedIds?.has(task.id) : task.completed}
+          checked={selectionMode ? !!selectedIds?.has(task.id) : task.completed || isHolding}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => {
             e.stopPropagation();
-            if (selectionMode) onToggleSelect?.(task.id);
-            else toggleTask(task.id);
+            if (selectionMode) {
+              onToggleSelect?.(task.id);
+            } else if (isHolding || task.completed) {
+              // Un-check during the animation (undo, AC3) or reopen from the
+              // ✓ Erledigt block — both plain, no animation.
+              toggleTask(task.id);
+            } else {
+              completeTaskAnimated(task.id, completionMode);
+            }
           }}
         />
         <span className={`priority-dot priority-${task.priority}`} title={task.priority} />
         <div className="task-content">
-          <div className={`task-title ${task.completed ? 'completed' : ''}`}>
+          <div className={`task-title ${task.completed || isHolding ? 'completed' : ''}`}>
             {task.title}
           </div>
-          {renderMeta(task, hideProject)}
+          {renderMeta(task, hideProject, inCompletedSection)}
         </div>
         <div className="task-actions">
           <AvatarStack members={assigneesOf(task, members)} size={20} />
@@ -518,15 +553,44 @@ export default function TaskList({
         </div>
       </div>
       {expanded && kids.length > 0 && (
-        <div className="task-subtasks">{kids.map(renderChild)}</div>
+        <div className="task-subtasks" data-flip-id={`${task.id}:subs`}>
+          {kids.map(renderChild)}
+        </div>
       )}
       </div>
     );
   };
 
+  // One ✓ Erledigt block for every list that shows completed tasks (#53 AC5),
+  // newest completion first; rows inside show their completion date.
+  const renderCompletedSection = (done: Task[]) =>
+    done.length > 0 ? (
+      <div className="task-section completed-section">
+        <div className="section-header">
+          <span className="section-grip" style={{ visibility: 'hidden' }}>⠿</span>
+          <span className="section-name section-name-static">✓ Erledigt</span>
+          <span className="section-count">{done.length}</span>
+        </div>
+        <div className="section-body">{done.map((t) => renderTask(t, true))}</div>
+      </div>
+    ) : null;
+
   // --- Flat list (ungrouped views) ---
   if (!grouped) {
-    return <div className="task-list">{tasks.map(renderTask)}</div>;
+    // The Erledigt view IS the completed area: no extra block, rows show dates.
+    if (inCompletedView) {
+      return (
+        <div className="task-list" ref={listRef}>
+          {tasks.map((t) => renderTask(t, true))}
+        </div>
+      );
+    }
+    return (
+      <div className="task-list" ref={listRef}>
+        {tasks.filter((t) => !t.completed).map((t) => renderTask(t))}
+        {renderCompletedSection(tasks.filter((t) => t.completed))}
+      </div>
+    );
   }
 
   // --- Grouped list (project or list view) ---
@@ -538,7 +602,7 @@ export default function TaskList({
   const ungrouped = tasks.filter(
     (t) => !t.completed && !(t.sectionId && scopeSectionIds.has(t.sectionId))
   );
-  const completedTasks = tasks.filter((t) => t.completed);
+  const completedTasks = [...tasks.filter((t) => t.completed)].sort(byCompletedAtDesc);
   const submitSection = () => {
     const name = newSectionName.trim();
     if (name) addSection(scopeKey, name);
@@ -547,7 +611,7 @@ export default function TaskList({
   };
 
   return (
-    <div className="task-list">
+    <div className="task-list" ref={listRef}>
       {/* Section index: jump to a section or drop a task straight onto it. The
           toggle is shown here only when the FilterBar isn't (otherwise FilterBar
           renders it so both toggles share one line). */}
@@ -636,7 +700,7 @@ export default function TaskList({
           setOverSectionId(null);
         }}
       >
-        {ungrouped.map(renderTask)}
+        {ungrouped.map((t) => renderTask(t))}
         {ungrouped.length === 0 && (
           <p className="section-empty-hint">
             {tasks.length === 0
@@ -729,7 +793,7 @@ export default function TaskList({
                 setOverSectionId(null);
               }}
             >
-              {secTasks.map(renderTask)}
+              {secTasks.map((t) => renderTask(t))}
               {secTasks.length === 0 && (
                 <p className="section-empty-hint">Aufgaben hierher ziehen…</p>
               )}
@@ -806,16 +870,7 @@ export default function TaskList({
       )}
 
       {/* All completed tasks, below every group; reopen sends them back up. */}
-      {completedTasks.length > 0 && (
-        <div className="task-section completed-section">
-          <div className="section-header">
-            <span className="section-grip" style={{ visibility: 'hidden' }}>⠿</span>
-            <span className="section-name section-name-static">✓ Erledigt</span>
-            <span className="section-count">{completedTasks.length}</span>
-          </div>
-          <div className="section-body">{completedTasks.map(renderTask)}</div>
-        </div>
-      )}
+      {renderCompletedSection(completedTasks)}
     </div>
   );
 }

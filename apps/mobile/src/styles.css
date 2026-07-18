@@ -197,6 +197,15 @@ body {
 }
 .m-list-big .m-row { min-height: 64px; font-size: 17px; }
 .m-row.done .m-row-title { text-decoration: line-through; color: var(--text-secondary); }
+
+/* #53: check-off animation — grey hold in place, then glide/collapse. */
+.m-row { transition: opacity 0.2s ease; }
+.m-row.completing { opacity: 0.55; }
+.m-row.completing .m-row-title { text-decoration: line-through; color: var(--text-secondary); }
+.m-row-doneat { color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) {
+  .m-row { transition: none; }
+}
 .m-check { width: 24px; height: 24px; flex-shrink: 0; accent-color: var(--accent); }
 .m-prio { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .m-prio-high { background: #e5484d; }

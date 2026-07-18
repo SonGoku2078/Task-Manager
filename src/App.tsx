@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
-import { dateKey, selectVisibleTasks, selectTaskTotals, weekViewDays } from './selectors';
+import { applyCompletionHold, dateKey, selectVisibleTasks, selectTaskTotals, weekViewDays } from './selectors';
 import { fmtFocus } from './pomodoro';
 import { parseQuickAdd } from './quickParse';
 import type { ViewType } from './types';
@@ -66,6 +66,7 @@ const TOTALS_VIEWS: ReadonlySet<ViewType> = new Set([
 
 function App() {
   const tasks = useStore((s) => s.tasks);
+  const completionHold = useStore((s) => s.completionHold);
   const ui = useStore((s) => s.ui);
   const projects = useStore((s) => s.projects);
   const savedViews = useStore((s) => s.savedViews);
@@ -309,7 +310,14 @@ function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [selectTask, setView, deleteTask, bulkMode, selectedIds]);
 
-  const visibleTasks = selectVisibleTasks(tasks, ui, projects, members);
+  // Tasks mid completion-hold stay "virtually open" so they keep their list
+  // position during the grey phase of the check-off animation (#53).
+  const visibleTasks = selectVisibleTasks(
+    applyCompletionHold(tasks, completionHold),
+    ui,
+    projects,
+    members
+  );
   // Das Wochenraster zeigt die Tasks der sichtbaren Tage, nicht visibleTasks
   // (calendar scopt auf den ausgewählten Tag) — Totals folgen dem Raster (#47).
   const weekGridActive = ui.currentView === 'calendar' && calendarMode !== 'list';
