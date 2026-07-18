@@ -2,15 +2,16 @@
 
 | Feld | Wert |
 |---|---|
-| Status | architecture-done |
-| Nächste Rolle | /developer |
-| Owner-Rolle | architect |
+| Status | implementation-done |
+| Nächste Rolle | /test-designer |
+| Owner-Rolle | developer |
 | Datum | 2026-07-18 |
 
 > Orchestrator-Log:
 > - 2026-07-18 Grill-me-Interview abgeschlossen, alle Scope-Entscheidungen gefallen → Artefakt angelegt → /req-engineer. Issue #53.
 > - 2026-07-18 requirements-done: Issue #53 bereinigt (Titel ohne „syncen") + AC1–AC9, Label `enhancement` → /architect.
 > - 2026-07-18 architecture-done: Hold-Mechanik „virtuell offen" + FLIP entworfen, offene Punkte 1–3 + reduced-motion entschieden → /developer.
+> - 2026-07-18 implementation-done: Branch `feature/issue-53-erledigt-animation`, Web-E2E-Smoke 16/17 (1 racy Timing-Sonde), Builds+Unit-Tests grün → /test-designer.
 
 ## 0. Briefing (Ergebnis Grill-me-Interview, 2026-07-18)
 
@@ -169,3 +170,19 @@ Web ermittelt das als `viewShowsCompleted(currentView)` (Konstante in `selectors
 | `apps/mobile/src/selectors.ts` | Re-Export `applyCompletionHold` |
 
 Keine Schema-/API-/Server-Änderung. Kein neues Package.
+
+## 3. Implementierung
+
+- **Branch:** `feature/issue-53-erledigt-animation`
+- **Commit:** `fda97f5` — 15 Dateien, +378/−55
+- **Umsetzung exakt nach Architektur**, mit zwei dokumentierten Abweichungen:
+  1. **`data-flip-id` + Exit-Kollaps liegen auf `.task-item`, nicht `.task-row`** — `.task-row` ist `display: contents` (TaskList.css:577) und hat damit keine messbare Box; FLIP/Kollaps auf dem Wrapper liefen ins Leere (im Smoke-Test entdeckt und gefixt). Expandierte Subtask-Container bekommen eine eigene Flip-ID (`<id>:subs`) und gleiten mit.
+  2. **Mobile Suche unverändert** (Architektur sagte `exit`): Die Suche filtert Erledigte NICHT aus — ein `exit`-Kollaps wäre falsch (Task bliebe Treffer und würde wieder auftauchen). Default `move` ohne Bewegung ist dort korrekt.
+- **Files Changed:** `src/store.ts` (Hold-Slice + `completeTaskAnimated` + Abbruch in `toggleTask`), `src/selectors.ts`, `src/App.tsx` (Hold-Feed), `src/components/TaskList.tsx` (+`TaskList.css`), **neu** `src/hooks/useListFlip.ts` (FLIP + `beginExitCollapse` + reduced-motion), `apps/mobile/src/{hooks.ts(neu),selectors.ts,styles.css}`, `apps/mobile/src/components/{TaskRow,Today,NextWeek,Inbox,NextAction,Projects}.tsx`
+- **Local Verification:**
+  - [x] `npm run build` (Web+Server-tsc) grün, `npm run build:mobile` grün
+  - [x] `npm test` (8 Unit-Suiten) grün
+  - [x] Lint: 0 neue Findings (5 Bestandsfehler in App.tsx, Zeilen 118–264, unverändert)
+  - [x] Playwright-E2E gegen Dev :3002/dev.db (nie Prod): **16/17 Checks grün** — AC1 (Grau an Ort + Landung im Block), AC2 (Priorität: grau → kollabiert raus), AC3 (Undo während Hold), AC4 (2 schnelle Checks), AC5 (Block in flacher Inbox), AC6 (Datum nur im Block/Erledigt-View), AC7 (D>C>A absteigend). FLIP-Transition „transform 400ms" im Vorlauf nachgewiesen; die eine rote Sonde ist eine timing-sensitive Mid-Glide-Messung (racy, im Vorlauf grün) — kein Funktionsdefekt, Hinweis ans Testdesign.
+  - [ ] Mobile-Runtime (dev:mobile :5174) — an Test Manager delegiert (Build + geteilter Store verifiziert)
+- **Testdaten:** Smoke legt `SMK<rand>-A…E` an und räumt sie wieder ab (Cleanup verifiziert 0 Reste); Script liegt im Session-Scratchpad (`smoke-53.mjs`), wiederverwendbar für Stufe 5.
