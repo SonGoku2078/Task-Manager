@@ -3,6 +3,8 @@ import { useStore, DEFAULT_PALETTE } from '../store';
 import type { MemberRole } from '../types';
 import { importFromNozbeApi, mapNozbe, loginNozbe, type NozbeExport } from '../nozbe';
 import { playAlarm, startFocusSound, stopFocusSound, unlockAudio } from '../pomodoroSound';
+import { APP_VERSION, BUILD_TIME, apiEnvironment } from '../version';
+import { getBaseUrl } from '../api/client';
 import './SettingsView.css';
 
 const POMO_ALARM_OPTIONS = [
@@ -163,8 +165,34 @@ export default function SettingsView() {
     setMemberName('');
   };
 
+  const env = apiEnvironment(getBaseUrl(), window.location.origin);
+
   return (
     <div className="settings-view">
+      {/* #56: which software version is running against which environment. */}
+      <section className="settings-section">
+        <h3 className="settings-heading">ℹ️ Version & Umgebung</h3>
+        <div className="settings-version">
+          <div className="version-row">
+            <span className="version-key">Version</span>
+            <code>{APP_VERSION}</code>
+          </div>
+          <div className="version-row">
+            <span className="version-key">Build</span>
+            <code>{BUILD_TIME ? new Date(BUILD_TIME).toLocaleString('de-DE') : '—'}</code>
+          </div>
+          <div className="version-row">
+            <span className="version-key">Profil</span>
+            <code>{(import.meta.env.VITE_APP_ENV as string | undefined) ?? import.meta.env.MODE}</code>
+          </div>
+          <div className="version-row">
+            <span className="version-key">Server</span>
+            <code>{env.url}</code>
+            <span className={`env-badge env-${env.kind}`}>{env.label}</span>
+          </div>
+        </div>
+      </section>
+
       <section className="settings-section">
         <h3 className="settings-heading">Profil</h3>
         <label className="settings-label">Dein Name</label>
