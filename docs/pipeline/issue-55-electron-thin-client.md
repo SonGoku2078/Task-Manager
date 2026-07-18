@@ -38,9 +38,10 @@
 | C: zweiter Server auf belegtem Port → saubere Meldung „bereits belegt", Prozess endet (Exit-Code auf Win durch cmd/tsx-Kette verfälscht; Meldung stammt nachweislich aus dem neuen Handler) | ✅ |
 | Regression: `npm test` 8/8, Lint auf geänderten Dateien 0 Findings | ✅ |
 
-**GATE: GO.** Packaged-Smoke (win-unpacked EXE) folgt nach dem gemeinsamen EXE-Build mit #56.
+**GATE: GO.** Packaged-Smoke nach dem EXE-Build: **4/4 grün mit der echten gepackten EXE** (win-unpacked, isPackaged=true) — Fenster lädt UI, Fallback, Auto-Recovery, EADDRINUSE-Meldung.
 
 ## 6. CI/CD & Deployment
 
-- PR → squash-merge → master (siehe PR-Link im Issue). Kein Mobile-Release (Mobile unberührt). Kein Prod-Eingriff: Server-Fix + neue Frontend-Bits erreichen Prod erst über den User-Deploy-Flow.
-- **Desktop-Auslieferung:** EXE/Installer wird nach Merge von #55+#56 EINMAL aus master im Worktree gebaut (`SelfManaged Setup 1.1.0.exe`); Installation durch den User (alte App vorher schließen).
+- **PR:** [#57](https://github.com/SonGoku2078/Task-Manager/pull/57) squash-merged → `436ae45`; Issue #55 geschlossen. CI (build + GitGuardian) grün.
+- **EXE-Build:** aus master (`ca03f86`, inkl. #56) im **Worktree** gebaut (Live-Repo unberührt; electron-builder-winCodeSign-Symlink-Falle via manuell entpacktem Cache `winCodeSign-2.6.0` umgangen). Installer: **`dist-electron/SelfManaged Setup 1.1.0.exe`** (78 MB, unsigniert — SmartScreen-Hinweis möglich). Installation durch den User; alte App vorher schließen.
+- Kein Mobile-Release (Mobile unberührt). Kein Prod-Eingriff: Server-Fix (EADDRINUSE-Meldung) erreicht Prod erst über den User-Deploy-Flow — die neue EXE funktioniert unabhängig davon sofort gegen den laufenden Prod.

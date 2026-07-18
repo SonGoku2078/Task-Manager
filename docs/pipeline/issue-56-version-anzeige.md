@@ -35,4 +35,5 @@
 
 ## 6. CI/CD & Deployment
 
-- PR → squash-merge → master (Link im Issue). Kein Mobile-Release. **Auf Prod sichtbar erst nach User-Deploy** (dann zeigt :3001 z. B. `mobile-v0.5.11-4-g<sha>` + rotes „Produktion"-Badge; :3002 zeigt „Dev/Test").
+- **PR:** [#58](https://github.com/SonGoku2078/Task-Manager/pull/58) squash-merged → `ca03f86`; Issue #56 geschlossen. CI grün.
+- Kein Mobile-Release. **Auf Prod sichtbar erst nach User-Deploy** (dann zeigt :3001 die describe-Version + rotes „Produktion"-Badge; :3002 zeigt „Dev/Test"). Die Desktop-EXE (Thin Client) erbt die Sektion vom Server, gegen den sie läuft.
