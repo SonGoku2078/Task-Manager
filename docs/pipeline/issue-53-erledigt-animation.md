@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | testdesign-done |
-| Nächste Rolle | /test-manager |
-| Owner-Rolle | test-designer |
+| Status | gate-go |
+| Nächste Rolle | /cicd-engineer |
+| Owner-Rolle | test-manager |
 | Datum | 2026-07-18 |
 
 > Orchestrator-Log:
@@ -13,6 +13,7 @@
 > - 2026-07-18 architecture-done: Hold-Mechanik „virtuell offen" + FLIP entworfen, offene Punkte 1–3 + reduced-motion entschieden → /developer.
 > - 2026-07-18 implementation-done: Branch `feature/issue-53-erledigt-animation`, Web-E2E-Smoke 16/17 (1 racy Timing-Sonde), Builds+Unit-Tests grün → /test-designer.
 > - 2026-07-18 testdesign-done: 16 Testfälle (Web T1–T9, Mobile M1–M4, Regression R1–R3), Timing-Sonden als informativ markiert → /test-manager.
+> - 2026-07-18 GATE: GO — Web 21/21, Mobile 11/11, Regression grün, 0 Defekte → /cicd-engineer.
 
 ## 0. Briefing (Ergebnis Grill-me-Interview, 2026-07-18)
 
@@ -240,3 +241,54 @@ Nozbe entfernt Erledigte aus aktiven Listen und führt sie in „Completed" mit 
 - T2i/Mid-Glide-Sonden (racy).
 - `prefers-reduced-motion` (Sichtprüfung wünschenswert; CSS/JS-Guards vorhanden).
 - APK-Optik auf echtem Gerät → User-Nachtest nach Release (wie #51).
+
+## 5. Testausführung & Gate
+
+Ausführung 2026-07-18, Playwright/Chromium, ausschließlich Dev-Umgebung (Web: Express :3002/dev.db mit frischem Build; Mobile: Vite :5174 → API :3002). Produktion (:3001) unberührt. Scripts: `t53-web.mjs`, `t53-mobile.mjs` (Session-Scratchpad); alle Testdaten mit eindeutigem Präfix, Pre-/Post-Cleanup verifiziert (0 Reste auf dem Server).
+
+### Web (T1–T9 + R3): **21/21 PASS** ✅
+
+| Fall | Ergebnis | Evidenz |
+|---|---|---|
+| T1 Grau-Phase an Ort | ✅ | `is-completing` + checked bei t≈150 ms, y-Position 519.5→519.5, nicht im Block |
+| T2 Landung im Block | ✅ | im `.completed-section`, kein `is-completing`-Rest |
+| T2i Glide-Sonde *(informativ)* | ✅ | Inline `transition: transform 400ms` mid-flight beobachtet |
+| T3 Undo Grau-Phase | ✅ | offen, unchecked, kein Datum |
+| T3b Undo Gleit-Phase | ✅ | einzelne offene Zeile zurück im offenen Bereich, keine Zombie-Klassen |
+| T4 3× schnell abhaken | ✅ | alle 3 im Block, 0 hängende `is-completing` |
+| T5 Block in flacher Liste | ✅ | Header „✓ Erledigt" + Zähler in Inbox |
+| T6 Datum nur im Erledigt-Bereich | ✅ | Datum im Block ✓, offene Zeile ohne Datum ✓ |
+| T7 Sortierung | ✅ | Block-Ordnung G > D > C > A (neueste zuerst) |
+| T8 Exit in Priorität | ✅ | grau an Ort → nach Animation aus Liste verschwunden |
+| T9a Recurring | ✅ | Original grau gehalten → im Block; neue Instanz sofort offen (block=1, total=2) |
+| T9b Subtask | ✅ | sofort `is-completed`, kein Hold, bleibt unter Parent |
+| T9c Reopen aus Block | ✅ | sofort zurück im offenen Bereich, unchecked |
+| R3 Persistenz | ✅ | API: erledigt → `completed=true` + `completedAt` ISO-Zeitstempel; Undo → `false`/null |
+
+### Mobile (M1–M4): **11/11 PASS** ✅
+
+| Fall | Ergebnis | Evidenz |
+|---|---|---|
+| M1 Heute: move + Datum | ✅ | `.completing` an Ort → „✓ Heute erledigt" mit `✓ <Datum>`; kein Datum außerhalb Done-Gruppen |
+| M2 Inbox: exit | ✅ | grau an Ort → Zeile nach Animation weg |
+| M3 Undo Grau-Phase | ✅ | Zeile bleibt, unchecked, nicht grau |
+| M4 Woche: Done-Gruppe | ✅ | beide Tasks in „✓ Erledigt (letzte 7 Tage)", neueste zuerst, mit Datum |
+
+### Regression (R1–R2): PASS ✅
+
+- `npm test`: 8/8 Unit-Suiten grün. Builds: `npm run build` + `npm run build:mobile` grün.
+- Lint: **identische 34 Bestandsprobleme auf master und Feature-Branch** (gleiche Dateien/Zeilen, u. a. App.tsx 118–264, DescToolbar, TaskDetailModal) — **0 neue Findings**; keine der geänderten Dateien im Fehlerbericht.
+
+### Defekte
+
+Keine. (Zwei Fehlläufe während der Ausführung waren Test-Infrastrukturfehler, keine Produktdefekte: (1) Detail-Panel war nach Quick-Add bereits offen → Klick schloss es wieder — Script prüft jetzt den Panel-Zustand; (2) Mobile-Datumszählung verglich gegen falsche Referenz bei Alt-Testdaten — Assertion korrigiert auf „kein Datum außerhalb `.m-group-done`".)
+
+### Nozbe-Vergleich
+
+Erledigt-Verhalten (aus aktiver Liste in Erledigt-Bereich mit Zeitpunkt) entspricht Nozbe; Animation ist beauftragte Erweiterung. ✅
+
+### Quality Gate Decision
+
+**GATE: GO** — alle gate-relevanten Tests grün (Web 21/21, Mobile 11/11, Regression vollständig), 0 Defekte.
+Offen (nicht blockierend): Sichtprüfung `prefers-reduced-motion`, APK-Optik auf echtem Gerät nach Release (User-Nachtest).
+Nächste Rolle: `/cicd-engineer`.
