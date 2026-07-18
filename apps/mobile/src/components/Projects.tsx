@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store';
+import { applyCompletionHold } from '../selectors';
 import type { Project } from '../types';
 import TaskRow from './TaskRow';
 
@@ -17,6 +18,7 @@ export default function Projects({
   onOpenTask: (id: string) => void;
 }) {
   const tasks = useStore((s) => s.tasks);
+  const completionHold = useStore((s) => s.completionHold);
   const projects = useStore((s) => s.projects);
   const addTask = useStore((s) => s.addTask);
 
@@ -26,7 +28,10 @@ export default function Projects({
   // ── Drill-down: one project's open tasks ──
   if (openProjectId) {
     const project = projects.find((p) => p.id === openProjectId);
-    const list = tasks.filter((t) => t.projectId === openProjectId && !t.parentId && !t.completed);
+    // The drill-down hides completed tasks → grey hold, then collapse (#53).
+    const list = applyCompletionHold(tasks, completionHold).filter(
+      (t) => t.projectId === openProjectId && !t.parentId && !t.completed
+    );
     return (
       <div className="m-list">
         <button className="m-back" onClick={onBack}>‹ Projekte</button>
@@ -38,7 +43,7 @@ export default function Projects({
         <QuickAddTo projectId={openProjectId} addTask={addTask} />
         {list.length === 0
           ? <p className="m-empty">Keine offenen Aufgaben in diesem Projekt.</p>
-          : list.map((t) => <TaskRow key={t.id} task={t} onOpen={onOpenTask} />)}
+          : list.map((t) => <TaskRow key={t.id} task={t} onOpen={onOpenTask} completionMode="exit" />)}
       </div>
     );
   }

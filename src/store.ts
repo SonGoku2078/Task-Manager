@@ -434,6 +434,15 @@ interface AppState {
   // state is real.
   dataLoaded: boolean;
 
+  // Two-phase completion animation (#53). UI-only, never persisted: tasks in
+  // here are completed in the store but still shown "virtually open" at their
+  // old list position ('hold' = grey in place, 'exit' = collapsing out of a
+  // view that hides completed tasks).
+  completionHold: Record<string, 'hold' | 'exit'>;
+  // Incremented when a hold releases into the completed block — the FLIP hook
+  // listens to this to animate the position change.
+  completionPulse: number;
+
   // Pomodoro timer (#3): runtime state lives in the store so the countdown
   // survives view changes; it also persists to localStorage so a page reload
   // resumes it (#39). Interval settings persist to the server.
@@ -474,6 +483,10 @@ interface AppState {
   deleteTask: (id: string) => void;
   restoreTask: (entryId: string) => void;
   toggleTask: (id: string) => void;
+  // #53: completes via toggleTask (persistence/recurring run immediately) but
+  // holds the row visually in place for COMPLETION_HOLD_MS before it moves to
+  // the completed block ('move') or collapses out ('exit').
+  completeTaskAnimated: (id: string, releaseMode: 'move' | 'exit') => void;
   toggleStar: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
   deleteComment: (taskId: string, commentId: string) => void;
@@ -626,6 +639,12 @@ export const DEFAULT_NAV_ORDER: ViewType[] = [
 // outbox flush and clobber newer optimistic edits.
 let loadAllInFlight: Promise<void> | null = null;
 
+// #53: two-phase completion timing — grey hold in place, then slide/collapse.
+export const COMPLETION_HOLD_MS = 500;
+export const COMPLETION_ANIM_MS = 400;
+// Pending hold timers by task id (module-level: timer handles are not state).
+const holdTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 export const useStore = create<AppState>()((set, get) => ({
   tasks: [],
   projects: [],
@@ -639,6 +658,8 @@ export const useStore = create<AppState>()((set, get) => ({
   nextTaskNumber: 1,
   ui: defaultUIState,
   dataLoaded: false,
+  completionHold: {},
+  completionPulse: 0,
   pomodoro: pomoInit?.state ?? { phase: 'focus', running: false, endsAt: null, remainingMs: 25 * 60_000, round: 1, currentTaskId: null, focusSegmentStart: null },
   pomodoroLog: pomoInit?.log ?? {},
   pomodoroTaskLog: pomoInit?.taskLog ?? {},
@@ -1152,6 +1173,19 @@ export const useStore = create<AppState>()((set, get) => ({
         }),
 
       toggleTask: (id) => {
+        // Toggling a task that is mid completion-hold cancels the animation
+        // (#53 AC3): the row never moved, so it just returns to normal.
+        const pendingTimer = holdTimers.get(id);
+        if (pendingTimer != null) {
+          clearTimeout(pendingTimer);
+          holdTimers.delete(id);
+          set((state) => {
+            const completionHold = { ...state.completionHold };
+            delete completionHold[id];
+            return { completionHold };
+          });
+        }
+
         const before = get().tasks.find((t) => t.id === id);
         const completing = before ? !before.completed : false;
 
@@ -1213,6 +1247,43 @@ export const useStore = create<AppState>()((set, get) => ({
         }
         // Write the completion change back to Nozbe (if connected + enabled).
         if (before) syncCompletion(get(), before, !before.completed);
+      },
+
+      completeTaskAnimated: (id, releaseMode) => {
+        const before = get().tasks.find((t) => t.id === id);
+        if (!before || before.completed) return;
+        // Store flips (and persists) immediately — only the visuals are staged.
+        get().toggleTask(id);
+        set((state) => ({ completionHold: { ...state.completionHold, [id]: 'hold' as const } }));
+        holdTimers.set(
+          id,
+          setTimeout(() => {
+            if (!get().completionHold[id]) return; // cancelled meanwhile
+            if (releaseMode === 'exit') {
+              // Keep the row rendered while it collapses, then let it unmount.
+              set((state) => ({ completionHold: { ...state.completionHold, [id]: 'exit' as const } }));
+              holdTimers.set(
+                id,
+                setTimeout(() => {
+                  holdTimers.delete(id);
+                  set((state) => {
+                    const completionHold = { ...state.completionHold };
+                    delete completionHold[id];
+                    return { completionHold };
+                  });
+                }, COMPLETION_ANIM_MS)
+              );
+            } else {
+              holdTimers.delete(id);
+              set((state) => {
+                const completionHold = { ...state.completionHold };
+                delete completionHold[id];
+                // Pulse triggers the FLIP glide into the completed block.
+                return { completionHold, completionPulse: state.completionPulse + 1 };
+              });
+            }
+          }, COMPLETION_HOLD_MS)
+        );
       },
 
       toggleStar: (id) => {

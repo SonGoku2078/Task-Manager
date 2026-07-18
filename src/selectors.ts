@@ -120,6 +120,35 @@ const matchesFilters = (task: Task, ui: UIState) => {
   return true;
 };
 
+// --- #53: two-phase completion (grey hold in place, then move/collapse) ---
+
+export type CompletionHoldMap = Record<string, 'hold' | 'exit'>;
+
+// While a just-completed task is in its hold/exit phase it stays "virtually
+// open" for every filter/sort/grouping — it keeps its old list position and
+// only the row styling shows the completion.
+export const applyCompletionHold = (tasks: Task[], hold: CompletionHoldMap): Task[] => {
+  let any = false;
+  for (const t of tasks) {
+    if (hold[t.id]) {
+      any = true;
+      break;
+    }
+  }
+  if (!any) return tasks;
+  return tasks.map((t) => (hold[t.id] ? { ...t, completed: false } : t));
+};
+
+// Newest completion first; tasks without a completion date sink to the end.
+export const byCompletedAtDesc = (a: Task, b: Task): number =>
+  (b.completedAt ? b.completedAt.getTime() : 0) - (a.completedAt ? a.completedAt.getTime() : 0);
+
+// Views whose lists hide completed tasks entirely — checking a task there
+// collapses the row out ('exit') instead of gliding it into the ✓ Erledigt
+// block ('move').
+export const viewShowsCompleted = (view: UIState['currentView']): boolean =>
+  view !== 'priority';
+
 export const sortTasks = (tasks: Task[], ui: UIState): Task[] => {
   const { sortField, sortDir } = ui;
   if (sortField === 'manual') return tasks;
@@ -288,8 +317,11 @@ export const selectVisibleTasks = (
   result = result.filter((t) => matchesSearch(t, ui.searchQuery, members));
 
   const sorted = sortTasks(result, ui);
-  // Completed tasks always sink to the bottom (order otherwise preserved).
-  return [...sorted.filter((t) => !t.completed), ...sorted.filter((t) => t.completed)];
+  // Completed tasks always sink to the bottom, newest completion first (#53).
+  return [
+    ...sorted.filter((t) => !t.completed),
+    ...sorted.filter((t) => t.completed).sort(byCompletedAtDesc),
+  ];
 };
 
 // Header totals over the currently visible tasks (#47): planned = entered
