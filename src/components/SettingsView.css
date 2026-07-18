@@ -392,3 +392,19 @@
 }
 .settings-danger-btn:disabled { opacity: 0.6; cursor: default; }
 .settings-danger-btn:hover:not(:disabled) { background: #b71c1c; }
+
+/* #56: Version & Umgebung */
+.settings-version { display: flex; flex-direction: column; gap: 8px; }
+.version-row { display: flex; align-items: center; gap: 10px; font-size: 14px; flex-wrap: wrap; }
+.version-key { width: 70px; color: var(--text-secondary); flex-shrink: 0; }
+.version-row code {
+  background: var(--hover-bg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.env-badge { padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.env-badge.env-prod { background: #fee2e2; color: #b91c1c; }
+.env-badge.env-dev { background: #dcfce7; color: #15803d; }
+.env-badge.env-custom { background: var(--hover-bg); color: var(--text-secondary); }
