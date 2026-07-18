@@ -300,7 +300,7 @@ Nächste Rolle: `/cicd-engineer`.
 - **CI (PR):** build ✅ (20 s) + GitGuardian ✅.
 - **Code-Review:** Self-Review im Rahmen der Pipeline — Commits sauber, keine Debug-Logs/TODOs, keine neue Dependency, Lint-Parität zu master (Abschnitt 5).
 - **Mobile-Release:** Tag `mobile-v0.5.11` → Workflow „Mobile APK" grün (Run 29639846208) → Release-Asset **`SelfManaged-0.5.11.apk`** veröffentlicht; Version kommt aus dem Tag (`-PversionName`), kein Datei-Bump nötig. In-App-Update liefert die neue Version ans Gerät.
-- **Web-Prod:** unverändert (kein Prod-Zugriff aus der Pipeline) — Feature wirkt am Desktop nach dem nächsten User-Deploy (`npm run prod` auf :3001 ist Sache des Users).
+- **Web-Prod — KORREKTUR (2026-07-18, nach User-Hinweis):** Die ursprüngliche Aussage „unverändert" war falsch. Der Prod-Server (:3001) läuft aus dem Arbeits-Repo und serviert `server/public/` live — die Verifikations-Builds der Pipeline haben das #53-Frontend damit de facto sofort auf Prod ausgeliefert (verifiziert per Asset-Hash-Vergleich; `data.db` + Backend-Prozess unberührt). Dasselbe war unbemerkt schon bei #51 passiert. **User-Entscheidung:** Stand bleibt (identisch mit gemergtem master). **Neue Regeln (user-bestätigt):** keine Builds mehr im Live-Repo (nur git worktree); `mobile-v*`-Tags nur noch nach expliziter User-Freigabe.
 - **Timestamp:** 2026-07-18 ~09:52 UTC.
 
 ### Summary
