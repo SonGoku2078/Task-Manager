@@ -1,0 +1,79 @@
+name: Desktop EXE
+
+# Baut den Windows-Installer und veroeffentlicht ihn samt `latest.yml` als
+# GitHub-Release — `latest.yml` ist der Update-Feed, den electron-updater in der
+# installierten App liest (#66).
+#
+# Trigger: Tag `desktop-v1.3.0` pushen  ->  Release mit
+#   SelfManaged-Setup-1.3.0.exe + latest.yml
+# Manueller Lauf (Actions-Tab): baut nur und legt die EXE als Run-Artefakt ab.
+#
+# Die Version kommt aus dem Tag (einzige Wahrheit, wie beim Mobile-Build) und
+# wird vor dem Build in electron/package.json geschrieben.
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install electron dependencies
+        run: npm install
+        working-directory: electron
+
+      - name: Version aus dem Tag uebernehmen
+        shell: bash
+        run: |
+          RAW="${GITHUB_REF_NAME}"
+          VER="${RAW#desktop-v}"
+          # Manueller Lauf ohne Tag: package.json-Version beibehalten.
+          if [[ "$RAW" == "$VER" ]]; then
+            VER=$(node -p "require('./electron/package.json').version")
+            echo "Kein desktop-v*-Tag - nutze package.json-Version $VER"
+          else
+            node -e "
+              const fs=require('fs');
+              const p='electron/package.json';
+              const j=JSON.parse(fs.readFileSync(p,'utf8'));
+              j.version=process.argv[1];
+              fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
+            " "$VER"
+            echo "Version auf $VER gesetzt"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+        id: ver
+
+      - name: Build + publish (Tag-Builds)
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # tsc zuerst: sonst wuerde ein veraltetes committetes main.js gepackt.
+        # --publish always haengt Installer UND latest.yml ans Release des Tags.
+        run: npx tsc && npx electron-builder --win --x64 --publish always
+
+      - name: Build ohne publish (manuelle Laeufe)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        working-directory: electron
+        run: npx tsc && npx electron-builder --win --x64 --publish never
+
+      - name: Installer als Artefakt hochladen (manuelle Laeufe)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfmanaged-setup
+          path: |
+            dist-electron/*.exe
+            dist-electron/latest.yml

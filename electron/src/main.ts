@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, Menu, Notification, dialog, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
+import { autoUpdater } from 'electron-updater';
 
 // Thin client (#55/#60/#62): the desktop app is a window onto a running
 // Task-Manager server. Target resolution, first hit wins:
@@ -162,6 +163,105 @@ ipcMain.handle('tm:set-server-url', async (_e, input: string) => {
   return { ok: true };
 });
 
+// ── Auto-Update (#66) ────────────────────────────────────────────────────────
+// Laedt ein neues Release im Hintergrund und installiert es beim Beenden.
+// Der Feed sind die GitHub-Releases dieses (oeffentlichen) Repos, gefuellt vom
+// desktop-exe-Workflow; ohne Netz/Release passiert schlicht nichts.
+const UPDATE_CHECK_DELAY_MS = 8000;
+let updateReady: string | null = null; // Version, sobald heruntergeladen
+let manualCheck = false; // true = Nutzer hat "Nach Updates suchen" geklickt
+
+function notify(title: string, body: string): void {
+  try {
+    if (Notification.isSupported()) new Notification({ title, body }).show();
+  } catch {
+    /* Benachrichtigungen sind Beiwerk, nie kritisch */
+  }
+}
+
+function setupAutoUpdater(): void {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.logger = null;
+
+  autoUpdater.on('update-available', (info) => {
+    logToFile(`update-available ${info.version}`);
+    if (manualCheck) notify('Update wird geladen', `Version ${info.version} wird im Hintergrund geladen.`);
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    logToFile('update-not-available');
+    if (manualCheck) {
+      manualCheck = false;
+      void dialog.showMessageBox({
+        type: 'info',
+        title: 'Kein Update',
+        message: `SelfManaged ${app.getVersion()} ist bereits aktuell.`,
+        buttons: ['OK'],
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    updateReady = info.version;
+    logToFile(`update-downloaded ${info.version}`);
+    buildMenu(); // Menue zeigt jetzt "Update installieren und neu starten"
+    void dialog
+      .showMessageBox({
+        type: 'info',
+        title: 'Update bereit',
+        message: `Version ${info.version} ist bereit.`,
+        detail: 'Jetzt neu starten oder beim naechsten Beenden automatisch installieren.',
+        buttons: ['Jetzt neu starten', 'Spaeter'],
+        defaultId: 1,
+        cancelId: 1,
+      })
+      .then((res) => {
+        if (res.response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+
+  autoUpdater.on('error', (err) => {
+    logToFile(`update-error ${String(err)}`);
+    if (manualCheck) {
+      manualCheck = false;
+      void dialog.showMessageBox({
+        type: 'warning',
+        title: 'Update-Pruefung fehlgeschlagen',
+        message: 'Die Update-Pruefung hat nicht geklappt.',
+        detail: String(err),
+        buttons: ['OK'],
+      });
+    }
+  });
+
+  // Verzoegert pruefen, damit der Start nicht ausgebremst wird. Im Dev-Betrieb
+  // (unpackaged) gibt es keine Update-Metadaten -> gar nicht erst versuchen.
+  if (app.isPackaged) {
+    setTimeout(() => {
+      void autoUpdater.checkForUpdates().catch((e) => logToFile(`update-check failed ${String(e)}`));
+    }, UPDATE_CHECK_DELAY_MS);
+  }
+}
+
+function checkForUpdatesManually(): void {
+  if (updateReady) {
+    autoUpdater.quitAndInstall();
+    return;
+  }
+  if (!app.isPackaged) {
+    void dialog.showMessageBox({
+      type: 'info',
+      title: 'Nach Updates suchen',
+      message: 'Update-Pruefung gibt es nur in der installierten App.',
+      buttons: ['OK'],
+    });
+    return;
+  }
+  manualCheck = true;
+  void autoUpdater.checkForUpdates().catch((e) => logToFile(`manual update-check failed ${String(e)}`));
+}
+
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
@@ -176,6 +276,14 @@ function buildMenu(): void {
             }
           },
         },
+        { type: 'separator' },
+        {
+          label: updateReady
+            ? `Update ${updateReady} installieren und neu starten`
+            : 'Nach Updates suchen...',
+          click: checkForUpdatesManually,
+        },
+        { label: `Version ${app.getVersion()}`, enabled: false },
         { type: 'separator' },
         { role: 'quit', label: 'Beenden' },
       ],
@@ -238,6 +346,7 @@ async function main(): Promise<void> {
   currentTarget = resolveTarget();
   logToFile(`start pid=${process.pid} packaged=${app.isPackaged} target=${currentTarget}`);
   buildMenu();
+  setupAutoUpdater();
   const win = createWindow();
   await connectAndLoad(win);
 
