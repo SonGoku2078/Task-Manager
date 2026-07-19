@@ -6,22 +6,20 @@ a Nozbe-inspired GTD app. Data is stored by a local Express + SQLite backend
 
 ## 🌐 Environments & Releases
 
-The app runs locally in the browser in two clearly separated environments, each with its **own
-database** — so testing never touches your real data.
+Two clearly separated environments, each with its **own database** — so testing never touches
+your real data. Since #60, **production runs on its own LAN server** (Docker Compose), while
+development stays local.
 
-| | **Production** (daily use) | **Development & Test** (sandbox) |
+| | **Production** (daily use) | **Development & Test** (local sandbox) |
 |---|---|---|
-| Start | `npm run start:prod` | `npm run dev:server` **and** `npm run dev` (two terminals) |
-| Open | http://localhost:3001 | http://localhost:5173 |
-| Database | `~/.task-manager/data.db` | `~/.task-manager/dev.db` |
+| Runs on | `192.168.8.50` (Docker Compose, `~/server/`) | this machine |
+| Start | managed by Docker (`unless-stopped`) | `npm run dev:server` **and** `npm run dev` (two terminals) |
+| Open | http://192.168.8.50:3001 | http://localhost:5173 |
+| Database | on the server | `~/.task-manager/dev.db` |
 | Marker | — | 🚧 **red "ENTWICKLUNG & TEST" banner** |
-| Backend port | 3001 | 3002 |
+| Deploy | `npm run release` (SSH → git pull → compose up --build; config: `scripts/deploy.local.json`, see `.example`) | — |
 
-Both can run at the same time. To test against realistic data, copy Prod → Dev/Test once:
-
-```bash
-npm run db:seed-dev   # copies data.db → dev.db (never writes data.db)
-```
+Check which version runs where: **Einstellungen → „Version & Umgebung"** (#56).
 
 ### CI / Releases (GitHub)
 - **CI** (`.github/workflows/ci.yml`): every push/PR builds + typechecks the app — a gate that

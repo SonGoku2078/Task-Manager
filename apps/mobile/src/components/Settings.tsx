@@ -20,7 +20,7 @@ export default function Settings({ onClose }: { onClose: () => void }) {
 
   // Pre-fill with a sensible default so nothing must be typed from scratch
   // (editable — change the IP/port as needed).
-  const [url, setUrl] = useState(getBaseUrl() || 'http://192.168.8.188:3001');
+  const [url, setUrl] = useState(getBaseUrl() || 'http://192.168.8.50:3001');
   const [status, setStatus] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [testStatus, setTestStatus] = useState<string>('');

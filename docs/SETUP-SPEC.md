@@ -1,5 +1,8 @@
 # Setup-Spec: Dev/Test-Umgebung + CI/CD + manuelle Prod-Freigabe
 
+> **⚠️ ÜBERHOLT durch #60 (2026-07-19):** Prod läuft jetzt auf **http://192.168.8.50:3001** (Docker Compose auf dem LAN-Server, Projekt ~/server/). Deploy = `npm run release` → SSH → git pull → `docker compose up -d --build taskmanager` (Konfig: scripts/deploy.local.json). Die lokalen :3001-Angaben unten beschreiben das ALTE Setup und gelten nur noch historisch; die lokale Prod-Instanz wird zurückgebaut.
+
+
 Portable Beschreibung des kompletten Setups, damit es **1:1 in ein anderes Projekt übertragen**
 werden kann: zwei getrennte Umgebungen (Dev/Test ↔ Produktion), die GitHub-Actions-Pipelines, die
 **manuelle Freigabe** vor jedem Prod-Release, der signierte Mobile-APK-Flow und die

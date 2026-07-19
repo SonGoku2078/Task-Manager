@@ -37,17 +37,14 @@ const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const http = __importStar(require("http"));
-// Thin client (#55): the desktop app no longer embeds its own server — it is a
-// window onto the already-running Task-Manager server. Packaged builds target
-// the production server (:3001), dev runs target the vite dev server (:5173,
-// which proxies /health to the dev backend). TM_DESKTOP_PORT overrides the
-// target for tests, so E2E can point at the dev backend or a dead port.
-// Number(x || fallback), not ??: an empty env string must fall through.
-const PORT = Number(process.env.TM_DESKTOP_PORT || (electron_1.app.isPackaged ? 3001 : 5173));
-// 127.0.0.1, not localhost: on Windows 11 Node and Chromium may resolve
-// localhost to different address families (::1 vs IPv4).
-const APP_URL = `http://127.0.0.1:${PORT}`;
-const HEALTH_URL = `${APP_URL}/health`;
+// Thin client (#55/#60/#62): the desktop app is a window onto a running
+// Task-Manager server. Target resolution, first hit wins:
+//   1. TM_DESKTOP_URL  — full URL override (tests/power users)
+//   2. TM_DESKTOP_PORT — 127.0.0.1:<port> (E2E against the dev backend)
+//   3. userData/config.json { "serverUrl": … } — set in-app (#62), persisted
+//   4. default: prod server http://192.168.8.50:3001 (packaged) / vite :5173 (dev)
+const DEFAULT_URL_PACKAGED = 'http://192.168.8.50:3001';
+const DEFAULT_URL_DEV = 'http://127.0.0.1:5173';
 const POLL_MS = 2000;
 let mainWindow = null;
 let pollTimer = null;
@@ -70,13 +67,54 @@ process.on('uncaughtException', (err) => {
     }
     electron_1.app.exit(1);
 });
-// E2E isolation: private userData also scopes the single-instance lock, so
-// tests never fight with an installed running app.
+// E2E isolation: private userData also scopes config + single-instance lock.
 if (process.env.TM_USER_DATA_DIR)
     electron_1.app.setPath('userData', process.env.TM_USER_DATA_DIR);
-function checkHealth() {
+// ── Persisted config (#62) ────────────────────────────────────────────────────
+const configPath = () => path.join(electron_1.app.getPath('userData'), 'config.json');
+function loadSavedServerUrl() {
+    try {
+        const raw = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+        return typeof raw.serverUrl === 'string' && raw.serverUrl ? raw.serverUrl : null;
+    }
+    catch {
+        return null; // missing/corrupt config → defaults
+    }
+}
+function saveServerUrl(url) {
+    fs.mkdirSync(electron_1.app.getPath('userData'), { recursive: true });
+    fs.writeFileSync(configPath(), JSON.stringify({ serverUrl: url }, null, 2));
+}
+// Accept http(s) origins only; strip trailing slashes. Returns null if invalid.
+function normalizeServerUrl(input) {
+    const v = (input ?? '').trim().replace(/\/+$/, '');
+    const withScheme = /^https?:\/\//i.test(v) ? v : v ? `http://${v}` : '';
+    try {
+        const u = new URL(withScheme);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:')
+            return null;
+        return u.origin;
+    }
+    catch {
+        return null;
+    }
+}
+function resolveTarget() {
+    if (process.env.TM_DESKTOP_URL) {
+        return normalizeServerUrl(process.env.TM_DESKTOP_URL) ?? DEFAULT_URL_PACKAGED;
+    }
+    if (process.env.TM_DESKTOP_PORT)
+        return `http://127.0.0.1:${Number(process.env.TM_DESKTOP_PORT)}`;
+    const saved = loadSavedServerUrl();
+    if (saved)
+        return saved;
+    return electron_1.app.isPackaged ? DEFAULT_URL_PACKAGED : DEFAULT_URL_DEV;
+}
+let currentTarget = ''; // set in main() — app.isPackaged needs the ready app
+// ── Health check + fallback page + polling ──────────────────────────────────
+function checkHealth(target) {
     return new Promise((resolve) => {
-        const req = http.get(HEALTH_URL, { timeout: 1500 }, (res) => {
+        const req = http.get(`${target}/health`, { timeout: 1500 }, (res) => {
             res.resume();
             resolve(res.statusCode === 200);
         });
@@ -87,9 +125,12 @@ function checkHealth() {
         req.on('error', () => resolve(false));
     });
 }
-function showFallback(win) {
-    // Query param lets the static page show the actual target URL.
-    void win.loadFile(path.join(__dirname, 'fallback.html'), { query: { target: APP_URL } });
+// mode 'error': server unreachable — page shows spinner, main keeps polling.
+// mode 'change': user picked "Server ändern…" — no polling, just the form.
+function showFallback(win, mode) {
+    void win.loadFile(path.join(__dirname, 'fallback.html'), {
+        query: { target: currentTarget, mode },
+    });
 }
 function stopPolling() {
     if (pollTimer) {
@@ -105,13 +146,72 @@ function startPolling(win) {
                 stopPolling();
                 return;
             }
-            if (await checkHealth()) {
+            if (await checkHealth(currentTarget)) {
                 stopPolling();
                 if (!win.isDestroyed())
-                    void win.loadURL(APP_URL);
+                    void win.loadURL(currentTarget);
             }
         })();
     }, POLL_MS);
+}
+async function connectAndLoad(win) {
+    if (await checkHealth(currentTarget)) {
+        void win.loadURL(currentTarget);
+    }
+    else {
+        showFallback(win, 'error');
+        startPolling(win);
+    }
+}
+// ── IPC (#62): the fallback/change page sets a new server URL ────────────────
+electron_1.ipcMain.handle('tm:get-target', () => currentTarget);
+electron_1.ipcMain.handle('tm:set-server-url', async (_e, input) => {
+    const url = normalizeServerUrl(String(input));
+    if (!url)
+        return { ok: false, error: 'Ungültige Adresse — erwartet z. B. http://192.168.8.50:3001' };
+    currentTarget = url;
+    try {
+        saveServerUrl(url);
+    }
+    catch (err) {
+        logToFile(`config save failed: ${String(err)}`);
+    }
+    const win = mainWindow;
+    if (win && !win.isDestroyed()) {
+        stopPolling();
+        if (await checkHealth(url)) {
+            void win.loadURL(url);
+        }
+        else {
+            showFallback(win, 'error');
+            startPolling(win);
+        }
+    }
+    return { ok: true };
+});
+function buildMenu() {
+    const template = [
+        {
+            label: 'Datei',
+            submenu: [
+                {
+                    label: 'Server ändern…',
+                    click: () => {
+                        if (mainWindow && !mainWindow.isDestroyed()) {
+                            stopPolling();
+                            showFallback(mainWindow, 'change');
+                        }
+                    },
+                },
+                { type: 'separator' },
+                { role: 'quit', label: 'Beenden' },
+            ],
+        },
+        { label: 'Bearbeiten', role: 'editMenu' },
+        { label: 'Ansicht', role: 'viewMenu' },
+        { label: 'Fenster', role: 'windowMenu' },
+    ];
+    electron_1.Menu.setApplicationMenu(electron_1.Menu.buildFromTemplate(template));
 }
 function createWindow() {
     const win = new electron_1.BrowserWindow({
@@ -123,12 +223,16 @@ function createWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
         },
     });
     mainWindow = win;
-    // DevTools only for a plain dev run — E2E always sets TM_DESKTOP_PORT, and
-    // an open DevTools window breaks Playwright's firstWindow().
-    if (!electron_1.app.isPackaged && !process.env.TM_DESKTOP_PORT)
+    // DevTools only for a plain dev run — E2E sets TM_USER_DATA_DIR (and usually
+    // TM_DESKTOP_PORT/URL); an open DevTools window breaks Playwright's firstWindow().
+    if (!electron_1.app.isPackaged &&
+        !process.env.TM_DESKTOP_PORT &&
+        !process.env.TM_DESKTOP_URL &&
+        !process.env.TM_USER_DATA_DIR)
         win.webContents.openDevTools();
     // Open external links in the OS browser, not Electron.
     win.webContents.setWindowOpenHandler(({ url }) => {
@@ -143,7 +247,7 @@ function createWindow() {
         if (!url.startsWith('http'))
             return; // ignore the file:// fallback itself
         logToFile(`did-fail-load ${code} ${desc} ${url}`);
-        showFallback(win);
+        showFallback(win, 'error');
         startPolling(win);
     });
     win.on('closed', () => {
@@ -153,17 +257,10 @@ function createWindow() {
     });
     return win;
 }
-async function connectAndLoad(win) {
-    if (await checkHealth()) {
-        void win.loadURL(APP_URL);
-    }
-    else {
-        showFallback(win);
-        startPolling(win);
-    }
-}
 async function main() {
-    logToFile(`start pid=${process.pid} packaged=${electron_1.app.isPackaged} target=${APP_URL}`);
+    currentTarget = resolveTarget();
+    logToFile(`start pid=${process.pid} packaged=${electron_1.app.isPackaged} target=${currentTarget}`);
+    buildMenu();
     const win = createWindow();
     await connectAndLoad(win);
     electron_1.app.on('activate', () => {

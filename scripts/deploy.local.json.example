@@ -1,0 +1,4 @@
+{
+  "sshTarget": "user@192.168.8.50",
+  "healthUrl": "http://192.168.8.50:3001/health"
+}

@@ -1,3 +1,5 @@
+# DEPRECATED (#60): Prod laeuft auf 192.168.8.50 (Docker) - nutze npm run release (release-remote.ps1).
+# Diese Datei deployt die ALTE lokale Instanz und wird mit dem lokalen Rueckbau entfernt.
 # ============================================================================
 #  SelfManaged - local release:  Build -> Test -> Freigabe -> Deploy
 # ----------------------------------------------------------------------------

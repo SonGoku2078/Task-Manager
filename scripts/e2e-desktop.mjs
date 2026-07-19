@@ -24,11 +24,12 @@ const ok = (name, cond, extra = '') => {
   console.log(`${cond ? '✅' : '❌'} ${name}${extra ? ' — ' + extra : ''}`);
 };
 
-const launchApp = (port, udDir) => {
+const launchApp = (port, udDir, extraEnv = {}) => {
   const env = {
     ...process.env,
-    TM_DESKTOP_PORT: port,
     TM_USER_DATA_DIR: path.join(TMP, udDir),
+    ...(port ? { TM_DESKTOP_PORT: port } : {}),
+    ...extraEnv,
   };
   // VS Code terminals export this — it would demote electron.exe to plain Node.
   delete env.ELECTRON_RUN_AS_NODE;
@@ -99,6 +100,46 @@ try {
 
   await appB.close();
   appB = null;
+  killTree(srv); // free :3999 — scenario F needs it dead again
+  srv = null;
+
+  // ── Scenario D (#60): TM_DESKTOP_URL full-URL override ──
+  const appD = await launchApp(null, 'ud-d', { TM_DESKTOP_URL: 'http://127.0.0.1:3002' });
+  const pageD = await appD.firstWindow();
+  await pageD.waitForURL('http://127.0.0.1:3002/', { timeout: 15000 });
+  ok('D: TM_DESKTOP_URL override respected', true);
+  await appD.close();
+
+  // ── Scenario E (#62): saved config.json wins without env overrides ──
+  const udE = path.join(TMP, 'ud-e');
+  fs.mkdirSync(udE, { recursive: true });
+  fs.writeFileSync(path.join(udE, 'config.json'), JSON.stringify({ serverUrl: 'http://127.0.0.1:3002' }));
+  const appE = await launchApp(null, 'ud-e');
+  const pageE = await appE.firstWindow();
+  await pageE.waitForURL('http://127.0.0.1:3002/', { timeout: 15000 });
+  ok('E: persisted serverUrl from config.json used', true);
+  await appE.close();
+
+  // ── Scenario F (#62): enter a server on the fallback page ──
+  const appF = await launchApp(DEAD_PORT, 'ud-f');
+  const pageF = await appF.firstWindow();
+  await pageF.getByText('Server nicht erreichbar').waitFor({ timeout: 10000 });
+  await pageF.fill('#url', 'http://127.0.0.1:3002');
+  await pageF.click('#connect');
+  await pageF.waitForURL('http://127.0.0.1:3002/', { timeout: 15000 });
+  const cfgF = JSON.parse(fs.readFileSync(path.join(TMP, 'ud-f', 'config.json'), 'utf8'));
+  ok('F: fallback input connects + persists', cfgF.serverUrl === 'http://127.0.0.1:3002', JSON.stringify(cfgF));
+
+  // ── Scenario G (#62): menu "Server ändern…" opens the change page ──
+  await appF.evaluate(({ Menu }) => {
+    const item = Menu.getApplicationMenu()
+      ?.items.find((i) => i.label === 'Datei')
+      ?.submenu?.items.find((i) => i.label === 'Server ändern…');
+    item?.click();
+  });
+  await pageF.getByText('Server ändern').waitFor({ timeout: 10000 });
+  ok('G: menu opens change-server page', true);
+  await appF.close();
 } catch (err) {
   console.error('💥 E2E failed:', err.message);
   results.push({ name: 'run', pass: false });
@@ -106,7 +147,11 @@ try {
   if (appA) await appA.close().catch(() => {});
   if (appB) await appB.close().catch(() => {});
   if (srv) killTree(srv);
-  fs.rmSync(TMP, { recursive: true, force: true });
+  try {
+    fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 });
+  } catch {
+    /* Electron profile handles can linger briefly — leftover tmp dir is harmless */
+  }
 }
 
 const failed = results.filter((r) => !r.pass);
