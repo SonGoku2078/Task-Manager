@@ -32,9 +32,34 @@
 - **`src/api/client.ts`:** `DEFAULT_BASE_URL`-Fallback von `http://localhost:3001` auf `''` (same-origin) — nach Rückbau zeigt localhost:3001 ins Leere; same-origin ist in jedem realen Szenario korrekt (Prod-Build same-origin, Dev via VITE_API_URL, Mobile via tm-api-url).
 - **Mobile:** nur Platzhalter-Konstante in `Settings.tsx`.
 
-## 3.–6. Implementierung, Test, Gate, Deployment
+## 3. Implementierung
 
-_Wird von den Stufen ergänzt._
+- **Branch:** `feature/issue-60-server-umzug`
+- **Electron (inkl. #62):** `main.ts` — Config-Layer (`userData/config.json`), Ziel-Auflösung `TM_DESKTOP_URL > TM_DESKTOP_PORT > gespeichert > Default 192.168.8.50:3001/5173`, IPC `tm:get-target`/`tm:set-server-url` (URL-Validierung im Main), Menü „Datei → Server ändern…"; **neu** `preload.ts` (contextBridge `window.tm`); `fallback.html` mit vorbefülltem Eingabefeld + „Verbinden" (Modi error/change); DevTools zusätzlich bei `TM_USER_DATA_DIR` unterdrückt (E2E-firstWindow-Falle); v1.2.0.
+- **Deploy:** **neu** `scripts/release-remote.ps1` (DryRun-Flag, Bestätigung, ein SSH-Kommando, Health-Poll von lokal, ASCII-Ausgaben wegen PS-5.1-Encoding) + `deploy.local.json.example`; echte `deploy.local.json` (dante@…) lokal angelegt, **gitignoriert**; `npm run release` → remote, altes Script → `release-local-legacy.ps1` (DEPRECATED-Header, `npm run release:local-legacy`).
+- **Clients/Doku:** `src/api/client.ts` Default `''` (same-origin), Mobile-Platzhalter → `192.168.8.50`, README-Umgebungstabelle neu, SETUP-SPEC mit Überholt-Hinweis.
+
+## 4./5. Testdesign, Ausführung & Gate
+
+`scripts/e2e-desktop.mjs` erweitert (A–G); Dev-Backend :3002 (Neustart nötig — lief nicht mehr), Wegwerf-Server via tsx; Prod nur read-only:
+
+| Test | Ergebnis |
+|---|---|
+| A `TM_DESKTOP_PORT=3002` → App lädt Dev-UI | ✅ |
+| B1/B2 toter Port → Fallback; Server erscheint → Auto-Connect | ✅ |
+| C Doppelstart-Server → saubere Meldung | ✅ |
+| D `TM_DESKTOP_URL`-Override | ✅ |
+| E gespeicherte `config.json`-URL wird genutzt | ✅ |
+| F (#62) Eingabe auf Fallback-Seite → verbindet + persistiert | ✅ |
+| G (#62) Menü „Server ändern…" öffnet Change-Seite | ✅ |
+| Deploy-Script `-DryRun` (Config gelesen, Kommandos korrekt, nichts ausgeführt) | ✅ |
+| Regression: `npm test` 8/8, Lint geänderte Dateien 0 Findings | ✅ |
+
+Gefixt unterwegs: Test-Sequenz-Bug (Wegwerf-Server belegte :3999 noch), DevTools-firstWindow-Race (Scenario E flaky). **GATE: GO.** Packaged-Smoke folgt nach EXE-Build.
+
+## 6. CI/CD & Deployment
+
+_Nach Merge: EXE 1.2.0 im Worktree, Packaged-Smoke, Übergabe._
 
 **Übergabe-Checkliste User (nach Merge/EXE-Build):**
 - [ ] `scripts/deploy.local.json` anlegen (Vorlage kopieren, `dante@192.168.8.50` eintragen)

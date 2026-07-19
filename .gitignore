@@ -34,3 +34,4 @@ outputs/
 *.njsproj
 *.sln
 *.sw?
+scripts/deploy.local.json

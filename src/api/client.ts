@@ -2,7 +2,9 @@
 // Resolved per request so the native/mobile app can point at a LAN IP at runtime
 // (in-app "Server-URL" setting, stored in localStorage) without a rebuild.
 // Precedence: localStorage 'tm-api-url' > build-time VITE_API_URL > default.
-const DEFAULT_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
+// Fallback '' = same origin that served the app (#60): correct for the prod
+// build on any host; dev/vite sets VITE_API_URL, mobile stores tm-api-url.
+const DEFAULT_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 export function getBaseUrl(): string {
   try {

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>SelfManaged – Server nicht erreichbar</title>
+  <title>SelfManaged – Server</title>
   <style>
     html, body { height: 100%; margin: 0; }
     body {
@@ -11,7 +11,7 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
     }
     .card {
-      max-width: 460px; padding: 36px 40px; text-align: center;
+      max-width: 480px; width: 90%; padding: 36px 40px; text-align: center;
       background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
       box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
     }
@@ -27,24 +27,65 @@
       background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 5px;
       padding: 1px 6px; font-size: 0.85rem;
     }
+    .row { display: flex; gap: 8px; margin-top: 18px; }
+    input[type="url"] {
+      flex: 1; padding: 9px 12px; font-size: 0.92rem; font-family: inherit;
+      border: 1px solid #d1d5db; border-radius: 8px; color: inherit; background: #fff;
+    }
+    input[type="url"]:focus { outline: 2px solid #4caf50; border-color: #4caf50; }
+    button {
+      padding: 9px 18px; font-size: 0.92rem; font-weight: 600; font-family: inherit;
+      background: #4caf50; color: #fff; border: none; border-radius: 8px; cursor: pointer;
+    }
+    button:hover { background: #43a047; }
+    .msg { min-height: 1.2em; font-size: 0.85rem; margin-top: 10px; color: #b91c1c; }
     @media (prefers-color-scheme: dark) {
       body { background: #111827; color: #e5e7eb; }
       .card { background: #1f2937; border-color: #374151; }
       p { color: #9ca3af; }
       code { background: #111827; border-color: #374151; }
+      input[type="url"] { background: #111827; border-color: #374151; color: #e5e7eb; }
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="spinner" aria-hidden="true"></div>
-    <h1>Server nicht erreichbar</h1>
-    <p>Der Task-Manager-Server unter <code id="target">…</code> antwortet nicht.</p>
-    <p>Starte ihn mit <code>npm run prod</code> — die App verbindet sich automatisch, sobald der Server läuft.</p>
+    <div class="spinner" id="spinner" aria-hidden="true"></div>
+    <h1 id="title">Server nicht erreichbar</h1>
+    <p id="info">Der Task-Manager-Server unter <code id="target">…</code> antwortet nicht.</p>
+    <p id="hint">Prüfe, ob der Server läuft und du im richtigen Netzwerk bist — oder gib unten eine andere Adresse ein. Die App verbindet sich automatisch, sobald der Server erreichbar ist.</p>
+    <div class="row">
+      <input type="url" id="url" placeholder="http://192.168.8.50:3001" spellcheck="false" />
+      <button id="connect">Verbinden</button>
+    </div>
+    <div class="msg" id="msg"></div>
   </div>
   <script>
-    const t = new URLSearchParams(location.search).get('target');
-    if (t) document.getElementById('target').textContent = t;
+    const params = new URLSearchParams(location.search);
+    const target = params.get('target') ?? '';
+    const mode = params.get('mode') ?? 'error';
+    document.getElementById('target').textContent = target;
+    const input = document.getElementById('url');
+    input.value = target;
+    if (mode === 'change') {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('title').textContent = 'Server ändern';
+      document.getElementById('info').innerHTML = 'Aktuelle Adresse: <code>' + target + '</code>';
+      document.getElementById('hint').textContent =
+        'Neue Server-Adresse eingeben und verbinden — die Einstellung wird gespeichert.';
+      input.focus();
+    }
+    const msg = document.getElementById('msg');
+    const submit = async () => {
+      msg.textContent = '';
+      if (!window.tm) { msg.textContent = 'Interner Fehler: Bridge fehlt.'; return; }
+      const res = await window.tm.setServerUrl(input.value);
+      if (!res.ok) msg.textContent = res.error ?? 'Ungültige Adresse.';
+      // On success the main process navigates (or returns here in error mode
+      // with the new target and keeps polling).
+    };
+    document.getElementById('connect').addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   </script>
 </body>
 </html>
