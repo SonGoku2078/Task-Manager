@@ -3,7 +3,7 @@ import type { ClipboardEvent } from 'react';
 import { marked } from 'marked';
 import type { Task, Attachment } from '../types';
 import { useStore } from '../store';
-import { dateKey, isTodayFlagActive } from '../selectors';
+import { dateKey, isTodayFlagActive, countsAsToday, isImplicitToday } from '../selectors';
 import { taskShareUrl } from '../config';
 import ClearableInput from './ClearableInput';
 import Avatar from './Avatar';
@@ -369,14 +369,22 @@ export default function TaskDetailPanel({ task, bulkSelectedIds }: TaskDetailPan
             >
               ★ Nächste Aktion
             </button>
+            {/* #81: Bei heute faelligen Tasks ist die Markierung implizit —
+                aktiv dargestellt, aber gesperrt: ein Umschalten waere wirkungslos,
+                der Task bliebe durch sein Faelligkeitsdatum in der Heute-Ansicht. */}
             <button
-              className={`detail-flag ${isTodayFlagActive(task) ? 'on' : ''}`}
+              className={`detail-flag ${countsAsToday(task) ? 'on' : ''}`}
+              disabled={isImplicitToday(task)}
               onClick={() =>
                 applyFlag({
                   todayDate: isTodayFlagActive(task) ? null : dateKey(new Date()),
                 })
               }
-              title="Für heute vormerken (verfällt über Nacht)"
+              title={
+                isImplicitToday(task)
+                  ? 'Heute fällig — erscheint automatisch in Heute'
+                  : 'Für heute vormerken (verfällt über Nacht)'
+              }
             >
               ☀️ Heute
             </button>

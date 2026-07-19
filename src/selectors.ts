@@ -70,6 +70,18 @@ export const isTodayFlagActive = (task: Task, now = new Date()): boolean =>
 export const isOverdue = (task: Task) =>
   !!task.dueDate && !task.completed && task.dueDate < startOfDay(new Date());
 
+// Gilt der Task heute als "Heute" — egal ob manuell markiert oder heute
+// faellig? (#81) Die Heute-Ansicht zeigt beide Faelle; die Markierung soll das
+// widerspiegeln. Bewusst getrennt von isTodayFlagActive, das weiterhin NUR das
+// manuell gesetzte Flag meint (Umschalten, Ablauf ueber Nacht).
+export const countsAsToday = (task: Task, now = new Date()): boolean =>
+  isTodayFlagActive(task, now) || (!!task.dueDate && isSameDay(task.dueDate, now));
+
+// Nur wegen der Faelligkeit "heute" — dann ist das Flag implizit und darf nicht
+// umgeschaltet werden (der Task bliebe ohnehin in der Heute-Ansicht).
+export const isImplicitToday = (task: Task, now = new Date()): boolean =>
+  !isTodayFlagActive(task, now) && !!task.dueDate && isSameDay(task.dueDate, now);
+
 // Searchable status keywords (German + English) per active GTD flag.
 const statusKeywords = (task: Task): string[] => {
   const k: string[] = [];
