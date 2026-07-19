@@ -539,10 +539,22 @@ a.detail-link-open { text-decoration: none; }
 .detail-row {
   display: flex;
   gap: 12px;
+  /* Seit #73 stehen vier Felder in dieser Zeile (Faelligkeit | Uhrzeit | Soll |
+     Ist). Im schmalsten Panel (320px) passen die nicht nebeneinander, also
+     umbrechen statt ueberlaufen. */
+  flex-wrap: wrap;
 }
 
 .detail-row .detail-field {
-  flex: 1;
+  /* min-width: 0 erlaubt das Schrumpfen unter die intrinsische Breite der
+     Datums-/Zeit-Eingaben; die Basis steuert, ab wann umgebrochen wird. */
+  flex: 1 1 116px;
+  min-width: 0;
+}
+
+.detail-row .detail-input,
+.detail-row .detail-select {
+  min-width: 0;
 }
 
 .cat-chips {
