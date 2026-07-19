@@ -1,0 +1,21 @@
+# Ergaenzung fuer ~/server/docker-compose.yml auf dem Prod-Server (#61).
+# Diesen Dienst in den Abschnitt `services:` der bestehenden Compose-Datei
+# kopieren — der Task-Manager-Dienst selbst bleibt unveraendert.
+#
+#   docker compose up -d ics-proxy
+#
+# Wichtig: Der Port ist absichtlich NUR an 127.0.0.1 gebunden. Der Filter ist
+# damit weder aus dem LAN noch aus dem Internet direkt erreichbar — nur der
+# NetBird-Agent auf demselben Host kommt heran und veroeffentlicht ihn.
+
+services:
+  ics-proxy:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      # Pfad relativ zu ~/server/ — das Repo liegt unter ~/server/taskmanager.
+      - ./taskmanager/deploy/ics-proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:8088:8080"
+    depends_on:
+      - taskmanager
