@@ -408,3 +408,9 @@
 .env-badge.env-prod { background: #fee2e2; color: #b91c1c; }
 .env-badge.env-dev { background: #dcfce7; color: #15803d; }
 .env-badge.env-custom { background: var(--hover-bg); color: var(--text-secondary); }
+
+/* #80: ehrlicher Hinweis, wenn das Kopieren nicht moeglich war. */
+.settings-copy-failed {
+  color: var(--alert-red, #e5484d);
+  margin: 4px 0 0;
+}

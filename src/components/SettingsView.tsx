@@ -5,6 +5,7 @@ import { importFromNozbeApi, mapNozbe, loginNozbe, type NozbeExport } from '../n
 import { playAlarm, startFocusSound, stopFocusSound, unlockAudio } from '../pomodoroSound';
 import { APP_VERSION, BUILD_TIME, apiEnvironment } from '../version';
 import { getBaseUrl } from '../api/client';
+import { copyToClipboard } from '../clipboard';
 import './SettingsView.css';
 
 const POMO_ALARM_OPTIONS = [
@@ -538,7 +539,17 @@ function MobileAccessSection() {
     let on = true;
     fetch('/api/lan')
       .then((r) => r.json())
-      .then((d) => { if (on) { setIps(Array.isArray(d.ips) ? d.ips : []); setLoaded(true); } })
+      .then((d) => {
+        if (!on) return;
+        // `host` kommt aus der Anfrage und ist damit erreichbar; die rohen
+        // `ips` sind im Docker-Betrieb Container-Adressen (#79). Deshalb den
+        // Anfrage-Host zuerst und Doppelungen vermeiden.
+        const list: string[] = [];
+        if (typeof d.host === 'string' && d.host && d.host !== 'localhost') list.push(d.host);
+        for (const ip of Array.isArray(d.ips) ? d.ips : []) if (!list.includes(ip)) list.push(ip);
+        setIps(list);
+        setLoaded(true);
+      })
       .catch(() => { if (on) setLoaded(true); });
     return () => { on = false; };
   }, []);
@@ -572,6 +583,7 @@ function CalendarFeedSection() {
   const [urls, setUrls] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [copyFailed, setCopyFailed] = useState<string | null>(null);
   useEffect(() => {
     let on = true;
     fetch('/api/calendar-feed')
@@ -581,13 +593,12 @@ function CalendarFeedSection() {
     return () => { on = false; };
   }, []);
   const copy = async (u: string) => {
-    try {
-      await navigator.clipboard.writeText(u);
-    } catch {
-      /* clipboard may be blocked on plain http — URL stays selectable */
-    }
-    setCopied(u);
-    window.setTimeout(() => setCopied(null), 1500);
+    const ok = await copyToClipboard(u);
+    // Erfolg nur melden, wenn wirklich kopiert wurde (#80): frueher lief
+    // setCopied auch im Fehlerfall und die Schaltflaeche log.
+    setCopied(ok ? u : null);
+    setCopyFailed(ok ? null : u);
+    window.setTimeout(() => { setCopied(null); setCopyFailed(null); }, ok ? 1500 : 4000);
   };
   return (
     <section className="settings-section">
@@ -607,8 +618,13 @@ function CalendarFeedSection() {
             <li key={u}>
               <code>{u}</code>{' '}
               <button className="theme-btn" onClick={() => copy(u)}>
-                {copied === u ? '✓ kopiert' : '📋 Kopieren'}
+                {copied === u ? '✓ kopiert' : copyFailed === u ? '✕ nicht kopiert' : '📋 Kopieren'}
               </button>
+              {copyFailed === u && (
+                <p className="settings-hint settings-copy-failed">
+                  Kopieren nicht möglich — URL markieren und Strg+C drücken.
+                </p>
+              )}
             </li>
           ))}
         </ul>

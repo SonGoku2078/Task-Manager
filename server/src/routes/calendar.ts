@@ -2,7 +2,7 @@ import { Router } from 'express';
 import crypto from 'node:crypto';
 import { db } from '../db';
 import { tasksToICS, IcsTask } from '../ics';
-import { PORT, lanIPv4 } from '../lan';
+import { PORT, lanIPv4, publicAddress, isLoopback } from '../lan';
 
 // The feed URL carries a secret token because the server has no auth at all —
 // without it anyone on the LAN could read every task via the calendar URL.
@@ -39,17 +39,24 @@ const router = Router();
 
 // Feed info for the settings UIs (web + mobile). Generating the token lazily
 // here means it exists from the first settings visit onwards.
-router.get('/api/calendar-feed', (_req, res) => {
+router.get('/api/calendar-feed', (req, res) => {
   const token = getOrCreateIcsToken();
   const feedPath = `/calendar/${token}.ics`;
-  res.json({
-    token,
-    port: PORT,
-    urls: [
-      `http://localhost:${PORT}${feedPath}`,
-      ...lanIPv4().map((ip) => `http://${ip}:${PORT}${feedPath}`),
-    ],
-  });
+  // Die Adresse aus der Anfrage steht zuerst: sie ist nachweislich erreichbar
+  // (diese Anfrage kam ja darueber). Im Container liefert lanIPv4() nur
+  // Bridge-Adressen wie 172.18.0.3, die niemand aufrufen kann (#79).
+  const addr = publicAddress(req);
+  const urls = [`${addr.baseUrl}${feedPath}`];
+  // Interface-Adressen NUR als Notnagel, wenn die Anfrage ueber localhost kam
+  // (dann laesst sich daraus keine Adresse fuer andere Geraete ableiten).
+  // Sonst waeren es im Container die unbrauchbaren 172.x-Bridge-Adressen.
+  if (isLoopback(addr.hostname)) {
+    for (const ip of lanIPv4()) {
+      const u = `http://${ip}:${PORT}${feedPath}`;
+      if (!urls.includes(u)) urls.push(u);
+    }
+  }
+  res.json({ token, port: PORT, baseUrl: addr.baseUrl, urls });
 });
 
 // The subscribable feed. 404 (not 403) on a bad token — don't confirm the
