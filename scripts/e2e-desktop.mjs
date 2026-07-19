@@ -139,6 +139,21 @@ try {
   });
   await pageF.getByText('Server ändern').waitFor({ timeout: 10000 });
   ok('G: menu opens change-server page', true);
+
+  // ── Scenario H (#66): update entries in the menu ──
+  const menu = await appF.evaluate(({ Menu, app }) => {
+    const file = Menu.getApplicationMenu()?.items.find((i) => i.label === 'Datei');
+    return {
+      labels: (file?.submenu?.items ?? []).map((i) => i.label),
+      version: app.getVersion(),
+    };
+  });
+  ok(
+    'H: menu offers update check + version',
+    menu.labels.some((l) => /Nach Updates suchen/.test(l)) &&
+      menu.labels.some((l) => l === `Version ${menu.version}`),
+    menu.labels.join(' | ')
+  );
   await appF.close();
 } catch (err) {
   console.error('💥 E2E failed:', err.message);

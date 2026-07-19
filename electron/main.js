@@ -37,6 +37,7 @@ const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const http = __importStar(require("http"));
+const electron_updater_1 = require("electron-updater");
 // Thin client (#55/#60/#62): the desktop app is a window onto a running
 // Task-Manager server. Target resolution, first hit wins:
 //   1. TM_DESKTOP_URL  — full URL override (tests/power users)
@@ -189,6 +190,100 @@ electron_1.ipcMain.handle('tm:set-server-url', async (_e, input) => {
     }
     return { ok: true };
 });
+// ── Auto-Update (#66) ────────────────────────────────────────────────────────
+// Laedt ein neues Release im Hintergrund und installiert es beim Beenden.
+// Der Feed sind die GitHub-Releases dieses (oeffentlichen) Repos, gefuellt vom
+// desktop-exe-Workflow; ohne Netz/Release passiert schlicht nichts.
+const UPDATE_CHECK_DELAY_MS = 8000;
+let updateReady = null; // Version, sobald heruntergeladen
+let manualCheck = false; // true = Nutzer hat "Nach Updates suchen" geklickt
+function notify(title, body) {
+    try {
+        if (electron_1.Notification.isSupported())
+            new electron_1.Notification({ title, body }).show();
+    }
+    catch {
+        /* Benachrichtigungen sind Beiwerk, nie kritisch */
+    }
+}
+function setupAutoUpdater() {
+    electron_updater_1.autoUpdater.autoDownload = true;
+    electron_updater_1.autoUpdater.autoInstallOnAppQuit = true;
+    electron_updater_1.autoUpdater.logger = null;
+    electron_updater_1.autoUpdater.on('update-available', (info) => {
+        logToFile(`update-available ${info.version}`);
+        if (manualCheck)
+            notify('Update wird geladen', `Version ${info.version} wird im Hintergrund geladen.`);
+    });
+    electron_updater_1.autoUpdater.on('update-not-available', () => {
+        logToFile('update-not-available');
+        if (manualCheck) {
+            manualCheck = false;
+            void electron_1.dialog.showMessageBox({
+                type: 'info',
+                title: 'Kein Update',
+                message: `SelfManaged ${electron_1.app.getVersion()} ist bereits aktuell.`,
+                buttons: ['OK'],
+            });
+        }
+    });
+    electron_updater_1.autoUpdater.on('update-downloaded', (info) => {
+        updateReady = info.version;
+        logToFile(`update-downloaded ${info.version}`);
+        buildMenu(); // Menue zeigt jetzt "Update installieren und neu starten"
+        void electron_1.dialog
+            .showMessageBox({
+            type: 'info',
+            title: 'Update bereit',
+            message: `Version ${info.version} ist bereit.`,
+            detail: 'Jetzt neu starten oder beim naechsten Beenden automatisch installieren.',
+            buttons: ['Jetzt neu starten', 'Spaeter'],
+            defaultId: 1,
+            cancelId: 1,
+        })
+            .then((res) => {
+            if (res.response === 0)
+                electron_updater_1.autoUpdater.quitAndInstall();
+        });
+    });
+    electron_updater_1.autoUpdater.on('error', (err) => {
+        logToFile(`update-error ${String(err)}`);
+        if (manualCheck) {
+            manualCheck = false;
+            void electron_1.dialog.showMessageBox({
+                type: 'warning',
+                title: 'Update-Pruefung fehlgeschlagen',
+                message: 'Die Update-Pruefung hat nicht geklappt.',
+                detail: String(err),
+                buttons: ['OK'],
+            });
+        }
+    });
+    // Verzoegert pruefen, damit der Start nicht ausgebremst wird. Im Dev-Betrieb
+    // (unpackaged) gibt es keine Update-Metadaten -> gar nicht erst versuchen.
+    if (electron_1.app.isPackaged) {
+        setTimeout(() => {
+            void electron_updater_1.autoUpdater.checkForUpdates().catch((e) => logToFile(`update-check failed ${String(e)}`));
+        }, UPDATE_CHECK_DELAY_MS);
+    }
+}
+function checkForUpdatesManually() {
+    if (updateReady) {
+        electron_updater_1.autoUpdater.quitAndInstall();
+        return;
+    }
+    if (!electron_1.app.isPackaged) {
+        void electron_1.dialog.showMessageBox({
+            type: 'info',
+            title: 'Nach Updates suchen',
+            message: 'Update-Pruefung gibt es nur in der installierten App.',
+            buttons: ['OK'],
+        });
+        return;
+    }
+    manualCheck = true;
+    void electron_updater_1.autoUpdater.checkForUpdates().catch((e) => logToFile(`manual update-check failed ${String(e)}`));
+}
 function buildMenu() {
     const template = [
         {
@@ -203,6 +298,14 @@ function buildMenu() {
                         }
                     },
                 },
+                { type: 'separator' },
+                {
+                    label: updateReady
+                        ? `Update ${updateReady} installieren und neu starten`
+                        : 'Nach Updates suchen...',
+                    click: checkForUpdatesManually,
+                },
+                { label: `Version ${electron_1.app.getVersion()}`, enabled: false },
                 { type: 'separator' },
                 { role: 'quit', label: 'Beenden' },
             ],
@@ -261,6 +364,7 @@ async function main() {
     currentTarget = resolveTarget();
     logToFile(`start pid=${process.pid} packaged=${electron_1.app.isPackaged} target=${currentTarget}`);
     buildMenu();
+    setupAutoUpdater();
     const win = createWindow();
     await connectAndLoad(win);
     electron_1.app.on('activate', () => {
