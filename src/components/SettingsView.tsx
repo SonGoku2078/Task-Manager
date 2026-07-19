@@ -3,7 +3,7 @@ import { useStore, DEFAULT_PALETTE } from '../store';
 import type { MemberRole } from '../types';
 import { importFromNozbeApi, mapNozbe, loginNozbe, type NozbeExport } from '../nozbe';
 import { playAlarm, startFocusSound, stopFocusSound, unlockAudio } from '../pomodoroSound';
-import { APP_VERSION, BUILD_TIME, apiEnvironment } from '../version';
+import { APP_VERSION, BUILD_TIME, apiEnvironment, fetchReleasedVersions, type ReleasedVersions } from '../version';
 import { getBaseUrl } from '../api/client';
 import { copyToClipboard } from '../clipboard';
 import './SettingsView.css';
@@ -170,29 +170,7 @@ export default function SettingsView() {
 
   return (
     <div className="settings-view">
-      {/* #56: which software version is running against which environment. */}
-      <section className="settings-section">
-        <h3 className="settings-heading">ℹ️ Version & Umgebung</h3>
-        <div className="settings-version">
-          <div className="version-row">
-            <span className="version-key">Version</span>
-            <code>{APP_VERSION}</code>
-          </div>
-          <div className="version-row">
-            <span className="version-key">Build</span>
-            <code>{BUILD_TIME ? new Date(BUILD_TIME).toLocaleString('de-DE') : '—'}</code>
-          </div>
-          <div className="version-row">
-            <span className="version-key">Profil</span>
-            <code>{(import.meta.env.VITE_APP_ENV as string | undefined) ?? import.meta.env.MODE}</code>
-          </div>
-          <div className="version-row">
-            <span className="version-key">Server</span>
-            <code>{env.url}</code>
-            <span className={`env-badge env-${env.kind}`}>{env.label}</span>
-          </div>
-        </div>
-      </section>
+      <VersionSection env={env} />
 
       <section className="settings-section">
         <h3 className="settings-heading">Profil</h3>
@@ -532,6 +510,70 @@ const EMPTY_COLOR_LABELS: Record<string, string> = {};
 
 // Shows this PC's current LAN address(es) so you can type them into the mobile
 // app (⚙ Server-URL). The IP can change (DHCP) — this always reflects the current one.
+// #56/#84: Was laeuft hier, gegen welche Umgebung — und was ist auf den
+// anderen Plattformen zuletzt veroeffentlicht worden?
+function VersionSection({ env }: { env: ReturnType<typeof apiEnvironment> }) {
+  const [released, setReleased] = useState<ReleasedVersions | null>(null);
+  const [releasedLoaded, setReleasedLoaded] = useState(false);
+  // Version der Desktop-App, falls die Seite dort laeuft (Bridge aus #62/#84).
+  const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    let on = true;
+    fetchReleasedVersions().then((r) => { if (on) { setReleased(r); setReleasedLoaded(true); } });
+    // window.tm existiert nur in der Desktop-App; getAppVersion erst ab 1.4.0,
+    // deshalb defensiv (aeltere EXE zeigt einfach nichts an).
+    const tm = (window as unknown as { tm?: { getAppVersion?: () => Promise<string> } }).tm;
+    tm?.getAppVersion?.().then((v) => { if (on) setDesktopVersion(v); }).catch(() => {});
+    return () => { on = false; };
+  }, []);
+
+  const pub = (v: string | null) =>
+    !releasedLoaded ? '…' : (v ?? 'nicht abrufbar');
+
+  return (
+    <section className="settings-section">
+      <h3 className="settings-heading">ℹ️ Version & Umgebung</h3>
+      <div className="settings-version">
+        <div className="version-row">
+          <span className="version-key">Diese App</span>
+          <code>{APP_VERSION}</code>
+          <span className="version-note">Web{desktopVersion ? ` · Desktop ${desktopVersion}` : ''}</span>
+        </div>
+        <div className="version-row">
+          <span className="version-key">Build</span>
+          <code>{BUILD_TIME ? new Date(BUILD_TIME).toLocaleString('de-DE') : '—'}</code>
+        </div>
+        <div className="version-row">
+          <span className="version-key">Profil</span>
+          <code>{(import.meta.env.VITE_APP_ENV as string | undefined) ?? import.meta.env.MODE}</code>
+        </div>
+        <div className="version-row">
+          <span className="version-key">Server</span>
+          <code>{env.url}</code>
+          <span className={`env-badge env-${env.kind}`}>{env.label}</span>
+        </div>
+      </div>
+
+      <h4 className="settings-subheading">Zuletzt veröffentlicht</h4>
+      <div className="settings-version">
+        <div className="version-row">
+          <span className="version-key">Desktop</span>
+          <code>{pub(released?.desktop ?? null)}</code>
+          {desktopVersion && released?.desktop && !released.desktop.endsWith(desktopVersion) && (
+            <span className="env-badge env-custom">Update verfügbar</span>
+          )}
+        </div>
+        <div className="version-row">
+          <span className="version-key">Android</span>
+          <code>{pub(released?.mobile ?? null)}</code>
+          <span className="version-note">installierte Version siehe Handy-Einstellungen</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function MobileAccessSection() {
   const [ips, setIps] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);

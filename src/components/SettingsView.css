@@ -414,3 +414,6 @@
   color: var(--alert-red, #e5484d);
   margin: 4px 0 0;
 }
+
+/* #84: Zusatzhinweis neben einer Versionszeile. */
+.version-note { font-size: 12px; color: var(--text-secondary); }

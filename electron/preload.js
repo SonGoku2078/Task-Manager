@@ -7,4 +7,6 @@ const electron_1 = require("electron");
 electron_1.contextBridge.exposeInMainWorld('tm', {
     getTarget: () => electron_1.ipcRenderer.invoke('tm:get-target'),
     setServerUrl: (url) => electron_1.ipcRenderer.invoke('tm:set-server-url', url),
+    // #84: laufende Version der Desktop-App fuer die Einstellungen.
+    getAppVersion: () => electron_1.ipcRenderer.invoke('tm:get-app-version'),
 });

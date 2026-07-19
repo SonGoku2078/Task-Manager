@@ -35,3 +35,6 @@ outputs/
 *.sln
 *.sw?
 scripts/deploy.local.json
+
+# Vom Deploy-Skript geschrieben (#84) — nie committen.
+.version

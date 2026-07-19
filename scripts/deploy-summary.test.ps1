@@ -73,6 +73,29 @@ Check 'Leerfall: Daten nicht pruefbar' ($out2 -match 'nicht pruefbar')
 $okBanner = (Write-TmBanner $true 'DEPLOY ERFOLGREICH ABGESCHLOSSEN' 6>&1 | Out-String)
 Check 'Banner: Text + Rahmen' (($okBanner -match 'DEPLOY ERFOLGREICH ABGESCHLOSSEN') -and ($okBanner -match '={10,}'))
 
+
+# --- #84: Version vorher -> nachher, live ausgelieferte Version ---
+$mNew = Get-TmMarkers @(
+    'TM_MARK|version_before|v0.2.9-16-g1de4939',
+    'TM_MARK|version_after|v0.2.9-32-gca82c88',
+    'TM_MARK|done|ok'
+)
+$outNew = (Write-TmSummary -Markers $mNew -LiveVersion 'v0.2.9-32-gca82c88' 6>&1 | Out-String)
+Check '#84 Version zeigt vorher -> nachher' ($outNew -match 'v0.2.9-16-g1de4939 -> v0.2.9-32-gca82c88')
+Check '#84 als NEU gekennzeichnet' ($outNew -match '(NEU)')
+Check '#84 Live-Version ausgewiesen' ($outNew -match 'Live.*ausgeliefert')
+Check '#84 kein desktop-/mobile-Prefix' (-not ($outNew -match 'desktop-v|mobile-v'))
+
+$mSame = Get-TmMarkers @('TM_MARK|version_before|v0.2.9-32-gca82c88','TM_MARK|version_after|v0.2.9-32-gca82c88','TM_MARK|done|ok')
+$outSame = (Write-TmSummary -Markers $mSame -LiveVersion 'v0.2.9-32-gca82c88' 6>&1 | Out-String)
+Check '#84 gleiche Version -> unveraendert' ($outSame -match 'unveraendert')
+
+$outDrift = (Write-TmSummary -Markers $mNew -LiveVersion 'v0.2.9-16-g1de4939' 6>&1 | Out-String)
+Check '#84 Abweichung live vs. gebaut wird gemeldet' ($outDrift -match 'ACHTUNG')
+
+$outNoLive = (Write-TmSummary -Markers $mNew 6>&1 | Out-String)
+Check '#84 fehlende Live-Version wird benannt' ($outNoLive -match 'nicht ermittelbar')
+
 Write-Host ""
 if ($fails -eq 0) { Write-Host "ALLE TESTS BESTANDEN" -ForegroundColor Green; exit 0 }
 Write-Host ("{0} TEST(S) FEHLGESCHLAGEN" -f $fails) -ForegroundColor Red

@@ -46,13 +46,23 @@ set -e
 cd ~/server
 B=$(git -C taskmanager rev-parse HEAD)
 echo "TM_MARK|before|$B"
+# --match "v*": nur Projekt-Tags, sonst kapern desktop-v*/mobile-v* die
+# Versionsanzeige der Web-App (#84).
+VB=$(git -C taskmanager describe --tags --match "v*" --always 2>/dev/null)
+echo "TM_MARK|version_before|$VB"
 echo "TM_MARK|image_before|$(docker compose images -q taskmanager 2>/dev/null | head -c 19)"
 echo "TM_MARK|t_pull_start|$(date +%s)"
 git -C taskmanager pull
 echo "TM_MARK|t_pull_end|$(date +%s)"
 A=$(git -C taskmanager rev-parse HEAD)
 echo "TM_MARK|after|$A"
-echo "TM_MARK|describe|$(git -C taskmanager describe --tags --always 2>/dev/null)"
+VA=$(git -C taskmanager describe --tags --match "v*" --always 2>/dev/null)
+echo "TM_MARK|version_after|$VA"
+echo "TM_MARK|describe|$VA"
+# Versionsdatei fuer den Build: im Container gibt es kein Git-Repo, deshalb
+# liest vite.config.ts diese Datei (#84).
+printf '%s' "$VA" > taskmanager/.version
+echo "TM_MARK|version_file|$(cat taskmanager/.version)"
 git -C taskmanager log --oneline "$B..$A" | sed "s/^/TM_MARK|commit|/"
 echo "TM_MARK|t_build_start|$(date +%s)"
 docker compose up -d --build taskmanager
@@ -152,6 +162,18 @@ if (-not $ok) {
     exit 1
 }
 
+# --- Live ausgelieferte Version (#84) ---
+# Aus dem Meta-Tag der ausgelieferten index.html: das ist, was wirklich im
+# Browser ankommt — nicht nur, was gebaut wurde.
+$liveVersion = ''
+try {
+    $html = (Invoke-WebRequest $baseUrl -TimeoutSec 10 -UseBasicParsing).Content
+    $m = [regex]::Match($html, '<meta name="app-version" content="([^"]*)"')
+    if ($m.Success) { $liveVersion = $m.Groups[1].Value }
+} catch {
+    $liveVersion = ''
+}
+
 # --- Datenbestaetigung (nur lesende GETs) ---
 $counts = @{ ok = $false; tasks = 0; projects = 0; error = '' }
 try {
@@ -168,6 +190,5 @@ $sw.Stop()
 
 Write-TmBanner $true "DEPLOY ERFOLGREICH ABGESCHLOSSEN"
 Write-TmSummary -Markers $markers -HealthMs $healthMs -HealthWaitSec $healthSw.Elapsed.TotalSeconds `
-    -TotalSec $sw.Elapsed.TotalSeconds -Counts $counts -HealthUrl $healthUrl
-Write-Host "Version im Browser pruefen: Einstellungen -> 'Version & Umgebung'" -ForegroundColor DarkGray
+    -TotalSec $sw.Elapsed.TotalSeconds -Counts $counts -HealthUrl $healthUrl -LiveVersion $liveVersion
 Write-Host ""
