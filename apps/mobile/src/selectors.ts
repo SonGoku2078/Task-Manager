@@ -62,13 +62,16 @@ export const mobileDoneToday = (tasks: Task[]): Task[] => {
 };
 
 export interface NextWeekGroup {
-  key: 'today' | 'tomorrow' | 'week' | 'future';
+  key: 'overdue' | 'today' | 'tomorrow' | 'week' | 'future';
   label: string;
   tasks: Task[];
 }
 
 // Next Week: open tasks due within the next 7 days (or flagged thisWeek),
-// grouped Today / Tomorrow / This Week / Future, each sorted by due date.
+// grouped Overdue / Today / Tomorrow / This Week / Future, each sorted by due
+// date. Overdue tasks get their own group (#64): they used to fall into
+// "Diese Woche" (the due-date filter had no lower bound), which buried months
+// of backlog under a heading that claimed to show the current week.
 export const mobileNextWeek = (tasks: Task[]): NextWeekGroup[] => {
   const today = new Date();
   const tomorrow = addDays(today, 1);
@@ -84,6 +87,7 @@ export const mobileNextWeek = (tasks: Task[]): NextWeekGroup[] => {
     (a.dueDate ? +a.dueDate : Infinity) - (b.dueDate ? +b.dueDate : Infinity);
 
   const groups: NextWeekGroup[] = [
+    { key: 'overdue', label: 'Überfällig', tasks: [] },
     { key: 'today', label: 'Heute', tasks: [] },
     { key: 'tomorrow', label: 'Morgen', tasks: [] },
     { key: 'week', label: 'Diese Woche', tasks: [] },
@@ -91,11 +95,14 @@ export const mobileNextWeek = (tasks: Task[]): NextWeekGroup[] => {
   ];
 
   for (const t of relevant) {
-    if (t.dueDate && isSameDay(t.dueDate, today)) groups[0].tasks.push(t);
-    else if (t.dueDate && isSameDay(t.dueDate, tomorrow)) groups[1].tasks.push(t);
-    else if (t.dueDate && t.dueDate <= weekEnd) groups[2].tasks.push(t);
-    else groups[3].tasks.push(t);
+    // Overdue first — isOverdue compares against the start of today, so a task
+    // due later today still belongs in "Heute".
+    if (isOverdue(t)) groups[0].tasks.push(t);
+    else if (t.dueDate && isSameDay(t.dueDate, today)) groups[1].tasks.push(t);
+    else if (t.dueDate && isSameDay(t.dueDate, tomorrow)) groups[2].tasks.push(t);
+    else if (t.dueDate && t.dueDate <= weekEnd) groups[3].tasks.push(t);
+    else groups[4].tasks.push(t);
   }
-  for (const g of groups) g.tasks.sort(byDue);
+  for (const g of groups) g.tasks.sort(byDue); // oldest due date first in Überfällig
   return groups.filter((g) => g.tasks.length > 0);
 };

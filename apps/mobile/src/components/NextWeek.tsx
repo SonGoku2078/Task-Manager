@@ -23,7 +23,7 @@ export default function NextWeek({ onOpenTask }: { onOpenTask: (id: string) => v
     <div className="m-list" ref={listRef}>
       {groups.map((g) => (
         <section key={g.key} className="m-group">
-          <h2 className="m-group-head">
+          <h2 className={`m-group-head ${g.key === 'overdue' ? 'is-overdue' : ''}`}>
             {g.label} <span className="m-group-count">{g.tasks.length}</span>
           </h2>
           {g.tasks.map((t) => (
