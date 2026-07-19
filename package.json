@@ -20,6 +20,7 @@
     "preview": "vite preview",
     "test": "tsx scripts/recurrence.test.ts && tsx scripts/todayflag.test.ts && tsx scripts/ics.test.ts && tsx scripts/widgetmeta.test.ts && tsx scripts/sharefields.test.ts && tsx scripts/pomodoro.test.ts && tsx scripts/evernote.test.ts && tsx scripts/totals.test.ts",
     "test:report": "node scripts/run-tests.mjs",
+    "test:deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-summary.test.ps1",
     "release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-remote.ps1",
     "release:local-legacy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-local-legacy.ps1"
   },
