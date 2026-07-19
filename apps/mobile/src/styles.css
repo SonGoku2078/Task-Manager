@@ -313,6 +313,8 @@ body {
   background: var(--card-bg); padding: 8px; margin-bottom: 12px;
 }
 .m-group-head.is-today { color: var(--accent); }
+/* #64: Überfällige stehen als eigene Gruppe oben und sind rot markiert. */
+.m-group-head.is-overdue { color: var(--alert-red); }
 .m-empty-sm { padding: 4px 8px; font-size: 13px; }
 .m-cal-toolbar {
   display: flex; align-items: center; justify-content: space-between;
