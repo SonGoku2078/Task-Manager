@@ -63,6 +63,10 @@ jobs:
       - name: Build
         working-directory: electron
         # tsc zuerst: sonst wuerde ein veraltetes committetes main.js gepackt.
+        # Der Installer heisst per artifactName (electron/package.json) bewusst
+        # OHNE Leerzeichen: GitHub ersetzt die beim Upload durch Punkte,
+        # latest.yml erwartet aber exakt den Bindestrich-Namen — sonst laeuft
+        # der Update-Download in ein 404.
         run: npx tsc && npx electron-builder --win --x64 --publish never
 
       - name: Installer + latest.yml ans Release haengen (Tag-Builds)
