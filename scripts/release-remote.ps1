@@ -40,11 +40,35 @@ if (-not $sshTarget -or -not $healthUrl) {
 }
 $baseUrl = $healthUrl -replace '/health/?$', ''
 
-# Remote-Kommando: deployt UND meldet Kennzahlen als TM_MARK|<key>|<value>.
-# Einzeiler-Kette, damit ein Fehlschlag sofort abbricht (&&).
-$remoteCmd = @'
-cd ~/server && B=$(git -C taskmanager rev-parse HEAD) && echo "TM_MARK|before|$B" && echo "TM_MARK|image_before|$(docker compose images -q taskmanager 2>/dev/null | head -c 19)" && echo "TM_MARK|t_pull_start|$(date +%s)" && git -C taskmanager pull && echo "TM_MARK|t_pull_end|$(date +%s)" && A=$(git -C taskmanager rev-parse HEAD) && echo "TM_MARK|after|$A" && echo "TM_MARK|describe|$(git -C taskmanager describe --tags --always 2>/dev/null)" && git -C taskmanager log --oneline "$B..$A" | sed "s/^/TM_MARK|commit|/" && echo "TM_MARK|t_build_start|$(date +%s)" && docker compose up -d --build taskmanager && echo "TM_MARK|t_build_end|$(date +%s)" && echo "TM_MARK|image_after|$(docker compose images -q taskmanager 2>/dev/null | head -c 19)" && echo "TM_MARK|done|ok"
-'@.Trim()
+# Remote-Skript: deployt UND meldet Kennzahlen als TM_MARK|<key>|<value>.
+$remoteScript = @'
+set -e
+cd ~/server
+B=$(git -C taskmanager rev-parse HEAD)
+echo "TM_MARK|before|$B"
+echo "TM_MARK|image_before|$(docker compose images -q taskmanager 2>/dev/null | head -c 19)"
+echo "TM_MARK|t_pull_start|$(date +%s)"
+git -C taskmanager pull
+echo "TM_MARK|t_pull_end|$(date +%s)"
+A=$(git -C taskmanager rev-parse HEAD)
+echo "TM_MARK|after|$A"
+echo "TM_MARK|describe|$(git -C taskmanager describe --tags --always 2>/dev/null)"
+git -C taskmanager log --oneline "$B..$A" | sed "s/^/TM_MARK|commit|/"
+echo "TM_MARK|t_build_start|$(date +%s)"
+docker compose up -d --build taskmanager
+echo "TM_MARK|t_build_end|$(date +%s)"
+echo "TM_MARK|image_after|$(docker compose images -q taskmanager 2>/dev/null | head -c 19)"
+echo "TM_MARK|done|ok"
+'@ -replace "`r`n", "`n"   # LF-Zeilenenden, sonst stolpert bash ueber CR
+
+# Uebertragung base64-kodiert. Grund: Windows PowerShell 5.1 entfernt beim
+# Aufruf nativer Programme die inneren Anfuehrungszeichen — aus "TM_MARK|x|y"
+# wurde auf dem Server ein echter Pipe-Befehl und bash brach mit einem
+# Syntaxfehler ab. Base64 enthaelt keine Sonderzeichen und ueberlebt das
+# Quoting; die Pipes im Aufrufkommando interpretiert absichtlich erst die
+# Remote-Shell.
+$remoteB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remoteScript))
+$remoteCmd = "echo $remoteB64 | base64 -d | bash"
 
 Write-Host ""
 Write-Host "=== Remote-Deploy auf den Prod-Server ===" -ForegroundColor Cyan
@@ -54,11 +78,15 @@ Write-Host "  Kommando : cd ~/server && git -C taskmanager pull && docker compos
 Write-Host ""
 
 if ($DryRun) {
-    Write-Host "[DryRun] Es wird nichts ausgefuehrt. Das echte Kommando waere:" -ForegroundColor Yellow
-    Write-Host "  ssh $sshTarget '<deploy + TM_MARK-Kennzahlen>'"
+    Write-Host "[DryRun] Es wird nichts ausgefuehrt." -ForegroundColor Yellow
+    Write-Host "  Aufruf : ssh $sshTarget `"echo <base64> | base64 -d | bash`""
     Write-Host ""
-    Write-Host "Vollstaendig:" -ForegroundColor DarkGray
-    Write-Host "  $remoteCmd" -ForegroundColor DarkGray
+    Write-Host "Remote-Skript (wird base64-kodiert uebertragen):" -ForegroundColor DarkGray
+    foreach ($l in $remoteScript -split "`n") { Write-Host "  $l" -ForegroundColor DarkGray }
+    Write-Host ""
+    # Gegenprobe: dekodiert das Kommando wirklich zum Skript zurueck?
+    $back = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($remoteB64))
+    Write-Host ("Base64-Roundtrip: {0}" -f $(if ($back -eq $remoteScript) { 'OK' } else { 'FEHLER' })) -ForegroundColor DarkGray
     exit 0
 }
 
