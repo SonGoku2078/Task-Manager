@@ -55,19 +55,30 @@ jobs:
           echo "version=$VER" >> "$GITHUB_OUTPUT"
         id: ver
 
-      - name: Build + publish (Tag-Builds)
-        if: startsWith(github.ref, 'refs/tags/')
+      # Immer OHNE electron-builder-Publisher bauen: der wuerde ein eigenes
+      # Release unter Tag `v<version>` anlegen — als ENTWURF (Default) und im
+      # Namensschema der Projekt-Releases (v0.2.x). Stattdessen haengen wir die
+      # Artefakte unten selbst an den gepushten `desktop-v*`-Tag, wie es der
+      # Mobile-Workflow mit der APK macht.
+      - name: Build
         working-directory: electron
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # tsc zuerst: sonst wuerde ein veraltetes committetes main.js gepackt.
-        # --publish always haengt Installer UND latest.yml ans Release des Tags.
-        run: npx tsc && npx electron-builder --win --x64 --publish always
-
-      - name: Build ohne publish (manuelle Laeufe)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        working-directory: electron
         run: npx tsc && npx electron-builder --win --x64 --publish never
+
+      - name: Installer + latest.yml ans Release haengen (Tag-Builds)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          # make_latest ist entscheidend: electron-updater fragt
+          # /releases/latest ab und laedt latest.yml von DORT. Zeigt "latest"
+          # auf einen Mobile-Release (nur APK), schlaegt jede Update-Pruefung
+          # fehl. Deshalb: Desktop-Releases sind immer "latest",
+          # Mobile-Releases nie (siehe mobile-apk.yml).
+          make_latest: true
+          files: |
+            dist-electron/*.exe
+            dist-electron/latest.yml
 
       - name: Installer als Artefakt hochladen (manuelle Laeufe)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}

@@ -76,6 +76,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          # NICHT als "latest" markieren: der Desktop-Updater fragt
+          # /releases/latest ab und erwartet dort latest.yml. Zeigte "latest"
+          # auf einen APK-Release, schluege jede Desktop-Update-Pruefung fehl.
+          # Der Mobile-Updater filtert selbst nach dem `mobile-v`-Prefix
+          # (apps/mobile/src/update.ts) und ist davon nicht betroffen.
+          make_latest: false
           files: ${{ steps.rename.outputs.apk }}
 
       - name: Upload APK artifact (manual runs)
