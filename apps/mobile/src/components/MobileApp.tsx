@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { outboxOnChange, getBaseUrl, flushOutbox } from '../api';
 import { useAutoSync } from '../useAutoSync';
 import { useNavHistory } from '../useNavHistory';
-import { useHorizontalSwipe } from '../gestures';
+import { useHorizontalSwipe, usePullToRefresh } from '../gestures';
 import Navigation from './Navigation';
 import QuickAdd from './QuickAdd';
 import Projects from './Projects';
@@ -51,6 +51,13 @@ export default function MobileApp() {
 
   const syncNow = () => { flushOutbox(); loadAll(); };
   const swipe = useHorizontalSwipe(nav.back, nav.forward);
+  // Pull-to-refresh (#63). loadAll() already drains the outbox first and never
+  // rejects — on an unreachable server it keeps the local state and flags
+  // dataLoaded=false, so that is what decides success vs. the error hint.
+  const refresh = usePullToRefresh(async () => {
+    await loadAll();
+    if (!useStore.getState().dataLoaded) throw new Error('server unreachable');
+  });
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -151,7 +158,29 @@ export default function MobileApp() {
 
       {tab !== 'calendar' && tab !== 'projekte' && <QuickAdd tab={tab} />}
 
-      <main className="m-main" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
+      <main
+        className="m-main"
+        onTouchStart={(e) => { swipe.onTouchStart(e); refresh.handlers.onTouchStart(e); }}
+        onTouchMove={refresh.handlers.onTouchMove}
+        onTouchEnd={(e) => { swipe.onTouchEnd(e); refresh.handlers.onTouchEnd(); }}
+      >
+        {/* #63: Indikator sitzt im Fluss ueber der Liste und wird vom Zug
+            mitgeschoben; bei 'idle' ist er 0 Pixel hoch. */}
+        <div
+          className={`m-pull ${refresh.state !== 'idle' ? 'is-active' : ''} m-pull-${refresh.state}`}
+          style={{ height: refresh.state === 'idle' ? 0 : Math.max(refresh.pull, 34) }}
+          aria-live="polite"
+        >
+          {refresh.state === 'refreshing' && <span className="m-pull-spinner" aria-hidden="true" />}
+          <span className="m-pull-text">
+            {refresh.state === 'pulling' && 'Zum Aktualisieren ziehen'}
+            {refresh.state === 'ready' && 'Loslassen zum Aktualisieren'}
+            {refresh.state === 'refreshing' && 'Aktualisiere…'}
+            {refresh.state === 'done' && '✓ Aktualisiert'}
+            {refresh.state === 'error' && '✕ Server nicht erreichbar'}
+          </span>
+        </div>
+        <div style={refresh.style}>
         {tab === 'projekte' && (
           <Projects
             openProjectId={projectId}
@@ -165,6 +194,7 @@ export default function MobileApp() {
         {tab === 'nextweek' && <NextWeek onOpenTask={openTask} />}
         {tab === 'nextaction' && <NextAction onOpenTask={openTask} />}
         {tab === 'calendar' && <Calendar onOpenTask={openTask} />}
+        </div>
       </main>
 
       <Navigation tab={tab} onChange={changeTab} />
