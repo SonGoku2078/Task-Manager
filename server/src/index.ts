@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
 import { db } from './db';
-import { PORT, lanIPv4 } from './lan';
+import { PORT, lanIPv4, publicAddress, isLoopback } from './lan';
 import tasksRouter from './routes/tasks';
 import calendarRouter from './routes/calendar';
 import projectsRouter from './routes/projects';
@@ -29,10 +29,23 @@ app.use((req, _res, next) => {
 
 // API routes
 app.get('/health', (_req, res) => res.json({ ok: true }));
-// LAN access info for mobile: this PC's reachable URLs on the local network.
-app.get('/api/lan', (_req, res) =>
-  res.json({ port: PORT, ips: lanIPv4(), urls: lanIPv4().map((ip) => `http://${ip}:${PORT}`) }),
-);
+// Erreichbare Adresse(n) fuer die Handy-Einrichtung. `host`/`baseUrl` kommen
+// aus der Anfrage und stimmen deshalb auch im Container (#79); `ips` bleibt als
+// Zusatz erhalten (im Docker-Betrieb sind das Bridge-Adressen, ausserhalb die
+// echten LAN-IPs).
+app.get('/api/lan', (req, res) => {
+  const addr = publicAddress(req);
+  // Interface-Adressen nur, wenn die Anfrage ueber localhost kam — sonst sind
+  // es im Container Bridge-IPs (172.x), die kein Handy erreicht.
+  const ips = isLoopback(addr.hostname) ? lanIPv4() : [];
+  res.json({
+    port: PORT,
+    host: addr.hostname,
+    baseUrl: addr.baseUrl,
+    ips,
+    urls: [addr.baseUrl],
+  });
+});
 app.use('/api/tasks',        tasksRouter);
 app.use('/api/projects',     projectsRouter);
 app.use('/api/categories',   categoriesRouter);
