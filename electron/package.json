@@ -24,6 +24,8 @@
     "directories": {
       "output": "../dist-electron"
     },
+    "//artifactName": "Ohne Leerzeichen: GitHub ersetzt sie beim Upload durch Punkte, latest.yml erwartet aber genau diesen Namen (sonst 404 beim Update-Download).",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
     "publish": [
       {
         "provider": "github",
