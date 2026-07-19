@@ -1,5 +1,5 @@
 import { useStore } from '../store';
-import { isOverdue, isTodayFlagActive } from '../selectors';
+import { isOverdue, countsAsToday, isImplicitToday } from '../selectors';
 import { beginExitCollapse } from '../hooks';
 import type { Task } from '../types';
 
@@ -71,7 +71,9 @@ export default function TaskRow({
             </span>
           )}
           {task.durationMin ? <span className="m-row-dur">⏱ {task.durationMin}m</span> : null}
-          {isTodayFlagActive(task) && <span className="m-flag-today" title="Heute">☀️</span>}
+          {countsAsToday(task) && (
+            <span className="m-flag-today" title={isImplicitToday(task) ? 'Heute fällig' : 'Für heute vorgemerkt'}>☀️</span>
+          )}
           {task.thisWeek && <span className="m-flag-week" title="Next Week">🗓️</span>}
           {task.recurrence !== 'none' && <span title={task.recurrence}>↻</span>}
         </div>

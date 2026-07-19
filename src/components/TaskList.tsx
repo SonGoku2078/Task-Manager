@@ -4,7 +4,8 @@ import { useStore } from '../store';
 import {
   byCompletedAtDesc,
   isOverdue,
-  isTodayFlagActive,
+  countsAsToday,
+  isImplicitToday,
   orderSections,
   viewShowsCompleted,
 } from '../selectors';
@@ -223,8 +224,15 @@ export default function TaskList({
         {task.starred && (
           <span className="task-flag flag-na" title="Nächste Aktion">★</span>
         )}
-        {isTodayFlagActive(task) && (
-          <span className="task-flag flag-today" title="Heute">☀️</span>
+        {/* #81: auch heute faellige Tasks tragen die Markierung — sie stehen
+            ohnehin in der Heute-Ansicht. */}
+        {countsAsToday(task) && (
+          <span
+            className="task-flag flag-today"
+            title={isImplicitToday(task) ? 'Heute fällig' : 'Für heute vorgemerkt'}
+          >
+            ☀️
+          </span>
         )}
         {task.thisWeek && (
           <span className="task-flag flag-week" title="Next Week">🗓️</span>
