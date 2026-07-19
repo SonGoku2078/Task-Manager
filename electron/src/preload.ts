@@ -7,4 +7,6 @@ contextBridge.exposeInMainWorld('tm', {
   getTarget: (): Promise<string> => ipcRenderer.invoke('tm:get-target'),
   setServerUrl: (url: string): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke('tm:set-server-url', url),
+  // #84: laufende Version der Desktop-App fuer die Einstellungen.
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('tm:get-app-version'),
 });

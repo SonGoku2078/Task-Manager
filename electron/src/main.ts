@@ -141,6 +141,7 @@ async function connectAndLoad(win: BrowserWindow): Promise<void> {
 
 // ── IPC (#62): the fallback/change page sets a new server URL ────────────────
 ipcMain.handle('tm:get-target', () => currentTarget);
+ipcMain.handle('tm:get-app-version', () => app.getVersion());
 ipcMain.handle('tm:set-server-url', async (_e, input: string) => {
   const url = normalizeServerUrl(String(input));
   if (!url) return { ok: false, error: 'Ungültige Adresse — erwartet z. B. http://192.168.8.50:3001' };

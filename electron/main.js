@@ -166,6 +166,7 @@ async function connectAndLoad(win) {
 }
 // ── IPC (#62): the fallback/change page sets a new server URL ────────────────
 electron_1.ipcMain.handle('tm:get-target', () => currentTarget);
+electron_1.ipcMain.handle('tm:get-app-version', () => electron_1.app.getVersion());
 electron_1.ipcMain.handle('tm:set-server-url', async (_e, input) => {
     const url = normalizeServerUrl(String(input));
     if (!url)

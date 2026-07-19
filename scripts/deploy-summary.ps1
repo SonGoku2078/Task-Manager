@@ -1,6 +1,6 @@
 # Auswertung + Ausgabe fuer den Remote-Deploy (#67).
 # Getrennt von release-remote.ps1, damit die Logik ohne SSH testbar ist
-# (siehe scripts/deploy-summary.test.ps1). Alle Ausgaben bewusst ASCII-only —
+# (siehe scripts/deploy-summary.test.ps1). Alle Ausgaben bewusst ASCII-only -
 # Windows PowerShell 5.1 verstuemmelt sonst Sonderzeichen in der Konsole.
 
 # Sammelt die TM_MARK-Zeilen des Remote-Kommandos ein.
@@ -59,7 +59,8 @@ function Write-TmSummary {
         [double]$HealthWaitSec = -1,
         [double]$TotalSec = -1,
         $Counts = $null,
-        [string]$HealthUrl = ''
+        [string]$HealthUrl = '',
+        [string]$LiveVersion = ''
     )
 
     Write-Host "DEPLOY-ZUSAMMENFASSUNG" -ForegroundColor Cyan
@@ -81,10 +82,32 @@ function Write-TmSummary {
         }
     }
 
-    # --- Version / Image ---
-    if ($Markers.ContainsKey('describe')) {
-        Write-Host ("  Version   : {0}" -f $Markers['describe'])
+    # --- Version: vorher -> nachher, mit Klartext ob neu (#84) ---
+    $vb = if ($Markers.ContainsKey('version_before')) { $Markers['version_before'] } else { '' }
+    $va = if ($Markers.ContainsKey('version_after')) { $Markers['version_after'] } else { $Markers['describe'] }
+    if ($vb -and $va) {
+        if ($vb -eq $va) {
+            Write-Host ("  Version   : {0}  (unveraendert)" -f $va) -ForegroundColor Yellow
+        } else {
+            Write-Host ("  Version   : {0} -> {1}  (NEU)" -f $vb, $va) -ForegroundColor Green
+        }
+    } elseif ($va) {
+        Write-Host ("  Version   : {0}" -f $va)
     }
+
+    # Was der Server TATSAECHLICH ausliefert (Meta-Tag der index.html) - deckt
+    # auf, wenn der Build zwar lief, aber ein alter Stand ausgeliefert wird.
+    if ($LiveVersion) {
+        if ($va -and $LiveVersion -ne $va) {
+            Write-Host ("  Live      : {0}   ACHTUNG: weicht vom gebauten Stand ab!" -f $LiveVersion) -ForegroundColor Red
+        } else {
+            Write-Host ("  Live      : {0}  (ausgeliefert)" -f $LiveVersion) -ForegroundColor Green
+        }
+    } elseif ($va) {
+        Write-Host "  Live      : nicht ermittelbar (Meta-Tag fehlt - alter Build?)" -ForegroundColor Yellow
+    }
+
+    # --- Image ---
     if ($Markers.ContainsKey('image_before') -and $Markers.ContainsKey('image_after')) {
         if ($Markers['image_before'] -eq $Markers['image_after']) {
             Write-Host "  Image     : unveraendert (Build aus Cache)"
