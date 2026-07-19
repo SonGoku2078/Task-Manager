@@ -2,9 +2,9 @@
 
 | Feld | Wert |
 |---|---|
-| Status | implementation |
-| Nächste Rolle | /developer (Kompakt-Pipeline) |
-| Owner-Rolle | orchestrator |
+| Status | user-handover (Rückbau ausstehend) |
+| Nächste Rolle | — (User: Clients umstellen + Rückbau-Freigabe) |
+| Owner-Rolle | cicd-engineer |
 | Datum | 2026-07-19 |
 
 > Orchestrator-Log:
@@ -59,7 +59,10 @@ Gefixt unterwegs: Test-Sequenz-Bug (Wegwerf-Server belegte :3999 noch), DevTools
 
 ## 6. CI/CD & Deployment
 
-_Nach Merge: EXE 1.2.0 im Worktree, Packaged-Smoke, Übergabe._
+- **PR:** [#65](https://github.com/SonGoku2078/Task-Manager/pull/65) squash-merged → `a189ab3`; Issues #60 + #62 geschlossen. CI grün.
+- **EXE:** aus master im Worktree gebaut, **Packaged-Smoke 8/8 mit der echten `SelfManaged.exe` 1.2.0**. Installer: `dist-electron/SelfManaged Setup 1.2.0.exe` (78 MB, unsigniert). `deploy.local.json` (dante@192.168.8.50) lokal angelegt, DryRun ok.
+- **Offen (User):** Client-Umstellung + explizite Freigabe für den lokalen Rückbau; danach letzter Pipeline-Schritt (:3001 stoppen, data.db archivieren).
+- **Nebenprodukt-Issues** aus den Grill-Zwischenfragen: #61 (ICS/NetBird), #63 (Pull-to-Refresh), #64 (Woche-Überfällig).
 
 **Übergabe-Checkliste User (nach Merge/EXE-Build):**
 - [ ] `scripts/deploy.local.json` anlegen (Vorlage kopieren, `dante@192.168.8.50` eintragen)
