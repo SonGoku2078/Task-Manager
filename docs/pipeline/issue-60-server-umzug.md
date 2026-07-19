@@ -2,8 +2,8 @@
 
 | Feld | Wert |
 |---|---|
-| Status | user-handover (Rückbau ausstehend) |
-| Nächste Rolle | — (User: Clients umstellen + Rückbau-Freigabe) |
+| Status | done |
+| Nächste Rolle | — |
 | Owner-Rolle | cicd-engineer |
 | Datum | 2026-07-19 |
 
@@ -71,3 +71,27 @@ Gefixt unterwegs: Test-Sequenz-Bug (Wegwerf-Server belegte :3999 noch), DevTools
 - [ ] Handy: Server-URL auf `http://192.168.8.50:3001`
 - [ ] ICS-Abo + Browser-Lesezeichen auf neue Adresse
 - [ ] Freigabe für lokalen Rückbau geben → Pipeline stoppt :3001, archiviert data.db
+
+## 7. Lokaler Rückbau (2026-07-19, nach User-Freigabe)
+
+**Ausgangsbefund:** Auf `:3001` lauschte lokal bereits **nichts mehr** — der Prozess war schon gestoppt (nur ausgehende Verbindungen zum neuen Server sichtbar). Die lokale `data.db` stammte vom **18. Juli 14:32**, also von vor dem Umzug.
+
+**Datenvergleich vor dem Rückbau:**
+
+| | Tasks | davon offen | Projekte |
+|---|---|---|---|
+| Neuer Server (192.168.8.50) | **1243** | 759 | 122 |
+| Lokale `data.db` (Archiv) | 1120 | 763 | 122 |
+
+Der Server ist deutlich weiter — die lokale DB ist ein reiner Altbestand, kein Rückimport nötig (wie entschieden).
+
+**Archiv:** `../archiv-lokale-prod-db-2026-07-19/` (neben dem Repo im Proton-Drive-Ordner, also gesichert und außerhalb von git)
+- `data.db` — **bitgenau identisch** zum Original (gleiche MD5, gültiger `SQLite format 3`-Header, gleiche Größe)
+- `backups/` — die vorhandenen Server-Backups mitgesichert
+- Inhalt verifiziert an einer **Wegwerf-Kopie** (temporärer Server auf :3010), damit das Archiv unangetastet blieb; Prüfsumme danach erneut kontrolliert: unverändert.
+
+**Original belassen:** `~/.task-manager/data.db` wurde **nicht gelöscht**. Das Löschen bringt keinen Nutzen, zerstört aber den Rückfallweg; der Ordner enthält ohnehin weiterhin die aktiv genutzte `dev.db`.
+
+**Autostart:** keine Reste — weder im Autostart-Ordner noch in der Aufgabenplanung noch in den Registry-Run-Keys.
+
+**Folge für die Arbeitsweise:** Der „Live-Repo-Build-Trap" ist damit erledigt. Da lokal kein Prod-Server mehr aus dem Repo ausliefert, ist `npm run build` im Arbeitsverzeichnis wieder ungefährlich — Worktree-Builds sind nicht mehr zwingend.
