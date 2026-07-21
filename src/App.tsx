@@ -29,7 +29,8 @@ import ConfirmDialog from './components/ConfirmDialog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import CompletionCalendar from './components/CompletionCalendar';
 import { parseTaskHash, parseAddTaskHash } from './config';
-import { onChange as outboxOnChange, flush as flushOutbox } from './api/outbox';
+import { onChange as outboxOnChange } from './api/outbox';
+import { useServerSync } from './useServerSync';
 
 const VIEW_TITLES: Record<ViewType, string> = {
   inbox: 'Inbox',
@@ -88,10 +89,12 @@ function App() {
 
   // Server connectivity + write-queue status. The offline banner reflects both:
   // it warns when the backend is unreachable and shows how many edits are still
-  // queued for sync. When the server returns, we flush the outbox and re-load.
+  // queued for sync. Sync loop lives in useServerSync (#86): it now RE-PULLS
+  // fresh data (background tick + on window focus + manual refresh), not only on
+  // the very first load — otherwise changes from other devices stayed invisible
+  // until an app restart.
   const dataLoaded = useStore((s) => s.dataLoaded);
-  const loadAll = useStore((s) => s.loadAll);
-  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+  const { serverOnline, refreshState, refresh } = useServerSync();
   const [pendingWrites, setPendingWrites] = useState(0);
   useEffect(() => outboxOnChange(setPendingWrites), []);
   // Runtime-DEV-Erkennung wie beim Testreport-Menü (#31): der Dev-Server :3002
@@ -117,28 +120,6 @@ function App() {
     }
     setSyncVisible(false);
   }, [pendingWrites]);
-  useEffect(() => {
-    let cancelled = false;
-    const check = () =>
-      fetch('/health', { signal: AbortSignal.timeout(3000) })
-        .then((r) => {
-          if (cancelled) return;
-          setServerOnline(r.ok);
-          if (r.ok) {
-            // Always try to drain the queue while online, so a single op that
-            // failed once keeps getting retried (not only on an offline→online
-            // transition). If we never managed an initial load, load now.
-            flushOutbox();
-            if (!useStore.getState().dataLoaded) loadAll();
-          }
-        })
-        .catch(() => { if (!cancelled) setServerOnline(false); });
-    check();
-    const id = window.setInterval(check, 15000);
-    const onOnline = () => flushOutbox();
-    window.addEventListener('online', onOnline);
-    return () => { cancelled = true; window.clearInterval(id); window.removeEventListener('online', onOnline); };
-  }, [loadAll]);
 
   // Deep-link support: open the task referenced by #/t/<number> in the URL.
   useEffect(() => {
@@ -534,6 +515,23 @@ function App() {
             <h2>{headerTitle}</h2>
           )}
           <div className="task-header-right">
+            {/* #86: manueller Refresh — holt sofort frische Daten vom Server. */}
+            <button
+              className={`header-icon-btn refresh-btn refresh-${refreshState}`}
+              disabled={refreshState === 'refreshing'}
+              title={
+                refreshState === 'refreshing'
+                  ? 'Aktualisiere…'
+                  : refreshState === 'done'
+                    ? 'Aktualisiert'
+                    : refreshState === 'error'
+                      ? 'Server nicht erreichbar'
+                      : 'Daten aktualisieren'
+              }
+              onClick={() => void refresh()}
+            >
+              {refreshState === 'done' ? '✓' : refreshState === 'error' ? '✕' : '↻'}
+            </button>
             <PomodoroWidget />
             {showTotalsPill ? (
               <span

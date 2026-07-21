@@ -617,3 +617,12 @@ body {
   background: var(--accent);
   color: #fff;
 }
+
+/* #86: Refresh-Button im Kopfbereich. */
+.refresh-btn.refresh-refreshing { animation: refresh-spin 0.8s linear infinite; opacity: 0.7; }
+.refresh-btn.refresh-done { color: var(--accent, #4caf50); }
+.refresh-btn.refresh-error { color: var(--alert-red, #e5484d); }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refresh-btn.refresh-refreshing { animation: none; }
+}
